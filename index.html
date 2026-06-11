@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Senior Secure Full Stack — คอร์สเรียน</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+:root{--bg:#f7f8fa;--card:#fff;--ink:#1f2937;--muted:#6b7280;--brand:#2563eb;--brand-dark:#1e40af;--ok:#059669;--border:#e5e7eb}
+*{box-sizing:border-box}body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);margin:0;line-height:1.8;font-size:16px}
+.wrap{max-width:860px;margin:0 auto;padding:24px 20px 80px}
+header.hero{background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;padding:44px 20px}
+header.hero h1{margin:0 0 8px;font-size:1.8rem}header.hero p{margin:0;opacity:.9}
+h2{font-size:1.3rem;margin:38px 0 12px;padding-bottom:8px;border-bottom:3px solid var(--brand);display:inline-block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card.disabled{opacity:.55}
+a.week{font-weight:700;color:var(--brand-dark);text-decoration:none;font-size:1.05rem}
+.badge{display:inline-block;background:var(--ok);color:#fff;font-size:.75rem;padding:2px 10px;border-radius:999px;font-weight:600;margin-left:8px}
+.badge.soon{background:#9ca3af}
+.muted{color:var(--muted);font-size:.9rem}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.92rem}
+th,td{border:1px solid var(--border);padding:9px 12px;text-align:left}th{background:#eef2f7}
+footer{text-align:center;color:var(--muted);font-size:.85rem;margin-top:60px}
+@media(max-width:600px){body{font-size:15px}header.hero h1{font-size:1.3rem}.wrap{padding:18px 14px 60px}table{display:block;overflow-x:auto}}
+@media(min-width:1400px){.wrap{max-width:1000px}body{font-size:17px}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap" style="padding:0 20px">
+    <h1>🎓 Senior Secure Full Stack</h1>
+    <p>คอร์สเรียน Full Stack + Security แบบ mission-based · TypeScript · Node.js · Next.js · Docker · CI/CD · OWASP</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <strong>วิธีเรียน:</strong> แต่ละสัปดาห์มีบทเรียนเรียงลำดับ อ่าน Mini-lecture → ทำ Mission ด้วยตัวเอง (ห้ามเปิดเฉลยก่อนพยายาม 20 นาที)
+    → ตอบ Quiz ท้ายบท ทุกบทมีตัวอย่างใช้งานจริง เหตุผลเบื้องหลังโค้ดทุกบรรทัด และหลักคิดของ dev
+  </div>
+
+  <h2>📚 บทเรียน</h2>
+
+  <div class="card">
+    <a class="week" href="week-01/index.html">Week 01 — ปิดจบ Frontend: Async/Await · Fetch · LocalStorage · Reading List</a>
+    <span class="badge">พร้อมเรียน</span>
+    <p class="muted" style="margin:6px 0 0">Mini-lecture 2 บท + Mission ใหญ่ 1 ชิ้น (แอป My Reading List + deploy จริง) · ~10 ชม.</p>
+  </div>
+
+  <div class="card disabled">
+    <span class="week">Week 02 — Node.js + Express: library-system เริ่มต้น</span>
+    <span class="badge soon">เร็ว ๆ นี้</span>
+  </div>
+  <div class="card disabled">
+    <span class="week">Week 03 — Express Core + เริ่มเขียน Test (Vitest/Supertest)</span>
+    <span class="badge soon">เร็ว ๆ นี้</span>
+  </div>
+
+  <h2>🗺 โครงคอร์สทั้งหมด (24 สัปดาห์)</h2>
+  <div class="card">
+    <table>
+      <tr><th>เฟส</th><th>สัปดาห์</th><th>เนื้อหา</th></tr>
+      <tr><td>1. Foundation</td><td>W1-8</td><td>JS Async → Express → Testing → Zod → JWT → <strong>TypeScript</strong> → Next.js</td></tr>
+      <tr><td>2. Production</td><td>W9-16</td><td>ระบบเต็ม → Docker → <strong>CI/CD (GitHub Actions)</strong> → Logging/Monitoring</td></tr>
+      <tr><td>3. Security</td><td>W17-20</td><td><strong>OWASP ฝั่งป้องกัน</strong> → OAuth/OIDC → Security ใน CI → Pentest ตัวเอง</td></tr>
+      <tr><td>4. System Design</td><td>W21-24</td><td>Caching · Queue · Indexing → <strong>Capstone Project</strong></td></tr>
+    </table>
+  </div>
+
+  <h2>📐 เอกสารประกอบ</h2>
+  <div class="card">
+    <p style="margin:0">
+    <a href="https://github.com/" onclick="return false" style="pointer-events:none;color:var(--muted)">📄</a>
+    มาตรฐานที่ใช้ทั้งคอร์ส: <strong>lesson-standards.md</strong> (โครงบทเรียน 6 ส่วน) ·
+    <strong>portfolio-standard.md</strong> (มาตรฐาน repo/commit) ·
+    <strong>ai-workflow.md</strong> (กฎใช้ AI สองโหมด) ·
+    <strong>friday-rebuild.md</strong> (ระบบกันลืม) — เปิดอ่านได้ใน repo</p>
+  </div>
+
+  <footer>Senior Secure Full Stack Course · 2026 · สร้างด้วย mission-based learning</footer>
+</div>
+</body>
+</html>
