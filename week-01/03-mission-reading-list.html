@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: My Reading List</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 1</a> · Mission ใหญ่</div>
+    <h1>📚 My Reading List — ชิ้นงานปิดจบ Frontend</h1>
+    <p>รวมทุกทักษะเป็นแอปจริง 1 ชิ้น: Semantic HTML · Bootstrap · Fetch · LocalStorage · Deploy</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้สำคัญ</h3>
+    <p>นี่คือ <strong>ตัววัดว่าพร้อมเข้า Backend หรือยัง</strong> — ถ้าทำจบได้โดยไม่เปิดเฉลย
+    แปลว่า Frontend ของคุณแน่นพอแล้ว ถ้าติดตรงไหน นั่นคือจุดที่ต้องกลับไปทบ (และผมจะรู้ว่าต้องเสริมอะไรใน Week 2)</p>
+    <div class="warn">เปิดดูได้เฉพาะ "โจทย์และรูปผลลัพธ์" ใน <a href="https://021.wwry.net/19-final-workshop.html" target="_blank">บท 19 ของคอร์สเดิม</a>
+    — <strong>ห้ามดูโค้ดตัวอย่าง</strong> ให้เขียนจากสเปคด้านล่างนี้แทน</div>
+  </div>
+
+  <!-- ===================== ภาพประกอบ: โครงแอป + data flow ===================== -->
+  <figure class="figure">
+    <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <rect x="20" y="15" width="430" height="220" rx="10" fill="#fff" stroke="#2563eb" stroke-width="2"/>
+      <rect x="20" y="15" width="430" height="34" rx="10" fill="#1f2937"/>
+      <text x="235" y="37" font-size="12" fill="#fff" text-anchor="middle">&lt;header&gt; — Navbar "Dev Article Hub"</text>
+      <rect x="32" y="58" width="270" height="140" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+      <text x="167" y="80" font-size="12" font-weight="700" fill="#1e40af" text-anchor="middle">&lt;main&gt; col-md-8</text>
+      <rect x="44" y="92" width="115" height="42" rx="5" fill="#bfdbfe"/><text x="101" y="116" font-size="10" fill="#1e3a8a" text-anchor="middle">บทความ + ปุ่มบันทึก</text>
+      <rect x="172" y="92" width="115" height="42" rx="5" fill="#bfdbfe"/><text x="229" y="116" font-size="10" fill="#1e3a8a" text-anchor="middle">บทความ + ปุ่มบันทึก</text>
+      <rect x="44" y="142" width="115" height="42" rx="5" fill="#bfdbfe"/><text x="101" y="166" font-size="10" fill="#1e3a8a" text-anchor="middle">บทความ...</text>
+      <rect x="172" y="142" width="115" height="42" rx="5" fill="#bfdbfe"/><text x="229" y="166" font-size="10" fill="#1e3a8a" text-anchor="middle">บทความ...</text>
+      <rect x="314" y="58" width="124" height="140" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
+      <text x="376" y="80" font-size="12" font-weight="700" fill="#047857" text-anchor="middle">&lt;aside&gt; col-md-4</text>
+      <text x="376" y="100" font-size="10" fill="#065f46" text-anchor="middle">📌 ที่บันทึกไว้</text>
+      <rect x="324" y="110" width="104" height="22" rx="4" fill="#a7f3d0"/><text x="376" y="125" font-size="9" fill="#064e3b" text-anchor="middle">บทความ 1 [X]</text>
+      <rect x="324" y="138" width="104" height="22" rx="4" fill="#a7f3d0"/><text x="376" y="153" font-size="9" fill="#064e3b" text-anchor="middle">บทความ 2 [X]</text>
+      <rect x="324" y="168" width="104" height="20" rx="4" fill="#dc2626"/><text x="376" y="182" font-size="9" fill="#fff" text-anchor="middle">ล้างทั้งหมด</text>
+      <rect x="20" y="206" width="430" height="29" rx="6" fill="#1f2937"/>
+      <text x="235" y="225" font-size="11" fill="#fff" text-anchor="middle">&lt;footer&gt; © 2026</text>
+      <rect x="480" y="30" width="200" height="50" rx="8" fill="#1f2937"/>
+      <text x="580" y="50" font-size="11" fill="#fff" text-anchor="middle">☁️ jsonplaceholder API</text>
+      <text x="580" y="68" font-size="10" fill="#9ca3af" text-anchor="middle">① fetch ดึง 6 บทความ</text>
+      <path d="M 478 60 L 310 90" stroke="#2563eb" stroke-width="2" marker-end="url(#b3)"/>
+      <rect x="480" y="150" width="200" height="50" rx="8" fill="#7c3aed"/>
+      <text x="580" y="170" font-size="11" fill="#fff" text-anchor="middle">🗄 localStorage</text>
+      <text x="580" y="188" font-size="10" fill="#ddd6fe" text-anchor="middle">② บันทึก ③ โหลดกลับ ④ ลบ</text>
+      <path d="M 478 165 L 442 130 M 442 150 L 478 185" stroke="#7c3aed" stroke-width="2" marker-end="url(#p3)"/>
+      <defs>
+        <marker id="b3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2563eb"/></marker>
+        <marker id="p3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#7c3aed"/></marker>
+      </defs>
+    </svg>
+    <figcaption>ภาพรวมแอป: โครง semantic 4 ส่วน + เส้นทางข้อมูล ① API→main ② main→storage ③ storage→aside ④ ลบจาก storage</figcaption>
+  </figure>
+
+  <h2>📋 สเปคงาน (เขียนแบบที่ลูกค้าจริงจะส่งให้คุณ)</h2>
+  <div class="card">
+    <p><strong>แอปอ่านบทความ "My Reading List"</strong></p>
+    <ul>
+      <li>ดึงบทความ 6 ชิ้นจาก <code>https://jsonplaceholder.typicode.com/posts?_limit=6</code> แสดงในพื้นที่หลัก</li>
+      <li>แต่ละบทความมีปุ่ม "บันทึกไว้อ่านทีหลัง" → ไปโผล่ใน sidebar ขวา และอยู่รอดข้าม refresh (localStorage)</li>
+      <li>ลบรายการที่บันทึกได้ทีละชิ้น (ปุ่ม X) หรือล้างทั้งหมด (มี confirm ก่อน)</li>
+      <li>บันทึกซ้ำชิ้นเดิมไม่ได้ — ต้องเด้งเตือน</li>
+      <li>Responsive: จอคอม 2 คอลัมน์ / มือถือเรียงซ้อน</li>
+    </ul>
+    <p>โครงสร้างข้อมูลจาก API: แต่ละบทความเป็น object <code>{ id, title, body }</code></p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 5 Mission ย่อย — ทำทีละขั้น เทสต์ทุกขั้น</h2>
+  <p>หลักการทำงานแบบมืออาชีพ: ไม่เขียนรวดเดียวจบแล้วค่อยเทสต์ แต่<strong>สร้างทีละชั้นและพิสูจน์ว่าชั้นนั้นทำงาน</strong>ก่อนไปต่อ
+  (นิสัยนี้จะกลายเป็น unit testing ใน Week 3)</p>
+
+  <div class="mission">
+    <h3>Mission 3.1 — โครง HTML <span class="badge orange">45 นาที</span></h3>
+    <div class="step"><div class="num">1</div><div>สร้าง <code>reading-list.html</code> ใส่ Bootstrap 5 CDN (CSS ใน head, JS bundle ก่อนปิด body)</div></div>
+    <div class="step"><div class="num">2</div><div>วางโครง Semantic: <code>&lt;header&gt;</code> (navbar ดำ มีชื่อแอป)
+      → <code>&lt;div class="container"&gt;&lt;div class="row"&gt;</code> ครอบ
+      <code>&lt;main class="col-md-8"&gt;</code> และ <code>&lt;aside class="col-md-4"&gt;</code>
+      → <code>&lt;footer&gt;</code></div></div>
+    <div class="step"><div class="num">3</div><div>ใน main: หัวข้อ + กล่องเปล่า <code>id="articleContainer"</code> ใส่ข้อความ "กำลังโหลด..." ไว้ก่อน<br>
+      ใน aside: card หัวสีน้ำเงิน "📌 บทความที่บันทึก" + กล่อง <code>id="savedList"</code> + ปุ่ม <code>id="btnClear"</code></div></div>
+    <div class="tip"><strong>✅ เทสต์ก่อนไปต่อ:</strong> เปิดไฟล์ → จอคอมเห็น 2 คอลัมน์ (8:4) → ย่อจอแคบ ๆ → ต้องเรียงซ้อนกัน</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.2 — Fetch + Render <span class="badge orange">45 นาที</span></h3>
+    <div class="step"><div class="num">1</div><div>เขียนฟังก์ชัน <code>loadArticles()</code> ตาม pattern 7 ขั้นจากบทที่ 2
+      (loading → fetch → เช็ค <code>res.ok</code> → json → render → catch → finally)</div></div>
+    <div class="step"><div class="num">2</div><div>Render ด้วย <code>.map()</code> + template literal แล้ว <code>join("")</code>
+      — <strong>ไม่ใช่</strong>ต่อ string ทีละรอบใน for loop (ท่า map เป็นมาตรฐานที่ React ใช้ คุ้นไว้ตั้งแต่ตอนนี้)</div></div>
+    <div class="step"><div class="num">3</div><div>เนื้อหา (body) ยาวเกิน 80 ตัวอักษร → ตัดด้วย <code>substring(0, 80) + "..."</code></div></div>
+    <div class="step"><div class="num">4</div><div>ปุ่มบันทึกในแต่ละ card ฝัง data ไว้: <code>onclick="saveArticle(${id}, '...')"</code>
+      <em>(หรือใครอยากเท่กว่า: ใช้ data-attribute + event delegation — ถามผมได้)</em></div></div>
+    <div class="tip"><strong>✅ เทสต์:</strong> เปิดปกติเห็น 6 บทความ → ปิด WiFi แล้ว refresh → ต้องเห็นข้อความ error ไม่ใช่ "กำลังโหลด..." ค้าง</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.3 — บันทึกลง LocalStorage <span class="badge orange">60 นาที</span></h3>
+    <div class="step"><div class="num">1</div><div><code>saveArticle(id, title)</code>: อ่าน array เดิม
+      (<code>JSON.parse(...) ?? []</code>) → <strong>เช็คซ้ำด้วย <code>.some(a =&gt; a.id === id)</code></strong>
+      → ถ้าซ้ำ alert เตือนแล้วจบ → ถ้าไม่ซ้ำ push <code>{id, title}</code> → stringify เซฟกลับ</div></div>
+    <div class="step"><div class="num">2</div><div>เรียก <code>renderSaved()</code> ทุกครั้งหลังเซฟ เพื่ออัปเดต sidebar ทันที</div></div>
+    <div class="tip"><strong>✅ เทสต์:</strong> บันทึก 2 ชิ้น → เห็นใน sidebar → กดบันทึกชิ้นเดิมซ้ำ → ต้องเด้งเตือน ไม่เพิ่มซ้ำ</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.4 — โหลดกลับ + ลบ <span class="badge orange">45 นาที</span></h3>
+    <div class="step"><div class="num">1</div><div><code>renderSaved()</code>: อ่านจาก localStorage → ว่าง = ข้อความ "ยังไม่มีบทความ"
+      → มีของ = list รายการ + ปุ่ม X ท้ายแต่ละแถว → เรียกตอนเปิดเว็บด้วย (บรรทัดล่างสุดของ script)</div></div>
+    <div class="step"><div class="num">2</div><div><code>removeArticle(id)</code>: ใช้ <code>.filter(a =&gt; a.id !== id)</code>
+      เก็บเฉพาะตัวที่ไม่ถูกลบ → เซฟกลับ → render ใหม่</div></div>
+    <div class="step"><div class="num">3</div><div>ปุ่ม btnClear: <code>confirm("ลบทั้งหมด?")</code> → ตกลงค่อย
+      <code>removeItem</code> → render ใหม่</div></div>
+    <div class="tip"><strong>✅ เทสต์ครบวงจร:</strong> บันทึก 3 → refresh → อยู่ครบ 3 → ลบ 1 → refresh → เหลือ 2 → ล้างหมด → refresh → ว่าง</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.5 — Deploy ขึ้นโลกจริง <span class="badge orange">30 นาที</span></h3>
+    <div class="warn"><strong>📦 มาตรฐาน Portfolio:</strong> repo นี้คือผลงานสมัครงานชิ้นแรก —
+    ก่อน push ให้เปิด <code>course/portfolio-standard.md</code> ทำตาม checklist:
+    README ตาม template (มี Features, Tech Stack, What I Learned, AI Usage), commit message แบบ
+    <code>feat:/fix:</code>, ไม่มีโค้ดตาย, ไม่มี secret</div>
+  <div class="step"><div class="num">1</div><div>เปลี่ยนชื่อไฟล์เป็น <code>index.html</code> (กฎของ GitHub Pages)</div></div>
+    <div class="step"><div class="num">2</div><div><code>git init</code> → <code>git add .</code> →
+      <code>git commit -m "feat: reading list app with fetch and localstorage"</code>
+      <em>(สังเกต commit message แบบมืออาชีพ — บอกว่าทำอะไร ไม่ใช่ "update")</em></div></div>
+    <div class="step"><div class="num">3</div><div>สร้าง repo ชื่อ <code>reading-list</code> บน GitHub (Public) → push ขึ้นไป</div></div>
+    <div class="step"><div class="num">4</div><div>Settings → Pages → Deploy from branch → main → Save → รอ 1-2 นาที ได้ URL</div></div>
+    <div class="tip"><strong>✅ เทสต์สุดท้าย:</strong> เปิด URL จากมือถือ (คนละเครื่อง) — ใช้งานได้ครบ = ผ่าน 🎉</div>
+  </div>
+
+  <h2>📏 เกณฑ์ที่ผมจะใช้ review (บอกล่วงหน้าให้เล็งถูก)</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>น้ำหนัก</th><th>ดูจากอะไร</th></tr>
+      <tr><td>ถูกต้องตามสเปค</td><td>40%</td><td>เทสต์ทุกข้อด้านบนผ่านจริง</td></tr>
+      <tr><td>คุณภาพโค้ด</td><td>30%</td><td>ชื่อตัวแปรสื่อความหมาย · ไม่มีโค้ดตาย/comment ทดลองค้าง · แยกฟังก์ชันชัด (บทเรียนจาก Project2)</td></tr>
+      <tr><td>Error handling</td><td>20%</td><td>res.ok · null จาก localStorage · ผู้ใช้กดรัว</td></tr>
+      <tr><td>Git hygiene</td><td>10%</td><td>commit message สื่อความหมาย ไม่ใช่ "update" 5 รอบ</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>เทสต์ครบทุก Mission (3.1-3.5)</li>
+    <li>ส่ง 2 ลิงก์ใน chat: GitHub repo + GitHub Pages URL</li>
+    <li>README ของ repo มี section "AI Usage" ตาม template ใน <code>course/ai-workflow.md</code>
+      (สัปดาห์นี้เขียนมือล้วน ก็ระบุไปตรง ๆ ว่า "No AI — เขียนเองทั้งหมดเพื่อฝึกพื้นฐาน" ซึ่งเป็นจุดขายเช่นกัน)</li>
+    <li>บอกผม 1 อย่างที่ติดนานที่สุด (ผมจะใช้ปรับบทเรียน Week 2)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-fetch-localstorage.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 1</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 1 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

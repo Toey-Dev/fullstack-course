@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Async/Await ให้เข้าใจถึงแก่น</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 1</a> · บทที่ 1</div>
+    <h1>Async/Await ให้เข้าใจถึงแก่น</h1>
+    <p>เรียนรู้วิธีที่ JavaScript จัดการกับ "งานที่ต้องรอ" — หัวใจของการต่อ API และ Database ทุกระบบ</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 จบบทนี้คุณจะ...</h3>
+    <ul class="check">
+      <li>อธิบายได้ว่า "ทำไม" JS ต้องมี async ไม่ใช่แค่ "ใช้ยังไง"</li>
+      <li>เขียน async/await + try/catch ได้โดยไม่เปิด docs</li>
+      <li>อ่านโค้ด Promise ของคนอื่นออก (จำเป็นมากตอนเข้าทีมใหม่)</li>
+      <li>ตอบคำถาม interview เรื่อง Event Loop เบื้องต้นได้</li>
+    </ul>
+  </div>
+
+  <!-- ===================== คีย์เวิร์ดภาพจำ ===================== -->
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท (ใช้ตอน Friday Rebuild: เห็นคำ → ดึงภาพ → ดึงโค้ด)</h3>
+    <div class="kw-row">
+      <span class="kw">☕ บาริสต้าคนเดียว = single thread</span>
+      <span class="kw">🛎 สั่งทิ้งไว้ เสร็จแล้วติ๊ง! = async</span>
+      <span class="kw">🧾 ใบรับของ 3 สถานะ = Promise</span>
+      <span class="kw">⏸ "รอตรงนี้" = await</span>
+      <span class="kw">🕳 กล่องเปล่ายังไม่มีของ = ลืม await</span>
+      <span class="kw">🛟 ตาข่ายรองรับ = try/catch</span>
+    </div>
+  </div>
+
+  <!-- ===================== ภาพประกอบหลัก ===================== -->
+  <figure class="figure">
+    <svg viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <text x="20" y="28" font-size="15" font-weight="700" fill="#1f2937">❌ Synchronous (Blocking) — ทุกอย่างต่อคิวเดียว</text>
+      <rect x="20" y="40" width="90" height="34" rx="6" fill="#2563eb"/>
+      <text x="65" y="62" font-size="12" fill="#fff" text-anchor="middle">งาน A</text>
+      <rect x="112" y="40" width="300" height="34" rx="6" fill="#dc2626"/>
+      <text x="262" y="62" font-size="12" fill="#fff" text-anchor="middle">รอ Server 3 วิ... (ทั้งหน้าค้าง! กดอะไรไม่ได้)</text>
+      <rect x="414" y="40" width="90" height="34" rx="6" fill="#2563eb"/>
+      <text x="459" y="62" font-size="12" fill="#fff" text-anchor="middle">งาน B</text>
+      <text x="20" y="120" font-size="15" font-weight="700" fill="#1f2937">✅ Asynchronous (Non-blocking) — สั่งทิ้งไว้ แล้วไปต่อ</text>
+      <rect x="20" y="132" width="90" height="34" rx="6" fill="#2563eb"/>
+      <text x="65" y="154" font-size="12" fill="#fff" text-anchor="middle">งาน A</text>
+      <rect x="112" y="132" width="90" height="34" rx="6" fill="#2563eb"/>
+      <text x="157" y="154" font-size="12" fill="#fff" text-anchor="middle">งาน B</text>
+      <rect x="204" y="132" width="90" height="34" rx="6" fill="#2563eb"/>
+      <text x="249" y="154" font-size="12" fill="#fff" text-anchor="middle">งาน C</text>
+      <rect x="112" y="180" width="300" height="30" rx="6" fill="#059669" opacity=".85"/>
+      <text x="262" y="200" font-size="12" fill="#fff" text-anchor="middle">รอ Server 3 วิ (อยู่เบื้องหลัง ไม่ขวางใคร)</text>
+      <path d="M 410 195 L 460 195 L 460 166" stroke="#059669" stroke-width="2.5" fill="none" marker-end="url(#ah)"/>
+      <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#059669"/></marker></defs>
+      <rect x="464" y="132" width="110" height="34" rx="6" fill="#059669"/>
+      <text x="519" y="154" font-size="12" fill="#fff" text-anchor="middle">ติ๊ง! กลับมาเสิร์ฟ</text>
+    </svg>
+    <figcaption>ภาพที่ 1: เปรียบเทียบ timeline — Sync งานช้าขวางทุกอย่าง / Async งานช้าไปรอเบื้องหลัง เส้นหลักวิ่งต่อ</figcaption>
+  </figure>
+
+  <!-- ===================== แนวคิด Dev ===================== -->
+  <h2>🧠 แนวคิด & หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <p>ก่อนแตะ syntax ต้องเข้าใจ "วิธีคิด" ที่อยู่เบื้องหลังก่อน — ถ้าเข้าใจหลักการเหล่านี้
+    ต่อให้ลืม syntax ก็เขียนเองใหม่ได้ เพราะรู้ว่ากำลังแก้ปัญหาอะไร:</p>
+    <h3>หลักการ 1: "Don't block the main thread" (อย่าขวางเส้นเลือดใหญ่)</h3>
+    <p>JS มี thread เดียวที่ต้องทั้งรันโค้ดและวาดหน้าจอ — งานไหนที่ "ใช้เวลาไม่แน่นอน"
+    (network, อ่านไฟล์, database) <strong>ห้ามให้มันยืนรอ</strong> ต้องสั่งทิ้งไว้แล้วไปทำอย่างอื่น
+    หลักการนี้คือเหตุผลการมีอยู่ของ async ทั้งระบบ และเป็นหลักเดียวกับที่ Node.js ใช้รับ
+    request เป็นพัน ๆ พร้อมกันได้ด้วย thread เดียว (จะเจอใน Week 2)</p>
+    <h3>หลักการ 2: "Errors are values, not surprises" (ความผิดพลาดคือสิ่งที่ต้องวางแผน ไม่ใช่อุบัติเหตุ)</h3>
+    <p>Dev มือใหม่เขียนเผื่อแค่ทางสำเร็จ (happy path) — dev มืออาชีพถามก่อนเสมอว่า
+    <em>"ถ้าพังตรงนี้ ผู้ใช้จะเห็นอะไร?"</em> นี่คือเหตุผลที่ try/catch ไม่ใช่ของแถม
+    แต่เป็นส่วนหนึ่งของ design ตั้งแต่บรรทัดแรก</p>
+    <h3>หลักการ 3: "Readability over cleverness" (โค้ดอ่านง่ายชนะโค้ดเท่)</h3>
+    <p>Callback → Promise → async/await คือวิวัฒนาการของ "ความอ่านง่าย" ล้วน ๆ
+    ความสามารถเท่าเดิมทุกยุค แต่โค้ดที่อ่านง่ายกว่า = ทีม maintain ได้ = บั๊กน้อยกว่า
+    บริษัทจ่ายแพงให้คนเขียนโค้ดที่ <strong>คนอื่นอ่านรู้เรื่อง</strong> ไม่ใช่โค้ดที่ฉลาดที่สุด</p>
+    <div class="tip"><strong>เมื่อไหร่ใช้ / ไม่ใช้:</strong> ใช้ async กับงาน I/O ทุกชนิด (network, ไฟล์, DB)
+    / <strong>ไม่ต้องใช้</strong>กับงานคำนวณธรรมดา (บวกเลข, จัด array, แปลง string) —
+    ใส่ async มั่ว ๆ ทุกฟังก์ชันคือ signal ว่าไม่เข้าใจ ซึ่ง interviewer จับได้ทันที</div>
+  </div>
+
+  <!-- ===================== ส่วนที่ 1 ===================== -->
+  <h2>ส่วนที่ 1: ทำไมต้องมี Async? (เข้าใจปัญหาก่อนเข้าใจทางแก้)</h2>
+
+  <div class="step"><div class="num">1</div><div>
+    <h3 style="margin-top:0">JavaScript ทำงานทีละบรรทัด ด้วย "พนักงานคนเดียว"</h3>
+    <p>ลองนึกภาพร้านกาแฟที่มี <strong>บาริสต้าแค่ 1 คน</strong> (JS เรียกว่า single thread)
+    ลูกค้าสั่งอะไรมา เขาก็ทำทีละอย่าง เสร็จอันแรกค่อยเริ่มอันถัดไป — โค้ดปกติก็ทำงานแบบนี้:</p>
+<pre><code>console.log("รับออเดอร์ A");   // ทำก่อน
+console.log("รับออเดอร์ B");   // ทำต่อ
+console.log("รับออเดอร์ C");   // ทำสุดท้าย</code></pre>
+  </div></div>
+
+  <div class="step"><div class="num">2</div><div>
+    <h3 style="margin-top:0">ปัญหาเกิดเมื่อมี "งานที่ต้องรอนาน"</h3>
+    <p>สมมติออเดอร์ B คือ "ขอข้อมูลจาก Server" ซึ่งใช้เวลา 3 วินาที (ข้อมูลต้องวิ่งข้ามอินเทอร์เน็ตไปกลับ)
+    ถ้าบาริสต้า <strong>ยืนเฉย ๆ รอ 3 วินาที</strong> ลูกค้าคนอื่นทั้งร้านต้องรอหมด —
+    บนหน้าเว็บแปลว่า <strong>ทั้งหน้าค้าง</strong> กดปุ่มไม่ได้ scroll ไม่ได้ พิมพ์ไม่ได้</p>
+    <div class="danger"><strong>นี่คือสิ่งที่เรียกว่า Blocking</strong> — งานเดียวที่ช้า ทำให้ทุกอย่างหยุดหมด
+    เว็บที่ค้างแบบนี้ผู้ใช้ปิดทิ้งภายใน 3 วินาที</div>
+  </div></div>
+
+  <div class="step"><div class="num">3</div><div>
+    <h3 style="margin-top:0">ทางแก้: Asynchronous = "สั่งงานทิ้งไว้ แล้วไปทำอย่างอื่นก่อน"</h3>
+    <p>บาริสต้าที่ฉลาดจะ <strong>กดเครื่องชงอัตโนมัติทิ้งไว้</strong> แล้วหันไปรับลูกค้าคนถัดไปทันที
+    พอเครื่องชงเสร็จมีเสียง "ติ๊ง!" ค่อยกลับมาเสิร์ฟ — นี่คือ Async:</p>
+<pre><code>console.log("1. กดเครื่องชงกาแฟ (สั่งงานทิ้งไว้)");
+
+setTimeout(() => {
+  console.log("3. ติ๊ง! กาแฟเสร็จ กลับมาเสิร์ฟ");
+}, 3000); // งานนี้ใช้เวลา 3 วิ แต่ไม่บล็อกใคร
+
+console.log("2. รับลูกค้าคนถัดไปทันที ไม่ต้องรอ");
+
+// ลำดับ output จริง: 1 → 2 → (รอ 3 วิ) → 3</code></pre>
+    <div class="tip"><strong>ตัวอย่างในชีวิตจริงที่คุณเจอทุกวัน:</strong> Facebook โหลด feed เพิ่มขณะที่คุณยัง scroll ได้ ·
+    YouTube โหลดวิดีโอขณะที่คุณพิมพ์ comment ได้ · เว็บ welovefukushima ของคุณตอน AJAX filter ทำงาน
+    ผู้ใช้ก็ยังเลื่อนหน้าได้ — ทั้งหมดคือ async</div>
+  </div></div>
+
+  <!-- ===================== ส่วนที่ 2 ===================== -->
+  <h2>ส่วนที่ 2: วิวัฒนาการ 3 ยุค (เล่าได้ = สอบผ่าน interview)</h2>
+  <p>คำถามยอดฮิตใน interview คือ <em>"Callback, Promise, Async/Await ต่างกันยังไง"</em>
+  วิธีตอบที่ดีที่สุดคือเล่าเป็น "ปัญหา → ทางแก้" ทีละยุค:</p>
+
+  <h3>ยุคที่ 1: Callback — ฝากเบอร์ไว้ เสร็จแล้วโทรกลับ</h3>
+  <p>Callback คือ "ฟังก์ชันที่ฝากไว้ให้เรียกทีหลังเมื่องานเสร็จ" เหมือนสั่งของแล้วฝากเบอร์โทรไว้
+  ฟังดูดี แต่พอต้องทำงานต่อกันหลายขั้น (login → ดึงโปรไฟล์ → ดึงออเดอร์) โค้ดจะซ้อนลึกลงเรื่อย ๆ:</p>
+<pre><code>// 😱 Callback Hell — ซ้อน 3 ชั้น ดัก error 3 รอบ
+loginUser("vee", "1234", (err, user) => {
+  if (err) return console.error(err);          // ดักชั้น 1
+  getProfile(user.id, (err, profile) => {
+    if (err) return console.error(err);        // ดักชั้น 2
+    getOrders(profile.id, (err, orders) => {
+      if (err) return console.error(err);      // ดักชั้น 3
+      console.log("ออเดอร์:", orders);
+    });
+  });
+});</code></pre>
+  <p>โค้ดรูปนี้มีชื่อเล่นว่า <strong>"Pyramid of Doom"</strong> — อ่านยาก แก้ยาก เพิ่มขั้นตอนใหม่ทีต้องนับปีกกาให้ดี</p>
+
+  <h3>ยุคที่ 2: Promise — ใบรับของที่สัญญาว่า "เดี๋ยวได้แน่"</h3>
+  <figure class="figure">
+    <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <rect x="270" y="15" width="160" height="44" rx="10" fill="#d97706"/>
+      <text x="350" y="36" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">🧾 pending</text>
+      <text x="350" y="52" font-size="11" fill="#fff" text-anchor="middle">กาแฟกำลังชง...</text>
+      <path d="M 300 62 L 180 95" stroke="#059669" stroke-width="2.5" marker-end="url(#g1)"/>
+      <path d="M 400 62 L 520 95" stroke="#dc2626" stroke-width="2.5" marker-end="url(#r1)"/>
+      <defs>
+        <marker id="g1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#059669"/></marker>
+        <marker id="r1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#dc2626"/></marker>
+      </defs>
+      <rect x="60" y="98" width="200" height="44" rx="10" fill="#059669"/>
+      <text x="160" y="118" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">✅ fulfilled → .then() / await ได้ค่า</text>
+      <text x="160" y="134" font-size="11" fill="#fff" text-anchor="middle">กาแฟเสร็จ มารับได้</text>
+      <rect x="440" y="98" width="200" height="44" rx="10" fill="#dc2626"/>
+      <text x="540" y="118" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">❌ rejected → .catch() / try-catch</text>
+      <text x="540" y="134" font-size="11" fill="#fff" text-anchor="middle">เมล็ดหมด ขอโทษครับ</text>
+    </svg>
+    <figcaption>ภาพที่ 2: Promise = ใบรับของ 3 สถานะ — ทุกใบจบที่สำเร็จ (ซ้าย) หรือล้มเหลว (ขวา) เท่านั้น</figcaption>
+  </figure>
+  <p>Promise คือ object ที่แทน "งานที่กำลังทำอยู่" มี 3 สถานะ:</p>
+  <table>
+    <tr><th>สถานะ</th><th>ความหมาย</th><th>เทียบกับร้านกาแฟ</th></tr>
+    <tr><td><code>pending</code></td><td>กำลังทำงาน</td><td>กาแฟกำลังชง</td></tr>
+    <tr><td><code>fulfilled</code></td><td>สำเร็จ (ได้ค่า)</td><td>กาแฟเสร็จ มารับได้</td></tr>
+    <tr><td><code>rejected</code></td><td>ล้มเหลว (ได้ error)</td><td>เมล็ดหมด ขอโทษครับ</td></tr>
+  </table>
+  <p>จุดเปลี่ยนสำคัญ: จากซ้อนลึก → กลายเป็น <strong>ต่อคิวแบน ๆ</strong> ด้วย <code>.then()</code>
+  และดัก error <strong>จุดเดียว</strong> ด้วย <code>.catch()</code>:</p>
+<pre><code>loginUser("vee", "1234")
+  .then(user    => getProfile(user.id))   // เสร็จแล้วส่งต่อ
+  .then(profile => getOrders(profile.id)) // เสร็จแล้วส่งต่อ
+  .then(orders  => console.log(orders))
+  .catch(err    => console.error(err));   // พังชั้นไหนก็ตกมาที่นี่ที่เดียว</code></pre>
+
+  <h3>ยุคที่ 3: Async/Await — เขียนโค้ดรอ ให้หน้าตาเหมือนโค้ดปกติ</h3>
+  <p>คือ "น้ำตาลเคลือบ Promise" (syntactic sugar) — ข้างใต้ยังเป็น Promise ทุกอย่าง
+  แต่เขียนอ่านง่ายเหมือนโค้ดบนลงล่างธรรมดา:</p>
+<pre><code>const run = async () => {           // 1. ประกาศว่าฟังก์ชันนี้มีงานต้องรอ
+  try {
+    const user    = await loginUser("vee", "1234"); // 2. รอตรงนี้ (ไม่บล็อกคนอื่น)
+    const profile = await getProfile(user.id);
+    const orders  = await getOrders(profile.id);
+    console.log(orders);
+  } catch (err) {                   // 3. พังบรรทัดไหนก็กระโดดมานี่
+    console.error(err);
+  }
+};</code></pre>
+
+  <div class="tip"><strong>กฎทอง 2 ข้อ (ท่องไว้):</strong><br>
+  ① คำสั่งไหนต้องรอ → ใส่ <code>await</code> หน้า และฟังก์ชันที่ครอบมัน <strong>ต้องมี</strong> <code>async</code><br>
+  ② ครอบด้วย <code>try { } catch (err) { }</code> เพื่อดัก error รวบยอดกล่องเดียว</div>
+
+  <!-- ===================== ส่วนที่ 3 ===================== -->
+  <h2>ส่วนที่ 3: กับดัก 3 อันที่มือใหม่ตกทุกคน</h2>
+
+  <div class="card">
+    <h3 style="margin-top:0">กับดัก 1: ลืม await แล้วได้ <code>Promise {&lt;pending&gt;}</code></h3>
+<pre><code>const data = getData();        // ❌ ลืม await
+console.log(data);             // Promise {&lt;pending&gt;} — ไม่ใช่ข้อมูล!
+
+const data = await getData();  // ✅ ได้ข้อมูลจริง</code></pre>
+    <p>เมื่อไหร่ที่ <code>console.log</code> แล้วเจอ <code>Promise {&lt;pending&gt;}</code>
+    ให้รู้ทันที: <strong>ลืม await ที่ไหนสักแห่ง</strong></p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">กับดัก 2: ฟังก์ชัน async คืนค่าเป็น Promise เสมอ</h3>
+<pre><code>const getNumber = async () => 42;   // ดูเหมือนคืนเลข...
+
+console.log(getNumber());           // ❌ Promise {42} ไม่ใช่ 42
+console.log(await getNumber());     // ✅ 42</code></pre>
+    <p>แปลว่า "คนเรียกฟังก์ชัน async ก็ต้อง await ด้วย" — ลูกโซ่นี้คือเหตุผลที่ใน React
+    เราถึงเรียก async function ใน useEffect แบบพิเศษ (จะเจอใน Week 8)</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">กับดัก 3: await เรียงกันโดยไม่จำเป็น = ช้าฟรี</h3>
+<pre><code>// ❌ ช้า: รองาน A เสร็จก่อน ค่อยเริ่ม B (รวม 4 วิ)
+const a = await fetchA();  // 2 วิ
+const b = await fetchB();  // 2 วิ — ทั้งที่ B ไม่ได้ใช้ผลของ A เลย!
+
+// ✅ เร็ว: ยิงพร้อมกัน รอพร้อมกัน (รวม 2 วิ)
+const [a, b] = await Promise.all([fetchA(), fetchB()]);</code></pre>
+    <p><strong>หลักคิด:</strong> ถ้างานไม่ขึ้นต่อกัน → <code>Promise.all</code> /
+    ถ้างานต้องใช้ผลของกันและกัน → await เรียงตามลำดับ</p>
+  </div>
+
+  <!-- ===================== ส่วนที่ 4 ===================== -->
+  <h2>ส่วนที่ 4: ตัวอย่างการประยุกต์ในงานจริงของคุณ</h2>
+
+  <div class="card">
+    <h3 style="margin-top:0">🏢 กรณีที่ 1: งาน Automation Report ที่ media-presto</h3>
+    <p>ตอนนี้คุณดึงข้อมูลการตลาดจากหลายแหล่ง (Meta, LINE, IG, GA4) — ทั้ง 4 แหล่ง
+    <strong>ไม่ขึ้นต่อกัน</strong> ดังนั้นท่าที่ถูกคือ:</p>
+<pre><code>const buildReport = async (clientId) => {
+  try {
+    // ยิงพร้อมกัน 4 แหล่ง — เร็วกว่าเรียงกัน ~4 เท่า
+    const [meta, line, ig, ga4] = await Promise.all([
+      fetchMetaAds(clientId),
+      fetchLineOA(clientId),
+      fetchInstagram(clientId),
+      fetchGA4(clientId),
+    ]);
+    return summarize({ meta, line, ig, ga4 });
+  } catch (err) {
+    notifyTeam(`Report ${clientId} ล้มเหลว: ${err.message}`);
+  }
+};</code></pre>
+    <p>นี่คือโค้ดที่คุณจะเขียนจริงใน Week 16 ตอน rebuild automation report เป็น TypeScript service</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">📚 กรณีที่ 2: ระบบยืมหนังสือใน library-system (Kcode Day 5)</h3>
+    <p>การยืมหนังสือ <strong>ขึ้นต่อกันเป็นลูกโซ่</strong> — ต้องเช็คสมาชิกก่อน แล้วค่อยเช็คหนังสือ แล้วค่อยบันทึก
+    ดังนั้นต้อง await เรียงลำดับ (ใช้ Promise.all ไม่ได้):</p>
+<pre><code>const borrowBook = async (memberId, bookId) => {
+  const member = await findMember(memberId);      // ขั้น 1
+  if (member.fines > 0) throw new Error("มีค่าปรับค้าง");
+  const book = await findBook(bookId);            // ขั้น 2 (ใช้หลังรู้ว่าสมาชิกผ่าน)
+  if (!book.available) throw new Error("หนังสือถูกยืมแล้ว");
+  return await createTransaction(member, book);   // ขั้น 3
+};</code></pre>
+    <p>สังเกต: ตัวอย่างสองกรณีนี้คือคำตอบของ Quiz ข้อ 3 ในชีวิตจริง — รู้ว่าเมื่อไหร่ใช้ท่าไหน</p>
+  </div>
+
+  <!-- ===================== Mission ===================== -->
+  <h2>ภารกิจ (เขียนเองทั้งหมด)</h2>
+
+  <div class="mission">
+    <h3>🎯 Mission 1.1: เครื่องชงกาแฟ Async <span class="badge orange">20 นาที</span></h3>
+    <p>สร้างไฟล์ <code>practice/coffee.js</code> แล้วรันด้วย <code>node coffee.js</code>:</p>
+    <ol>
+      <li>ฟังก์ชัน <code>grindBeans()</code> คืน Promise — สำเร็จหลัง 1 วินาที ได้ค่า <code>"ผงกาแฟ"</code>
+        <br><em>ใบ้โครง: <code>new Promise((resolve) =&gt; setTimeout(() =&gt; resolve("ผงกาแฟ"), 1000))</code></em></li>
+      <li>ฟังก์ชัน <code>brew(powder)</code> คืน Promise — สำเร็จหลัง 1.5 วิ ได้ <code>"เอสเพรสโซ่"</code>
+        แต่ถ้า <code>powder !== "ผงกาแฟ"</code> ให้ <code>reject("วัตถุดิบผิด!")</code></li>
+      <li>ฟังก์ชัน async <code>makeCoffee()</code> เรียกทั้งสองตามลำดับ + try/catch + log ทุกขั้นตอน</li>
+      <li>ทดสอบ 2 เคส: เคสปกติ และเคสส่ง <code>"น้ำเปล่า"</code> เข้า brew ตรง ๆ
+        (ต้องเห็นข้อความ error สวย ๆ จาก catch ไม่ใช่โปรแกรม crash)</li>
+    </ol>
+  </div>
+
+  <div class="mission">
+    <h3>🎯 Mission 1.2: ทายลำดับ Output <span class="badge orange">10 นาที</span></h3>
+    <p><strong>ก่อนรัน</strong> ทายลำดับตัวอักษรที่จะแสดง พร้อมเหตุผล แล้วค่อยรันตรวจ:</p>
+<pre><code>console.log("A");
+setTimeout(() => console.log("B"), 0);
+const f = async () => { console.log("C"); await null; console.log("D"); };
+f();
+console.log("E");</code></pre>
+    <p>ส่งคำตอบ + เหตุผลใน chat — ข้อนี้คือคำถามสัมภาษณ์จริงของหลายบริษัท (รวมถึงกลุ่ม 100k+)</p>
+  </div>
+
+  <!-- ===================== Quiz ===================== -->
+  <h2>📝 Quiz ท้ายบท</h2>
+  <p>ตอบเองก่อน แล้วค่อยกดดูเฉลย — ส่งคำตอบของคุณใน chat เพื่อให้ผมเช็คความเข้าใจ</p>
+
+  <details><summary>ข้อ 1: ฟังก์ชัน async ที่ <code>return 42</code> — คนเรียกจะได้อะไร และต้องเอาค่าออกมายังไง?</summary>
+    <p>ได้ <strong>Promise ที่ resolve เป็น 42</strong> ไม่ใช่เลข 42 ตรง ๆ
+    ต้องใช้ <code>await getNumber()</code> หรือ <code>getNumber().then(n =&gt; ...)</code> เพื่อเอาค่าจริงออกมา
+    — กฎคือ "async คืน Promise เสมอ ไม่ว่าจะ return อะไร"</p></details>
+
+  <details><summary>ข้อ 2: โค้ดนี้ผิดตรงไหน: <code>const data = fetch(url).json();</code></summary>
+    <p>ผิด 2 จุด: ① <code>fetch(url)</code> คืน Promise — ต้อง <code>await</code> ก่อนถึงจะได้ response object
+    ② <code>.json()</code> ก็คืน Promise เช่นกัน — ต้อง await อีกชั้น
+    ที่ถูกคือ <code>const res = await fetch(url); const data = await res.json();</code></p></details>
+
+  <details><summary>ข้อ 3: await 3 ตัวที่ไม่ขึ้นต่อกันเรียงกัน ช้าเพราะอะไร แก้ยังไง?</summary>
+    <p>ช้าเพราะแต่ละ await <strong>รอตัวก่อนหน้าเสร็จก่อน</strong> ทั้งที่งานไม่เกี่ยวกัน
+    (เวลารวม = ผลบวกของทุกงาน) แก้ด้วย <code>Promise.all([a, b, c])</code>
+    ให้ทุกงานวิ่งพร้อมกัน (เวลารวม = งานที่ช้าที่สุดงานเดียว)</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>Mission 1.1 รันผ่านทั้ง 2 เคส (สำเร็จ + error สวยงาม)</li>
+    <li>Mission 1.2 ส่งคำตอบ + เหตุผลใน chat แล้ว</li>
+    <li>Quiz ตอบเองครบก่อนเปิดเฉลย</li>
+    <li>จดโน้ต <code>notes/async-await.md</code> ≤ 15 บรรทัด (โค้ด pattern + กับดัก 3 อัน)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 1</a>
+    <a class="btn" href="02-fetch-localstorage.html">บทที่ 2: Fetch + LocalStorage →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 1 บทที่ 1</footer>
+</div>
+</body>
+</html>

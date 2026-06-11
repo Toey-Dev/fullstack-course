@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 1 — ปิดจบ Frontend | คอร์ส Senior Secure Full Stack</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 1</div>
+    <h1>Week 1 — ปิดจบ Frontend ให้สนิท</h1>
+    <p>Async/Await · Fetch API · LocalStorage · Mission ใหญ่ "My Reading List" · Deploy จริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>สัปดาห์นี้คือ "ด่านสุดท้ายของ Frontend" ก่อนเข้าสู่ Backend เต็มตัว
+    เราจะเก็บ 2 เรื่องที่เหลือจากคอร์ส Zero to One (Week 5) ให้แน่นถึงแก่น
+    แล้วพิสูจน์ด้วยชิ้นงานจริง 1 ชิ้นที่ deploy ขึ้นอินเทอร์เน็ตได้</p>
+    <ul class="check">
+      <li>เข้าใจ Async/Await ลึกพอที่จะ "อธิบายให้คนอื่นฟังได้" ไม่ใช่แค่ใช้เป็น</li>
+      <li>ใช้ Fetch + LocalStorage แบบมี error handling ครบเหมือนงาน production</li>
+      <li>สร้างแอป "My Reading List" เสร็จ + ขึ้น GitHub Pages</li>
+    </ul>
+  </div>
+
+  <h2>บทเรียน</h2>
+
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-async-await.html">Async/Await ให้เข้าใจถึงแก่น</a></strong>
+    <p style="margin:6px 0 0">ทำไม JavaScript ต้องมีระบบ "ไม่รอคิว" · วิวัฒนาการ Callback → Promise → Async/Await
+    · Mission เครื่องชงกาแฟ · โจทย์ทายลำดับ output แบบที่เจอใน interview จริง</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~1.5 ชม. (อ่าน 30 นาที + Mission 1 ชม.)</p>
+  </div>
+
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-fetch-localstorage.html">Fetch API + LocalStorage (มุมมอง Pentester)</a></strong>
+    <p style="margin:6px 0 0">ดึงข้อมูลจาก API จริงแบบครบวงจร loading/error · กฎเหล็กของ LocalStorage
+    · อะไรห้ามเก็บและทำไม (XSS) · Mission Pokedex มินิ + ระบบ Favorites</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2 ชม. (อ่าน 30 นาที + Mission 1.5 ชม.)</p>
+  </div>
+
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-reading-list.html">My Reading List — ชิ้นงานปิดจบ Frontend</a></strong>
+    <p style="margin:6px 0 0">รวมทุกทักษะเป็นแอปจริง 1 ชิ้น แบ่งเป็น 5 Mission ย่อยพร้อมวิธีเทสต์ทุกขั้น
+    จบด้วยการ deploy ขึ้น GitHub Pages ได้ URL ผลงานออนไลน์ชิ้นแรก</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม. (แบ่งทำ 2-3 วันได้)</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (อ่าน + Mission 1.1, 1.2 + Quiz)</td><td>1.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>บทที่ 2 (อ่าน + Mission Pokedex)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>Mission ใหญ่ 3.1-3.2 (โครง HTML + Fetch)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission ใหญ่ 3.3-3.4 (บันทึก + ลบ)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (โจทย์ F1) + จดโน้ต</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 3.5 Deploy + เก็บงานค้าง + ส่งให้ Claude review</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <div class="warn"><strong>กติกาสำคัญ:</strong> Mission ทุกข้อเขียนเองทั้งหมด ห้ามเปิดเฉลยก่อนพยายามครบ 20 นาที
+  — ความรู้สึก "ติดขัด" คือตอนที่สมองกำลังสร้างความจำระยะยาว ซึ่งเป็นสิ่งที่คุณบอกว่าขาดมาตลอด</div>
+
+  <div class="danger"><strong>🤖 กฎ AI สองโหมด (สำคัญมาก):</strong> ระหว่างทำ Mission = <strong>ปิด AI และ autocomplete ทั้งหมด</strong> เขียนมือล้วน
+  เพราะเนื้อหาสัปดาห์นี้คือ "แนวคิดใหม่" ที่ยังไม่คล่อง (โหมดเรียน) — AI ใช้ได้เฉพาะ: ถามคอนเซ็ปต์ที่งง,
+  ขอ hint เมื่อติดเกิน 20 นาที, และตรวจโค้ดหลังเขียนเสร็จแล้ว
+  รายละเอียดเต็มดู <code>course/ai-workflow.md</code> · AI Code Review Drill จะเริ่มสัปดาห์หน้า (Week 2)</div>
+
+  <footer>คอร์ส Senior Secure Full Stack — ออกแบบเฉพาะสำหรับวี · มิ.ย. 2026</footer>
+</div>
+</body>
+</html>
