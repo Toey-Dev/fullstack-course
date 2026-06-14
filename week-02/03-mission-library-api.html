@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: library-system v0.1 — Books API</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 2</a> · Mission ใหญ่</div>
+    <h1>📚 library-system v0.1 — Books API</h1>
+    <p>API จริงชิ้นแรกของโปรเจกต์ที่จะอยู่กับคุณทั้งคอร์ส — เริ่มต้นให้ถูก เพราะอีก 22 สัปดาห์ต่อยอดจากนี้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้สำคัญเป็นพิเศษ</h3>
+    <p>นี่ไม่ใช่แบบฝึกหัดทิ้ง — <code>library-system</code> คือ <strong>ยานพาหนะหลักของทั้งคอร์ส</strong>
+    สิ่งที่สร้างวันนี้จะถูกเติม TypeScript (W6), test (W3), database (W4), auth (W5), Docker (W11), CI/CD (W13)
+    และถูกคุณ pentest เอง (W20) จนกลายเป็น portfolio piece ที่เล่าใน interview ได้ 30 นาที
+    <strong>โครงที่วางวันนี้ = ฐานรากของบ้านทั้งหลัง</strong></p>
+    <div class="warn">เรียนคู่ Kcode Day 2 (Books CRUD) ได้ — แต่ <strong>เขียนเองทุกบรรทัด ปิด AI</strong> ดูคอร์สเป็นไอเดีย ไม่ copy</div>
+  </div>
+
+  <h2>📋 สเปค (แบบที่ลูกค้า/ทีมจะสั่งจริง)</h2>
+  <div class="card">
+    <p><strong>Books API</strong> — จัดการรายการหนังสือในห้องสมุด:</p>
+    <table>
+      <tr><th>Method + Path</th><th>หน้าที่</th><th>ตอบกลับ</th></tr>
+      <tr><td><code>GET /api/health</code></td><td>เช็คชีพจร (จาก W2 บท 1)</td><td>200 + {ok, time}</td></tr>
+      <tr><td><code>GET /api/books</code></td><td>ดูหนังสือทั้งหมด + รองรับ <code>?search=</code></td><td>200 + รายการ</td></tr>
+      <tr><td><code>GET /api/books/:id</code></td><td>ดูเล่มเดียว</td><td>200 + เล่ม / 404 ถ้าไม่เจอ</td></tr>
+      <tr><td><code>POST /api/books</code></td><td>เพิ่มเล่มใหม่ (มี validation)</td><td>201 + เล่มใหม่ / 400 ถ้า input ผิด</td></tr>
+    </table>
+    <p>ข้อมูลหนังสือ: <code>{ id, title, author, available }</code> · เก็บลงไฟล์ JSON ให้รอด restart</p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 3.1 — โครงสร้าง + GET ทั้งหมด <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>วางโครง <code>src/</code> (server, routes/, controllers/, data/) ตามบทที่ 2</li>
+      <li><code>data/books.js</code> — array หนังสือเริ่มต้น 3-4 เล่ม</li>
+      <li><code>GET /api/books</code> คืนทั้งหมด แยก logic ไป controller (server.js ต้องบาง)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> <code>localhost:3000/api/books</code> เห็น array · server.js มีแค่ setup + ผูก route (ไม่มี logic ปน)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.2 — GET by id + query search <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li><code>GET /api/books/:id</code> — เจอคืน 200, ไม่เจอคืน <strong>404 + error message</strong> (อย่าลืมเคสไม่เจอ)</li>
+      <li><code>GET /api/books?search=คำ</code> — กรอง title ที่มีคำนั้น (ใช้ <code>.filter()</code> + <code>.includes()</code> จาก Week 1)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> ขอ id ที่ไม่มี ต้องได้ 404 ไม่ใช่ 200 + null / search แล้วได้เฉพาะที่ตรง</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.3 — POST + validation + persistence <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li><code>POST /api/books</code> — validate title (จำเป็น, เป็น string) ผิด = 400, ผ่าน = 201</li>
+      <li>บันทึกลงไฟล์ JSON จริง (<code>fs</code> module) — เพิ่มเล่มแล้ว restart server ต้องยังอยู่</li>
+      <li>error message ปลอดภัย (ไม่รั่วโครงสร้างภายใน — มุม pentester)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> POST เล่มใหม่ → restart → GET เห็นเล่มนั้นอยู่ / POST body ว่าง → ได้ 400</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.4 — ขึ้น GitHub ตามมาตรฐาน <span class="badge orange">40 นาที</span></h3>
+    <ol>
+      <li><code>.gitignore</code> ใส่ <code>node_modules</code> (สำคัญ! ห้าม commit) </li>
+      <li>README ตาม <code>portfolio-standard.md</code>: Features, Tech Stack, Setup, What I Learned, AI Usage ("No AI in core logic")</li>
+      <li>commit แบบมีจังหวะ: <code>feat: add books list endpoint</code> ... ไม่ใช่ก้อนเดียว</li>
+      <li>push repo <code>library-system</code> (public ได้ — ยังไม่มีความลับ)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> เปิด repo บน GitHub — README สวย, ไม่มี node_modules, commit history เล่าเรื่องได้</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review (เหมือนเดิม + เพิ่ม backend)</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>ถูกตามสเปค</td><td>35%</td><td>4 endpoint ทำงานครบ + status code ถูก (รวม 404/400/201)</td></tr>
+      <tr><td>โครงสร้าง</td><td>30%</td><td>แยก routes/controllers/data จริง · server.js บาง · ชื่อสื่อความหมาย</td></tr>
+      <tr><td>Validation + security</td><td>20%</td><td>validate input · error ไม่รั่วข้อมูล · req.body ไม่พัง</td></tr>
+      <tr><td>Git + README</td><td>15%</td><td>ไม่มี node_modules · commit message ดี · README ครบ template</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>4 endpoint ผ่านเทสต์ทุกข้อ (รวมเคส error)</li>
+    <li>library-system ขึ้น GitHub ตามมาตรฐาน — ส่งลิงก์ใน chat</li>
+    <li>AI Review Drill #1 ส่งผลแล้ว (จุดอ่อนที่เจอในโค้ด AI)</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 3</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-routing-structure.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 2</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 2 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

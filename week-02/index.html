@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 2 — Node.js + Express: กำเนิด library-system</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 1</div>
+    <h1>Week 2 — Node.js + Express: กำเนิด library-system</h1>
+    <p>จาก Browser สู่ Server · สร้าง API แรกของโปรเจกต์ที่จะอยู่กับเราทั้งคอร์ส</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>สัปดาห์ที่แล้ว JavaScript ของคุณวิ่งใน browser — สัปดาห์นี้มันจะวิ่งบน <strong>server</strong>
+    เราจะเริ่มโปรเจกต์ <code>library-system</code> (ระบบห้องสมุดจากคอร์ส Kcode) ซึ่งจะถูกต่อยอดไปจนจบคอร์ส:
+    สัปดาห์นี้เป็น Express API ธรรมดา → อีก 22 สัปดาห์ข้างหน้ามันจะมี TypeScript, test, Docker, CI/CD และผ่านการ pentest โดยคุณเอง</p>
+    <ul class="check">
+      <li>เข้าใจว่า Node.js คืออะไร ต่างจาก JS ใน browser ยังไง และทำไม single thread ถึงรับพันคนได้</li>
+      <li>สร้าง Express server + endpoint แรก พร้อมเข้าใจทุกบรรทัดว่า "ทำไม"</li>
+      <li>จัดโครงโปรเจกต์แบบมืออาชีพ (routes / controllers / data) ตั้งแต่วันแรก</li>
+      <li>library-system ขึ้น GitHub เป็น repo จริงตาม portfolio-standard</li>
+    </ul>
+    <p class="muted">เรียนคู่กับ Kcode Day 1-2 (docs.kcode.online) — บทเรียนนี้คือ "เลนส์" ช่วยให้อ่านคอร์สแล้วเข้าใจลึกขึ้น ไม่ใช่ของทดแทน</p>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-node-express-foundation.html">Node.js + Express จากศูนย์ถึง endpoint แรก</a></strong>
+    <p style="margin:6px 0 0">ทำไม JS ถึงออกจาก browser ได้ · Event Loop กับร้านกาแฟ (ภาคต่อจาก Week 1) · Express คือใคร ทำไมไม่ใช้ http เปล่า ๆ · สร้าง GET /api/health</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-routing-structure.html">Routing, รับข้อมูล และโครงสร้างที่ไม่พังในอนาคต</a></strong>
+    <p style="margin:6px 0 0">GET/POST/params/query ใช้เมื่อไหร่ · validation คือด่านแรกของ security · แยก routes/controllers/data — ทำไมไฟล์เดียวถึงเป็นหนี้</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-library-api.html">library-system v0.1 — Books API + ขึ้น GitHub</a></strong>
+    <p style="margin:6px 0 0">CRUD หนังสือ (GET list / GET by id / POST พร้อม validation) + เก็บลงไฟล์ JSON + โครงโปรเจกต์มาตรฐาน + push GitHub</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 + Mission 1.1-1.2 (server แรก + health)</td><td>2 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>บทที่ 2 ครึ่งแรก (routing + params/query)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 ครึ่งหลัง (POST + validation + แยกโครง)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission ใหญ่ 3.1-3.2 (Books API)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild F6 (ตู้ค้นหาพนักงาน) + 🤖 AI Review Drill #1</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 3.3-3.4 (persistence + GitHub) + ส่ง review</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #1 (เริ่มสัปดาห์นี้ — ศุกร์ 30 นาที):</strong>
+  ขอให้ AI (Claude/อื่น) เขียน "Express endpoint รับ POST /users บันทึกลง database" แล้ว<strong>หาจุดอ่อนให้ได้ ≥ 2 จุดก่อนรัน</strong>
+  (ใบ้จาก ai-workflow.md: validation? SQL injection? hash password? error message รั่วข้อมูล?) จดผลลง <code>notes/ai-review-log.md</code> แล้วส่งให้ผมดูใน chat</div>
+
+  <h2>🧹 Clean Code ประจำ Week 2 — รูปแบบ Express ที่ใช้ในทีมจริง</h2>
+  <div class="card">
+    <h3>1. Destructure req ทันที (ไม่เขียน req.body.x ซ้ำ ๆ)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ req.body ทุกบรรทัด</h4>
+<pre><code>app.post("/books", (req, res) =&gt; {
+  const book = {
+    title: req.body.title,
+    author: req.body.author,
+    year: req.body.year
+  };
+});</code></pre></div>
+      <div class="good"><h4>✅ ดึงครั้งเดียว</h4>
+<pre><code>app.post("/books", (req, res) =&gt; {
+  const { title, author, year } = req.body;
+  const book = { title, author, year };  // shorthand property
+});</code></pre></div>
+    </div>
+
+    <h3>2. Guard clause + early return ใน validation</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ if ครอบ logic ทั้งก้อน</h4>
+<pre><code>if (title) {
+  // ...โค้ดยาว 20 บรรทัด
+  res.status(201).json(book);
+} else {
+  res.status(400).json({ error: "..." });
+}</code></pre></div>
+      <div class="good"><h4>✅ ดักผิดก่อน เนื้อหลักไม่ย่อหน้า</h4>
+<pre><code>if (!title) {
+  return res.status(400).json({ error: "..." });
+}
+// ...เนื้อหลักอยู่ระดับบนสุด อ่านง่าย
+res.status(201).json(book);</code></pre></div>
+    </div>
+
+    <h3>3. แยกไฟล์ตามหน้าที่ (server.js ต้องบาง)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ทุกอย่างใน server.js</h4>
+<pre><code>// server.js 300 บรรทัด
+app.get("/books", (req,res)=&gt;{ /*logic*/ });
+app.post("/books", (req,res)=&gt;{ /*logic*/ });
+app.get("/members", ...);
+// ...ปนกันหมด</code></pre></div>
+      <div class="good"><h4>✅ ผูก route → controller</h4>
+<pre><code>// server.js (บาง)
+app.use("/api/books", booksRouter);
+
+// routes/books.routes.js
+router.get("/", booksController.list);
+router.post("/", booksController.create);</code></pre></div>
+    </div>
+    <div class="warn"><strong>ใช้ใน Mission library-system เลย:</strong> 3 รูปแบบนี้คือเกณฑ์ "โครงสร้าง 30%" + "validation 20%" ของ review สัปดาห์นี้พอดี —
+    เขียนแบบ ✅ ตั้งแต่ commit แรก</div>
+  </div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude ขอ hint · จบสัปดาห์ส่งงานใน chat</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 2</footer>
+</div>
+</body>
+</html>

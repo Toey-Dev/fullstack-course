@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 0 · บทที่ 1: HTML — โครงกระดูกของเว็บ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 0</a> · บทที่ 1</div>
+    <h1>HTML — โครงกระดูกของเว็บ</h1>
+    <p>สรุปแก่นจาก 021 บท 01-04 + เหตุผลเบื้องหลังที่คอร์สพื้นฐานมักไม่ได้เล่า</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำ</h3>
+    <div class="kw-row">
+      <span class="kw">🦴 โครงกระดูก = HTML · 👗 เสื้อผ้า = CSS · ⚡ ระบบไฟ = JS</span>
+      <span class="kw">🧱 Block กินทั้งแถว · 🪡 Inline แทรกในบรรทัด</span>
+      <span class="kw">🗺 ./ ที่นี่ · ../ ถอยหนึ่งชั้น = Relative Path</span>
+      <span class="kw">🏷 ป้ายบอกความหมาย = Semantic</span>
+      <span class="kw">📮 จ่าหน้าซอง = name ใน form</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด & หลักการ</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Structure before style" — โครงถูกก่อน สวยทีหลัง</h3>
+    <p>HTML ที่ดีต้องอ่านรู้เรื่อง<strong>แม้ไม่มี CSS เลย</strong> — เพราะผู้อ่านตัวจริงไม่ได้มีแค่มนุษย์:
+    Google bot, screen reader, AI search (GEO/AEO ที่คุณทำที่ media-presto!) ล้วนอ่าน "โครง" ไม่ได้ดู "ความสวย"
+    โครงผิด = เครื่องอ่านไม่เข้าใจ = SEO/AEO พัง ต่อให้สวยแค่ไหน</p>
+    <h3>หลักการ 2: "Semantic = ความหมาย ไม่ใช่หน้าตา"</h3>
+    <p><code>&lt;div&gt;</code> 100 อันทำเว็บได้ แต่บอกความหมายอะไรไม่ได้เลย —
+    <code>&lt;header&gt; &lt;nav&gt; &lt;main&gt; &lt;article&gt; &lt;footer&gt;</code> หน้าตาเหมือน div ทุกประการ
+    แต่ "บอกบทบาท" ให้เครื่องเข้าใจ <strong>ทำไมต้องแคร์:</strong> SEO ranking, accessibility (กฎหมายหลายประเทศบังคับ),
+    และ AI search ยุคนี้ให้คะแนนเว็บที่โครงชัด — ทักษะ GEO/AEO ของคุณยืนอยู่บนเรื่องนี้ตรง ๆ</p>
+    <h3>หลักการ 3: "Forms คือประตูรับข้อมูล — และประตูแรกที่ถูกโจมตี"</h3>
+    <p>ทุก input ที่เปิดรับ = ช่องทางที่ผู้ใช้ (และผู้ไม่หวังดี) ส่งของเข้าระบบ
+    attribute <code>name</code> คือ "จ่าหน้าซอง" — ไม่มี = ข้อมูลไปไม่ถึง server / <code>required, type="email"</code>
+    คือ validation ฝั่ง browser ซึ่ง<strong>กันคนพลั้งเผลอได้ แต่กันคนตั้งใจไม่ได้</strong> (ปิด JS หรือยิงตรงด้วย curl ก็ข้ามหมด)
+    — นี่คือเหตุผลที่ Week 2 ต้อง validate ซ้ำฝั่ง server เสมอ</p>
+  </div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <rect x="40" y="20" width="620" height="150" rx="10" fill="#fff" stroke="#2563eb" stroke-width="2"/>
+      <rect x="40" y="20" width="620" height="30" rx="10" fill="#1e40af"/>
+      <text x="350" y="40" font-size="12" fill="#fff" text-anchor="middle">&lt;header&gt; โลโก้ + &lt;nav&gt; เมนู</text>
+      <rect x="55" y="60" width="420" height="95" rx="6" fill="#dbeafe"/>
+      <text x="265" y="80" font-size="12" fill="#1e3a8a" text-anchor="middle">&lt;main&gt; เนื้อหาหลัก (มีได้อันเดียว)</text>
+      <rect x="70" y="90" width="180" height="55" rx="4" fill="#93c5fd"/>
+      <text x="160" y="120" font-size="11" fill="#1e3a8a" text-anchor="middle">&lt;article&gt; บทความ</text>
+      <rect x="265" y="90" width="180" height="55" rx="4" fill="#93c5fd"/>
+      <text x="355" y="120" font-size="11" fill="#1e3a8a" text-anchor="middle">&lt;section&gt; ส่วนย่อย</text>
+      <rect x="490" y="60" width="155" height="95" rx="6" fill="#fde68a"/>
+      <text x="567" y="110" font-size="11" fill="#92400e" text-anchor="middle">&lt;aside&gt; แถบข้าง</text>
+      <rect x="40" y="155" width="620" height="15" fill="#1f2937"/>
+      <text x="350" y="167" font-size="10" fill="#fff" text-anchor="middle">&lt;footer&gt;</text>
+    </svg>
+    <figcaption>ภาพที่ 1: Semantic layout มาตรฐาน — โครงเดียวกับที่ใช้ใน Reading List (Week 1) และทุกเว็บที่จะสร้างตลอดคอร์ส</figcaption>
+  </figure>
+
+  <h2>ส่วนที่ 1: โครงสร้าง HTML5 — เข้าใจทุกบรรทัด</h2>
+  <div class="card">
+<pre><code>&lt;!DOCTYPE html&gt;            &lt;!-- 1 --&gt;
+&lt;html lang="th"&gt;           &lt;!-- 2 --&gt;
+&lt;head&gt;                     &lt;!-- 3 --&gt;
+  &lt;meta charset="UTF-8"&gt;             &lt;!-- 4 --&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;  &lt;!-- 5 --&gt;
+  &lt;title&gt;ชื่อบน tab&lt;/title&gt;          &lt;!-- 6 --&gt;
+&lt;/head&gt;
+&lt;body&gt;                     &lt;!-- 7 --&gt;
+  &lt;h1&gt;เนื้อหาที่คนเห็น&lt;/h1&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    <table>
+      <tr><th>บรรทัด</th><th>ทำไมต้องมี (ไม่ใช่แค่ทำอะไร)</th></tr>
+      <tr><td>1</td><td><code>DOCTYPE</code> บอก browser ว่า "ใช้มาตรฐาน HTML5" — ถ้าไม่มี browser เข้า "quirks mode" จำลองพฤติกรรมเก่ายุค 90 ทำให้ layout เพี้ยนแบบหาสาเหตุยาก</td></tr>
+      <tr><td>2</td><td><code>lang="th"</code> ไม่ใช่ของประดับ — screen reader ใช้เลือกเสียงอ่านภาษาไทย, Google ใช้จัดกลุ่มภาษา, ปุ่ม "แปลหน้านี้" ใช้ตัดสินใจ</td></tr>
+      <tr><td>3-6</td><td><code>head</code> = ข้อมูลสำหรับ "เครื่อง" (ไม่แสดงบนหน้า): charset กันภาษาไทยเพี้ยนเป็น "à¸ªà¸§", viewport ทำให้ responsive ทำงาน (ขาดบรรทัดนี้ = มือถือซูมออกจิ๋ว)</td></tr>
+      <tr><td>7</td><td><code>body</code> = ทุกอย่างที่ "มนุษย์" เห็น</td></tr>
+    </table>
+    <div class="warn"><strong>กับดักอันดับ 1 ของมือใหม่:</strong> ลืม <code>&lt;meta charset="UTF-8"&gt;</code> → ภาษาไทยกลายเป็นตัวยึกยือ
+    และลืม viewport → เว็บสวยบนคอมแต่จิ๋วบนมือถือ ทั้งคู่แก้ด้วยพิมพ์ <code>!</code> + Tab ใน VS Code (Emmet สร้างโครงครบให้)</div>
+  </div>
+
+  <h2>ส่วนที่ 2: Block vs Inline — ทำไม span ปรับขนาดไม่ได้</h2>
+  <div class="card">
+    <p>ทุก element มี "นิสัยการกินที่" 2 แบบ — เข้าใจอันนี้ = เข้าใจ layout ครึ่งหนึ่ง:</p>
+    <div class="compare">
+      <div>
+        <h3>🧱 Block — จอมบงการ</h3>
+        <ul>
+          <li>กินเต็มแถว 100% เสมอ</li>
+          <li>ขึ้นบรรทัดใหม่เสมอ</li>
+          <li>ตั้ง width/height/margin ได้ครบ</li>
+        </ul>
+        <p class="muted"><code>&lt;div&gt; &lt;p&gt; &lt;h1&gt; &lt;section&gt;</code></p>
+      </div>
+      <div>
+        <h3>🪡 Inline — เจียมตัว</h3>
+        <ul>
+          <li>กว้างเท่าเนื้อหาข้างใน</li>
+          <li>อยู่ต่อกันในบรรทัดเดียวได้</li>
+          <li><strong>ตั้ง width/height ไม่ได้!</strong></li>
+        </ul>
+        <p class="muted"><code>&lt;span&gt; &lt;a&gt; &lt;strong&gt;</code></p>
+      </div>
+    </div>
+    <p><strong>ทำไม span ใส่ width ไม่ได้:</strong> เพราะนิสัยมัน "กว้างเท่าข้อความ" การสั่ง width จึงถูกเพิกเฉย
+    — ทางแก้คือ <code>display: inline-block</code> (อยู่ในบรรทัดเดียวได้ แต่ตั้งขนาดได้) ซึ่งเป็นเหตุผลที่ปุ่มและ <code>&lt;img&gt;</code> เป็น inline-block โดยธรรมชาติ
+    (เรื่องนี้ต่อยอดเต็มในบทที่ 2 Box Model)</p>
+  </div>
+
+  <h2>ส่วนที่ 3: File Path — ./ กับ ../ ที่ทำคนงงทั้งโลก</h2>
+  <div class="card">
+    <p>สมมติโครงไฟล์:</p>
+<pre><code>my-site/
+├── index.html      📍 (กำลังเขียนไฟล์นี้)
+├── about.html
+├── images/logo.png
+└── pages/contact.html</code></pre>
+    <table>
+      <tr><th>จาก index.html อยากลิงก์ไป</th><th>เขียน</th><th>อ่านว่า</th></tr>
+      <tr><td>logo.png</td><td><code>images/logo.png</code></td><td>เดินเข้าห้อง images</td></tr>
+      <tr><td>about.html (ข้าง ๆ)</td><td><code>./about.html</code> หรือ <code>about.html</code></td><td>"ที่นี่"</td></tr>
+      <tr><td>contact.html</td><td><code>pages/contact.html</code></td><td>เข้าห้อง pages</td></tr>
+    </table>
+    <p>แต่ถ้าย้ายไปเขียนใน <code>pages/contact.html</code> แล้วอยากกลับไป index:
+    ต้อง <code>../index.html</code> — <code>../</code> = "ถอยออกจากห้องปัจจุบัน 1 ชั้น"</p>
+    <div class="tip"><strong>วิธีจำ:</strong> <code>./</code> = ที่นี่ · <code>folder/</code> = เดินเข้าห้อง · <code>../</code> = เดินออกจากห้อง<br>
+    <strong>ทำไม Absolute path (https://...) พังเมื่อย้ายเครื่อง:</strong> มันชี้ตำแหน่งตายตัวบนเน็ต —
+    ใช้กับลิงก์ภายในเว็บเรา = ต้องมีเน็ต + URL ห้ามเปลี่ยน ใช้ Relative ปลอดภัยกว่าสำหรับไฟล์ในโปรเจกต์เดียวกัน</div>
+  </div>
+
+  <h2>ส่วนที่ 4: รูปภาพ — ทำไม alt ไม่ใช่ของแถม</h2>
+  <div class="card">
+<pre><code>&lt;img src="cat.jpg" alt="แมวส้มนอนบนโซฟา" width="300"&gt;</code></pre>
+    <p><code>alt</code> ทำงาน 3 หน้าที่ที่มองไม่เห็นแต่สำคัญ:</p>
+    <ol>
+      <li><strong>ภาพโหลดไม่ขึ้น</strong> (เน็ตช้า/ไฟล์หาย) → แสดงข้อความแทน ผู้ใช้ยังรู้ว่าตรงนี้คือรูปอะไร</li>
+      <li><strong>Screen reader</strong> → อ่าน alt ให้คนตาบอดฟัง ไม่มี alt = คนตาบอดเจอ "รูปภาพ" เปล่า ๆ</li>
+      <li><strong>SEO/Google Images</strong> → Google อ่านรูปไม่ออก ใช้ alt เข้าใจว่ารูปคืออะไร = ติดอันดับค้นรูป</li>
+    </ol>
+    <p class="muted">เคล็ดลับ: ใส่ width หรือ height แค่ด้านเดียว อีกด้านจะ auto รักษาสัดส่วน — ใส่ทั้งคู่เสี่ยงภาพเบี้ยว</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตาราง — โครงและการผสานเซลล์</h2>
+  <div class="card">
+<pre><code>&lt;table&gt;
+  &lt;thead&gt;&lt;tr&gt;&lt;th&gt;สินค้า&lt;/th&gt;&lt;th&gt;ราคา&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;&lt;td&gt;ส้มตำ&lt;/td&gt;&lt;td&gt;50&lt;/td&gt;&lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+    <p><strong>ทำไมแยก thead/tbody/tfoot:</strong> ไม่ใช่แค่ความสวย — screen reader ใช้บอกว่าแถวไหนคือ "หัวข้อ"
+    เวลา scroll ตารางยาว browser/CSS รู้ว่าควรตรึง header, และ Google เข้าใจโครงข้อมูลดีขึ้น</p>
+    <p><strong>ผสานเซลล์:</strong> <code>colspan="2"</code> = กินกว้าง 2 คอลัมน์ (แนวนอน) · <code>rowspan="2"</code> = กินสูง 2 แถว (แนวตั้ง)
+    เช่น "พักเที่ยง" ที่กิน 2 ช่วงเวลา</p>
+    <div class="warn">ในงานจริงไม่ใช้ table จัด layout หน้าเว็บ (ยุค 90 ทำกัน เลิกแล้ว) — table ใช้แสดง "ข้อมูลตาราง" จริง ๆ เท่านั้น
+    จัด layout ใช้ CSS/Grid (บทที่ 2)</div>
+  </div>
+
+  <h2>ส่วนที่ 6: ฟอร์ม — ประตูรับข้อมูล (และด่านแรกที่ถูกโจมตี)</h2>
+  <div class="card">
+<pre><code>&lt;form action="/api/register" method="POST"&gt;
+  &lt;label for="email"&gt;อีเมล:&lt;/label&gt;
+  &lt;input type="email" id="email" name="email" required&gt;
+  &lt;button type="submit"&gt;สมัคร&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+    <table>
+      <tr><th>ส่วน</th><th>หน้าที่ + ทำไมสำคัญ</th></tr>
+      <tr><td><code>action</code></td><td>ส่งข้อมูลไป URL ไหน</td></tr>
+      <tr><td><code>method</code></td><td>GET = ค้นหา (ข้อมูลโผล่ใน URL) / POST = บันทึก (ข้อมูลอยู่ใน body) — <strong>password ต้อง POST เสมอ</strong> ไม่งั้นรหัสโผล่ใน URL + ประวัติ browser</td></tr>
+      <tr><td><code>name</code></td><td>⭐ สำคัญสุด — คือ "จ่าหน้าซอง" ไม่มี name = ข้อมูลไปไม่ถึง server (บั๊กเงียบที่เจอบ่อยมาก)</td></tr>
+      <tr><td><code>label for</code></td><td>ผูกกับ id ของ input → กดที่ข้อความแล้ว cursor เด้งเข้าช่อง + screen reader อ่านคู่กัน</td></tr>
+      <tr><td><code>required</code></td><td>browser กันส่งฟอร์มว่าง — แต่กันได้แค่คนพลั้งเผลอ</td></tr>
+    </table>
+    <div class="danger"><strong>🔐 มุม pentester:</strong> <code>required</code>, <code>type="email"</code> ทำงานใน browser ที่ผู้ใช้ควบคุม 100% —
+    เปิด DevTools ลบ attribute ทิ้ง หรือยิง POST ตรงด้วย curl ก็ข้ามหมด ดังนั้น <strong>validation ฝั่ง browser = UX ช่วยคนทั่วไป / security ต้อง validate ซ้ำฝั่ง server เสมอ</strong> (Week 2 จะทำจริง)</div>
+  </div>
+
+  <h2>ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> งาน GEO/AEO ที่ media-presto คือการทำให้ AI search "เข้าใจ" เว็บลูกค้า —
+    เครื่องมือพื้นฐานที่สุดของมันคือ Semantic HTML + schema.org (ที่คุณเขียนใน <code>inc/schema.php</code> ของ welovefukushima)
+    บทนี้คือทฤษฎีเบื้องหลังงานที่คุณทำอยู่ทุกวัน</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> เว็บข่าวใหญ่ (BBC, Thairath) ใช้ semantic เคร่งครัด เพราะ Google News จัดอันดับจากความเข้าใจโครงสร้าง — โครงผิดคือหายจากหน้าฟีดข่าว = เสียเงินจริง</p>
+  </div>
+
+  <h2>🎯 Mission ทบทวน</h2>
+  <div class="mission">
+    <h3>Mission: Dev Hunter <span class="badge orange">60 นาที</span></h3>
+    <p>ทำ Practice Mission "<a href="https://021.wwry.net/04-forms-semantic.html" target="_blank">ใบสมัครงาน Dev Hunter</a>" จากเว็บต้นทาง (หน้า Join Us: semantic ครบ + ฟอร์มทุก input type)
+    — <strong>โดยไม่ดูโค้ดที่เคยทำใน D:\05_Frontend (KKU)</strong> เสร็จแล้วค่อยเทียบของเก่า: เขียนดีขึ้นตรงไหน?</p>
+  </div>
+
+  <h2>📝 Quiz</h2>
+  <details><summary>ข้อ 1: ฟอร์มที่ input ไม่มี <code>name</code> — กดส่งแล้วเกิดอะไร และทำไม?</summary>
+    <p>ฟอร์มส่งได้ปกติ แต่ข้อมูลช่องนั้น<strong>ไม่ถูกแนบไป</strong> — เพราะ name คือ "ชื่อตัวแปร" ที่ browser ใช้จ่าหน้าข้อมูล
+    ไม่มีชื่อ = ไม่รู้จะเรียกว่าอะไร = ทิ้ง (บั๊กเงียบที่เจอบ่อยมากในงานจริง: ฟอร์มดูทำงาน แต่ข้อมูลหายบางช่อง)</p></details>
+  <details><summary>ข้อ 2: ทำไม <code>required</code> + <code>type="email"</code> ฝั่ง browser ถึง "กันคนตั้งใจ" ไม่ได้?</summary>
+    <p>เพราะมันทำงานใน browser ของผู้ใช้ ซึ่งผู้ใช้ควบคุมได้ 100% — เปิด DevTools ลบ attribute ทิ้ง, หรือข้าม browser ไปยิง request ตรงด้วย curl/Postman ก็ส่งอะไรก็ได้เข้า server
+    ดังนั้น browser validation = UX (ช่วยคนพลั้งเผลอ) ส่วน security ต้องอยู่ฝั่ง server เสมอ</p></details>
+  <details><summary>ข้อ 3: เว็บสองเว็บหน้าตาเหมือนกันเป๊ะ เว็บแรกใช้ div ล้วน เว็บสองใช้ semantic — ต่างกันที่ไหนบ้าง?</summary>
+    <p>ต่างที่ "เครื่องอ่าน": SEO (Google เข้าใจโครงเนื้อหา → อันดับดีกว่า), accessibility (screen reader นำทางได้), AI search/GEO (สกัดเนื้อหาไปตอบได้ถูก),
+    และ maintainability (dev คนใหม่อ่านโครงรู้เรื่องทันที) — มนุษย์ตาดีมองไม่เห็นความต่าง แต่ระบบทั้งหมดข้างบนเห็น</p></details>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 0</a>
+    <a class="btn" href="02-css-bootstrap.html">บทที่ 2: CSS + Bootstrap →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 0 บทที่ 1 · อ้างอิง 021.wwry.net</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Routing, รับข้อมูล และโครงสร้างที่ไม่พัง</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 2</a> · บทที่ 2</div>
+    <h1>Routing, รับข้อมูล และโครงสร้างที่ไม่พังในอนาคต</h1>
+    <p>ออกแบบ API ให้คนอื่นใช้รู้เรื่อง และจัดโค้ดให้ตัวเองในอีก 6 เดือนไม่ด่าตัวเอง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📖 GET = ขอดู · POST = ส่งเข้า</span>
+      <span class="kw">🏷 /books/:id = ป้ายชี้ของชิ้นเดียว = params</span>
+      <span class="kw">🔍 ?search= = ตัวกรองท้าย URL = query</span>
+      <span class="kw">🚧 validation = ด่านตรวจก่อนเข้าเมือง</span>
+      <span class="kw">🗂 routes/controllers/data = แยกครัว แยกหน้าร้าน แยกคลัง</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด & หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "HTTP verb คือคำกริยา — ใช้ให้ตรงความหมาย"</h3>
+    <p>GET=ขอดู (ไม่เปลี่ยนข้อมูล), POST=สร้างใหม่, PUT/PATCH=แก้, DELETE=ลบ
+    — นี่ไม่ใช่กฎตายตัวทางเทคนิค (จะ POST ทุกอย่างก็ได้) แต่เป็น <strong>ข้อตกลงร่วมของวงการ (REST)</strong>
+    ที่ทำให้คนอื่นเดา API เราได้โดยไม่ต้องถาม — API ที่ดีคือ API ที่ "เดาถูก"</p>
+    <h3>หลักการ 2: "Never trust user input" — ด่านแรกของ security ทุกระบบ</h3>
+    <p>ข้อมูลที่ส่งมาจาก client = ของแปลกหน้า เชื่อไม่ได้เลย ต้อง validate ก่อนใช้เสมอ
+    ในฐานะอดีต pentester คุณรู้ดี: ระบบส่วนใหญ่ถูกเจาะเพราะ "เชื่อ input" — SQL injection, XSS, ทุกอย่างเริ่มจากตรงนี้
+    วันนี้เราเริ่มจาก validation ง่าย ๆ (Week 4 จะอัปเป็น Zod, Week 17 จะมองมันเป็นเกราะ security เต็มตัว)</p>
+    <h3>หลักการ 3: "Separation of Concerns" — แยกหน้าที่ ไม่ปนกัน</h3>
+    <p>ไฟล์เดียวที่ทำทุกอย่าง (route + logic + ข้อมูล) เขียนเร็วตอนแรก แต่พอโต = หาอะไรไม่เจอ แก้จุดหนึ่งพังอีกจุด
+    หลักการนี้คือสิ่งที่โค้ด welovefukushima ของคุณทำได้ดีอยู่แล้ว (แยก inc/) — เราจะเอานิสัยนั้นมาใช้ฝั่ง backend
+    <strong>นี่คือจุดที่ทำให้คุณดู senior กว่าอายุงาน</strong></p>
+    <div class="tip"><strong>เมื่อไหร่แยกโครง / เมื่อไหร่ไม่ต้อง:</strong> โปรเจกต์จิ๋ว 1 ไฟล์พอ —
+    แต่พอมีเกิน ~3 endpoint หรือรู้ว่าจะโต (อย่าง library-system) ให้แยกตั้งแต่ต้น เพราะ refactor ทีหลังแพงกว่า</div>
+  </div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <text x="20" y="24" font-size="14" font-weight="700" fill="#1f2937">เปรียบเทียบ: ไฟล์เดียว vs แยกโครง</text>
+      <rect x="20" y="36" width="300" height="170" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+      <text x="170" y="58" font-size="12" font-weight="700" fill="#dc2626" text-anchor="middle">❌ server.js ไฟล์เดียว 500 บรรทัด</text>
+      <rect x="40" y="70" width="260" height="26" rx="4" fill="#fca5a5"/><text x="170" y="88" font-size="10" fill="#7f1d1d" text-anchor="middle">route + logic + ข้อมูล ปนกันหมด</text>
+      <rect x="40" y="102" width="260" height="26" rx="4" fill="#fca5a5"/><text x="170" y="120" font-size="10" fill="#7f1d1d" text-anchor="middle">แก้ books พัง members</text>
+      <rect x="40" y="134" width="260" height="26" rx="4" fill="#fca5a5"/><text x="170" y="152" font-size="10" fill="#7f1d1d" text-anchor="middle">หาโค้ดต้อง scroll หาทั้งวัน</text>
+      <text x="170" y="184" font-size="11" fill="#991b1b" text-anchor="middle">= หนี้ทางเทคนิค (เหมือน Project2 เดิม)</text>
+      <rect x="380" y="36" width="300" height="170" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+      <text x="530" y="58" font-size="12" font-weight="700" fill="#047857" text-anchor="middle">✅ แยกตามหน้าที่</text>
+      <rect x="400" y="70" width="260" height="26" rx="4" fill="#6ee7b7"/><text x="530" y="88" font-size="10" fill="#064e3b" text-anchor="middle">routes/ → ป้ายบอกทาง (URL ไหน ไปไหน)</text>
+      <rect x="400" y="102" width="260" height="26" rx="4" fill="#6ee7b7"/><text x="530" y="120" font-size="10" fill="#064e3b" text-anchor="middle">controllers/ → ครัว (logic ทำงาน)</text>
+      <rect x="400" y="134" width="260" height="26" rx="4" fill="#6ee7b7"/><text x="530" y="152" font-size="10" fill="#064e3b" text-anchor="middle">data/ → คลัง (เก็บข้อมูล)</text>
+      <text x="530" y="184" font-size="11" fill="#047857" text-anchor="middle">= แก้จุดเดียว ไม่กระทบที่อื่น</text>
+    </svg>
+    <figcaption>ภาพที่ 1: โครงสร้างที่แยกหน้าที่ — สิ่งที่ทำให้โปรเจกต์โตได้โดยไม่กลายเป็นหนี้</figcaption>
+  </figure>
+
+  <h2>ส่วนที่ 1: Params vs Query — ใช้ตัวไหนเมื่อไหร่</h2>
+  <div class="card">
+<pre><code>// params (:id) — ชี้ "ทรัพยากรชิ้นเฉพาะ"
+app.get("/api/books/:id", (req, res) => {
+  const id = req.params.id;        // /api/books/42 → id = "42"
+  // ...หาเล่ม id นี้
+});
+
+// query (?...) — "ตัวเลือก/ตัวกรอง" ของรายการ
+app.get("/api/books", (req, res) => {
+  const { search, limit } = req.query;  // /api/books?search=clean&amp;limit=5
+  // ...กรองตาม search, จำกัด limit
+});</code></pre>
+    <table>
+      <tr><th></th><th>params <code>:id</code></th><th>query <code>?key=</code></th></tr>
+      <tr><td>ใช้กับ</td><td>ระบุของชิ้นเดียวที่เจาะจง</td><td>กรอง/เรียง/แบ่งหน้า ของรายการ</td></tr>
+      <tr><td>จำเป็นไหม</td><td>ขาดไม่ได้ (เป็นส่วนของ path)</td><td>มีหรือไม่มีก็ได้ (optional)</td></tr>
+      <tr><td>ตัวอย่างจริง</td><td>เปิดโปรไฟล์ user คนเดียว <code>/users/7</code></td><td>ค้นหาสินค้า <code>/products?cat=tech&sort=price</code></td></tr>
+    </table>
+    <div class="warn"><strong>ทำไมแยกให้ถูก:</strong> ใช้สลับกันได้ทางเทคนิค แต่ผิด convention = ทีมงงและ recruiter เห็นว่ายังไม่เข้าใจ REST
+    หลักจำง่าย: <em>"ชี้ของชิ้นไหน = params / จะเอาของยังไง = query"</em></p></div>
+  </div>
+
+  <h2>ส่วนที่ 2: รับข้อมูล POST + validate (ด่านแรกของ security)</h2>
+  <div class="card">
+<pre><code>app.post("/api/books", (req, res) => {
+  const { title, author } = req.body;
+
+  // ❌ ถ้าไม่ validate: ใครส่ง body ว่างมา ระบบก็บันทึกขยะ / หรือ crash
+  // ✅ ด่านตรวจก่อนเข้าเมือง:
+  if (!title || typeof title !== "string") {
+    return res.status(400).json({ ok: false, error: "title is required" });
+  }
+
+  const newBook = { id: Date.now(), title, author: author ?? "Unknown" };
+  // ...บันทึก
+  res.status(201).json({ ok: true, data: newBook });  // 201 = created
+});</code></pre>
+    <p><strong>ทำไม status code สำคัญ:</strong> 400=client ส่งผิด, 201=สร้างสำเร็จ, 404=ไม่เจอ, 500=server พัง
+    — มันคือ "ภาษากลาง" ที่ frontend ใช้ตัดสินใจว่าจะแสดงอะไรให้ผู้ใช้ ส่ง 200 ทุกกรณี = frontend แยกไม่ออกว่าสำเร็จหรือพัง
+    (เชื่อมกับ <code>res.ok</code> ที่คุณเรียนใน Week 1 พอดี — ฝั่งนู้นเช็ค ฝั่งนี้เป็นคนส่ง)</p>
+    <div class="danger"><strong>🔐 มุม pentester:</strong> error message ห้ามรั่วข้อมูลภายใน เช่น
+    อย่าตอบ <code>"column 'titl' does not exist in table books"</code> — บอกโครง database ให้ผู้โจมตีฟรี
+    ตอบแค่ <code>"invalid input"</code> ก็พอ (หลักการนี้คือ Quiz ของ AI Review Drill สัปดาห์นี้)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: แยกโครงสร้าง — ทำจริง</h2>
+  <div class="card">
+<pre><code>library-system/
+├── src/
+│   ├── server.js              # เปิด app + ผูก routes (บางมาก)
+│   ├── routes/books.routes.js # ป้ายบอกทาง: path ไหน → controller ไหน
+│   ├── controllers/books.controller.js  # logic จริง
+│   └── data/books.js          # ข้อมูล (สัปดาห์นี้เป็น array/JSON)
+├── package.json
+└── README.md</code></pre>
+    <p><strong>ทำไมโครงนี้:</strong> วันที่เพิ่ม members, borrow, return (Kcode Day 4-5) คุณแค่เพิ่มไฟล์คู่ใหม่
+    ไม่ต้องแตะของเดิม — นี่คือ "ขยายได้โดยไม่พัง" ที่ทำให้ codebase อยู่รอดเป็นปี
+    และเป็นโครงเดียวกับที่ Kcode สอน (handlers/routes/repositories) แค่เราเข้าใจ "ทำไม" ลึกกว่า</p>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 welovefukushima ของคุณ:</strong> <code>inc/ajax.php</code> ที่แยก handler ออกมาคือหลักการเดียวกันนี้ในภาษา PHP —
+    คุณทำถูกอยู่แล้วโดยสัญชาตญาณ บทนี้แค่ทำให้คุณ "อธิบายได้ว่าทำไม" ซึ่งคือสิ่งที่แยก mid กับ senior</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> e-commerce ทุกเจ้าออกแบบ <code>GET /products?category=&sort=&page=</code> แบบเดียวกันเป๊ะ —
+    เพราะเป็น convention เรียนครั้งเดียวใช้ได้ทุกที่ นี่คือพลังของมาตรฐาน</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: <code>/api/books/42</code> กับ <code>/api/books?id=42</code> ต่างกันยังไง อันไหนถูกตามหลัก REST?</summary>
+    <p>อันแรก (params) ถูก — เพราะเล่ม 42 คือ "ทรัพยากรเฉพาะชิ้น" path ควรชี้ตรงไป
+    อันหลัง (query) เหมาะกับการกรองรายการ ไม่ใช่ชี้ของชิ้นเดียว ผิด convention REST แม้ทำงานได้</p></details>
+  <details><summary>ข้อ 2: ทำไมต้องตอบ status 201 ตอน POST สำเร็จ แทนที่จะ 200 เฉย ๆ?</summary>
+    <p>201 = "Created" สื่อชัดว่ามีของใหม่เกิดขึ้น ส่วน 200 = "OK" ทั่วไป — frontend และระบบอื่นอ่าน status เพื่อตัดสินใจ
+    ความแม่นยำของ status คือคุณภาพของ API (และเป็นจุดที่ test จะเช็คใน Week 3)</p></details>
+  <details><summary>ข้อ 3 (security): client ส่ง <code>{title: "&lt;script&gt;alert(1)&lt;/script&gt;"}</code> มา — validation แค่เช็ค "มี title ไหม" พอไหม?</summary>
+    <p>ไม่พอ — เช็คว่ามีค่าผ่าน แต่เนื้อหาเป็น XSS payload ถ้าเอาไปแสดงบนหน้าเว็บตรง ๆ จะโดนโจมตี
+    validation ที่ดีต้องคิดถึง "เนื้อหาอันตราย" ไม่ใช่แค่ "มี/ไม่มี" — Week 4 (Zod) และ Week 17 (OWASP) จะลงลึกเรื่องนี้
+    คุณในฐานะ pentester มองออกก่อนคนอื่น = จุดแข็ง</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>อธิบายความต่าง params/query ได้โดยไม่เปิดดู</li>
+    <li>เขียน POST + validation + status code ถูกต้องเป็น</li>
+    <li>เข้าใจเหตุผลการแยก routes/controllers/data (ไม่ใช่แค่ทำตาม)</li>
+    <li>Quiz + โน้ต <code>notes/rest-routing.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-node-express-foundation.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-library-api.html">Mission ใหญ่: Books API →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 2 บทที่ 2</footer>
+</div>
+</body>
+</html>

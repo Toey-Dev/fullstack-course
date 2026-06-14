@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Node.js + Express จากศูนย์ถึง endpoint แรก</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 2</a> · บทที่ 1</div>
+    <h1>Node.js + Express จากศูนย์ถึง endpoint แรก</h1>
+    <p>พา JavaScript ออกจาก browser มารันบน server — และเข้าใจว่าทำไมโลกถึงเลือกทางนี้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🏃 JS หนีออกจาก browser = Node.js</span>
+      <span class="kw">☕ บาริสต้าคนเดิม ร้านใหญ่ขึ้น = Event Loop บน server</span>
+      <span class="kw">📋 สมุดสูตรของโปรเจกต์ = package.json</span>
+      <span class="kw">🛣 ป้ายบอกทาง = Route</span>
+      <span class="kw">🧰 ชุดเครื่องมือสำเร็จรูป = Express</span>
+      <span class="kw">❤️ ชีพจรของ server = /api/health</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด & หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Same language, both sides" — ภาษาเดียวทั้งสองฝั่ง</h3>
+    <p>ก่อนปี 2009 frontend เขียน JS, backend ต้องเขียน PHP/Java/Python — สมองสลับภาษาตลอดวัน
+    Node.js เกิดจากคำถามเดียว: <em>"ถ้า JS รันนอก browser ได้ล่ะ?"</em> ผลคือ dev คนเดียวเขียนได้ทั้งระบบด้วยภาษาเดียว
+    — นี่คือเหตุผลที่ "Full Stack JS" กลายเป็นตำแหน่งที่ตลาดจ้างมากที่สุด และคือเส้นทางที่คุณกำลังเดิน</p>
+    <h3>หลักการ 2: "Don't block" ภาคต่อ — เหตุผลที่ Node รับพันคนด้วย thread เดียว</h3>
+    <p>จำบาริสต้าคนเดียวจาก Week 1 ได้ไหม? บน server หลักการเดิมกลายเป็นพลังมหาศาล:
+    เมื่อ request มาขอข้อมูล database (งานรอ) Node ไม่ยืนเฝ้า — มันหันไปรับ request ถัดไปทันที
+    เสร็จเมื่อไหร่ค่อยวนกลับมาตอบ ดังนั้น thread เดียวจึงรับผู้ใช้พร้อมกันเป็นพันได้
+    <strong>ตราบใดที่ไม่มีใครเขียนโค้ด blocking ขวางไว้</strong> — ประโยคหลังคือหน้าที่ของคุณตลอดอาชีพ</p>
+    <h3>หลักการ 3: "Convention over reinvention" — ใช้ของที่โลกตกลงกันแล้ว</h3>
+    <p>Node มี <code>http</code> module ในตัว สร้าง server ได้เปล่า ๆ แต่ต้องเขียน routing, แกะ body, จัดการ error เองหมด
+    Express คือ "ข้อตกลงร่วม" ที่คนทั้งวงการใช้ — เข้าทีมไหนก็อ่านโค้ดกันรู้เรื่อง
+    Dev ที่ดีไม่ได้เก่งเพราะสร้างทุกอย่างเอง แต่เก่งเพราะ<strong>รู้ว่าอะไรควรสร้าง อะไรควรใช้ของมาตรฐาน</strong></p>
+    <div class="tip"><strong>เมื่อไหร่ใช้ / ไม่ใช้ Node:</strong> เหมาะกับ I/O หนัก (API, realtime, microservice) —
+    ไม่เหมาะกับงานคำนวณหนักต่อเนื่อง (วิดีโอ, ML training) เพราะคำนวณหนัก = block บาริสต้า ทั้งร้านหยุด
+    (คำถามนี้โผล่ใน interview บ่อยมาก)</div>
+  </div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <rect x="20" y="30" width="180" height="140" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+      <text x="110" y="55" font-size="13" font-weight="700" fill="#1e40af" text-anchor="middle">🖥 Browser (Week 1)</text>
+      <text x="110" y="80" font-size="11" fill="#1f2937" text-anchor="middle">JavaScript ทำงานกับ:</text>
+      <text x="110" y="100" font-size="11" fill="#1f2937" text-anchor="middle">DOM · Events · fetch</text>
+      <text x="110" y="120" font-size="11" fill="#1f2937" text-anchor="middle">localStorage</text>
+      <text x="110" y="150" font-size="10" fill="#6b7280" text-anchor="middle">ขอข้อมูล →</text>
+      <text x="350" y="100" font-size="30" text-anchor="middle">🔄</text>
+      <text x="350" y="130" font-size="11" fill="#6b7280" text-anchor="middle">ภาษาเดียวกัน!</text>
+      <rect x="500" y="30" width="180" height="140" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+      <text x="590" y="55" font-size="13" font-weight="700" fill="#047857" text-anchor="middle">☁️ Node.js (Week 2)</text>
+      <text x="590" y="80" font-size="11" fill="#1f2937" text-anchor="middle">JavaScript ทำงานกับ:</text>
+      <text x="590" y="100" font-size="11" fill="#1f2937" text-anchor="middle">ไฟล์ · Database · Network</text>
+      <text x="590" y="120" font-size="11" fill="#1f2937" text-anchor="middle">Express · API</text>
+      <text x="590" y="150" font-size="10" fill="#6b7280" text-anchor="middle">← ตอบข้อมูล</text>
+    </svg>
+    <figcaption>ภาพที่ 1: ภาษาเดิม ความรู้เดิม (const, arrow function, async/await ใช้หมด) — เปลี่ยนแค่ "ของที่มันคุยด้วย"</figcaption>
+  </figure>
+
+  <h2>ส่วนที่ 1: เริ่มโปรเจกต์อย่างถูกวิธี</h2>
+  <div class="step"><div class="num">1</div><div>
+    <h3 style="margin-top:0">สร้างบ้านของ library-system</h3>
+<pre><code>mkdir library-system && cd library-system
+npm init -y          # สร้าง package.json
+npm install express  # ติดตั้ง Express
+npm install -D nodemon  # -D = ใช้เฉพาะตอน dev</code></pre>
+    <p><strong>ทำไมแต่ละบรรทัด:</strong> <code>package.json</code> คือ "สมุดสูตร" ของโปรเจกต์ —
+    บอกว่าใช้ library อะไรเวอร์ชันไหน เพื่อนร่วมทีม clone ไปแล้วพิมพ์ <code>npm install</code> ก็ได้ของครบเหมือนเรา
+    / <code>-D</code> (devDependencies) สำคัญ: nodemon ใช้แค่ตอนพัฒนา (restart server อัตโนมัติเมื่อ save)
+    production ไม่ต้องการมัน — <strong>นี่คือจุดที่ server เก่าใน D:\react ของคุณใส่ผิดช่อง</strong> ครั้งนี้ทำให้ถูก</p>
+  </div></div>
+  <div class="step"><div class="num">2</div><div>
+    <h3 style="margin-top:0">ตั้ง script ใน package.json</h3>
+<pre><code>"scripts": {
+  "dev": "nodemon src/server.js",
+  "start": "node src/server.js"
+}</code></pre>
+    <p><strong>ทำไม:</strong> <code>npm run dev</code> ตอนพัฒนา (auto-restart) / <code>npm start</code> ตอน production
+    — แยกสองโหมดตั้งแต่วันแรก เป็น convention ที่ทุกบริษัทใช้</p>
+  </div></div>
+
+  <h2>ส่วนที่ 2: Express server แรก — เข้าใจทุกบรรทัด</h2>
+  <div class="card">
+<pre><code>// src/server.js
+const express = require("express");  // 1
+const app = express();               // 2
+
+app.use(express.json());             // 3
+
+app.get("/api/health", (req, res) => {          // 4
+  res.json({ ok: true, time: new Date() });     // 5
+});
+
+const PORT = process.env.PORT || 3000;          // 6
+app.listen(PORT, () => console.log(`Server on :${PORT}`));  // 7</code></pre>
+    <table>
+      <tr><th>บรรทัด</th><th>ทำไมต้องมี (ไม่ใช่แค่ทำอะไร)</th></tr>
+      <tr><td>1-2</td><td>สร้าง "แอป" 1 ตัว — <code>app</code> คือศูนย์รวมทุก route/middleware ของระบบ</td></tr>
+      <tr><td>3</td><td>สอนให้ Express อ่าน JSON จาก body — <strong>ถ้าไม่มีบรรทัดนี้ <code>req.body</code> จะเป็น undefined ตลอด</strong> (บั๊กอันดับ 1 ของมือใหม่ และ Express 5 มีในตัวแล้ว ไม่ต้องลง body-parser แยกแบบโค้ดเก่าของคุณ)</td></tr>
+      <tr><td>4</td><td>Route = "ถ้ามีคน GET มาที่ path นี้ ให้รันฟังก์ชันนี้" — req คือซองคำขอ, res คือซองคำตอบ</td></tr>
+      <tr><td>5</td><td><code>res.json()</code> แปลง object → JSON + ตั้ง Content-Type ให้อัตโนมัติ (ดีกว่า res.send สำหรับ API)</td></tr>
+      <tr><td>6</td><td>อ่าน PORT จาก environment ก่อน ค่อย fallback 3000 — เพราะ production (Docker/cloud) เป็นคนกำหนด port ไม่ใช่เรา hardcode (จะเจอจริง Week 11)</td></tr>
+      <tr><td>7</td><td>เปิดร้านรอรับลูกค้า — callback ไว้ยืนยันว่าเปิดสำเร็จ</td></tr>
+    </table>
+    <div class="warn"><strong>ทำไมต้องมี /api/health?</strong> ทุกระบบ production มี endpoint นี้ —
+    load balancer, Docker, ระบบ monitor ใช้มัน "จับชีพจร" ว่า server ยังหายใจไหม
+    ใส่ตั้งแต่วันแรก = ติดนิสัยคิดแบบ production ฟรี ๆ (Week 15 จะ monitor ตัวนี้จริง)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: ตัวอย่างการประยุกต์ในงานจริง</h2>
+  <div class="card">
+    <h3 style="margin-top:0">🏢 งานของวี: automation report ที่ media-presto</h3>
+    <p>report ที่คุณรันมือทุกเดือน — ปลายทางของมัน (Week 16) คือ Express service แบบที่กำลังสร้างนี้เป๊ะ:
+    endpoint <code>POST /api/reports/:clientId</code> → ไปดึง GA4/Meta → สรุป → ส่งกลับ
+    ทุกอย่างที่เรียนวันนี้คือฐานของของจริงชิ้นนั้น</p>
+    <h3>🌏 อุตสาหกรรม: ทำไม LINE MAN ใช้สถาปัตยกรรมแบบนี้</h3>
+    <p>app LINE MAN 1 หน้าจอ ยิงไปหา API หลายสิบตัว (ร้าน, เมนู, โปรโมชั่น, คนขับ) — แต่ละตัวคือ "Express-like service" เล็ก ๆ
+    ที่มี /health ให้ระบบกลางเช็คตลอดเวลา ตัวไหนป่วยจะถูกดึงออกจากสนามอัตโนมัติ
+    คุณกำลังสร้าง pattern เดียวกัน แค่ scale เล็กกว่า</p>
+  </div>
+
+  <h2>ภารกิจ</h2>
+  <div class="mission">
+    <h3>🎯 Mission 1.1: เปิดร้าน library-system <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>สร้างโปรเจกต์ตามส่วนที่ 1 (โฟลเดอร์ใหม่ — อย่าใช้ server เก่าใน D:\react ของเดิมเก็บไว้เทียบความเติบโต)</li>
+      <li>เขียน <code>src/server.js</code> เองทุกบรรทัด (ห้าม copy) + รัน <code>npm run dev</code></li>
+      <li>เปิด browser ไป <code>localhost:3000/api/health</code> ต้องเห็น JSON</li>
+      <li>แก้ไฟล์แล้ว save — nodemon ต้อง restart เอง</li>
+    </ol>
+  </div>
+  <div class="mission">
+    <h3>🎯 Mission 1.2: ทดลองให้พัง (เรียนจาก error) <span class="badge orange">30 นาที</span></h3>
+    <p>จงทำให้พังทั้ง 3 แบบ แล้วจดว่า error หน้าตาเป็นยังไง — เพื่อให้เจอของจริงแล้วจำได้:</p>
+    <ol>
+      <li>รัน server สองตัวพร้อมกัน (เปิด terminal 2 อัน) → อ่าน error <code>EADDRINUSE</code> แปลว่าอะไร?</li>
+      <li>ลบบรรทัด <code>app.use(express.json())</code> แล้วลอง POST JSON เข้ามา (ใช้ Postman/curl) → req.body เป็นอะไร?</li>
+      <li>เขียน route ที่ไม่เรียก <code>res</code> อะไรเลย → browser ค้างเพราะอะไร?</li>
+    </ol>
+    <p>ส่งคำตอบ 3 ข้อใน chat — การอธิบาย error ได้คือทักษะที่ interviewer ชอบทดสอบ</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: Node.js single thread แต่รับพันคนพร้อมกันได้ — อธิบายด้วยภาพร้านกาแฟ และบอกว่าโค้ดแบบไหนทำลายข้อดีนี้</summary>
+    <p>บาริสต้าคนเดียว (thread) ไม่เคยยืนรอเครื่องชง (I/O) — สั่งงานทิ้งไว้แล้วรับลูกค้าถัดไป งาน I/O เสร็จค่อยวนกลับมาเสิร์ฟ
+    สิ่งที่ทำลายมัน: โค้ด CPU หนัก ๆ ใน request (loop ล้านรอบ, เข้ารหัสไฟล์ใหญ่) = บาริสต้ามัวบดเมล็ดเอง ทั้งร้านหยุดรับออเดอร์</p></details>
+  <details><summary>ข้อ 2: ทำไม PORT ต้องอ่านจาก process.env ก่อน ไม่ hardcode 3000 อย่างเดียว?</summary>
+    <p>เพราะคนกำหนด port ตัวจริงใน production คือ environment (Docker, cloud, load balancer) ไม่ใช่โค้ดเรา —
+    hardcode แล้ววันที่ deploy จะชนกับระบบเขา หลักการนี้เรียก config จาก environment (12-Factor App) จะเจอเต็ม ๆ ตอน Week 11-15</p></details>
+  <details><summary>ข้อ 3 (security): /api/health ควรตอบอะไร และ "ไม่ควร" ตอบอะไร — คิดแบบ pentester</summary>
+    <p>ควรตอบแค่ ok/เวลา/เวอร์ชันคร่าว ๆ — <strong>ไม่ควร</strong>ตอบ: เวอร์ชัน dependency ละเอียด, ชื่อ database, path ภายใน, stack trace
+    เพราะ health endpoint มักเปิด public และเป็นจุดแรกที่ผู้โจมตี (เช่นคุณในอดีต) ใช้ทำ recon เก็บข้อมูลระบบ</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>server รันได้ + nodemon restart อัตโนมัติ</li>
+    <li>Mission 1.2 ส่งคำอธิบาย error 3 แบบใน chat</li>
+    <li>Quiz ตอบเองก่อนเปิดเฉลย + โน้ต <code>notes/express-basics.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 2</a>
+    <a class="btn" href="02-routing-structure.html">บทที่ 2: Routing + โครงสร้าง →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 2 บทที่ 1</footer>
+</div>
+</body>
+</html>

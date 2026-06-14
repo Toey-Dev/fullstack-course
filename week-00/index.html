@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 0 — Frontend Foundation (ทบทวนพื้นฐาน)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · บทเตรียมพื้นฐาน</div>
+    <h1>Week 0 — Frontend Foundation</h1>
+    <p>สรุปแก่น HTML · CSS · Bootstrap · JavaScript พื้นฐาน · DOM & Events — ฉบับเข้าใจ "ทำไม" ไม่ใช่แค่ "ทำตาม"</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">📌 บทนี้คือใคร เพื่อใคร</h3>
+    <p>เนื้อหาอ้างอิงคอร์ส <a href="https://021.wwry.net/" target="_blank">Zero to One: Frontend Web Dev</a> (Week 1-4)
+    — ฉบับนี้เป็น <strong>บทเรียนเต็มสแตนด์อโลน</strong>: mini-lecture step-by-step + โค้ดทุกหัวข้อ + หลักคิด dev + security
+    เรียนจบได้โดยไม่ต้องเปิดเว็บต้นทาง (ลิงก์ 021 มีไว้เผื่ออยากดูเพิ่ม)</p>
+    <p class="muted">⏱ ใช้เวลา ~5-6 ชม. · เนื้อหาเสริมสำหรับเวลาว่าง ไม่กระทบ 10-15 ชม./สัปดาห์ของ Week 1</p>
+    <table>
+      <tr><th>คุณคือ...</th><th>ใช้ Week 0 ยังไง</th></tr>
+      <tr><td>เรียน Zero to One จบแล้ว (อย่างวี)</td><td>อ่านผ่านเร็ว ๆ เช็คว่าจุดไหน "อธิบายไม่ได้" → กลับไปทบเฉพาะจุด</td></tr>
+      <tr><td>คนใหม่ในทีม / เริ่มจากศูนย์</td><td>เรียนบทนี้คู่กับเว็บต้นทาง (มีลิงก์ทุกหัวข้อ) แล้วทำ Mission ให้ครบก่อนไป Week 1</td></tr>
+    </table>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-html-foundation.html">HTML — โครงกระดูกของเว็บ</a></strong>
+    <p style="margin:6px 0 0">โครงสร้าง HTML5 · Block vs Inline · ลิงก์/รูป/Path · ตาราง · ฟอร์ม · Semantic HTML (ทำไม Google และ screen reader แคร์)</p>
+    <p style="margin:6px 0 0;color:#6b7280">จาก 021 บท 01-04 · ⏱ ~1 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-css-bootstrap.html">CSS + Bootstrap — แต่งตัวและจัดวาง</a></strong>
+    <p style="margin:6px 0 0">Selectors · Box Model (หัวใจของทุก layout) · Display · Bootstrap Grid 12 คอลัมน์ · Components · ทำไม utility class ถึงชนะ</p>
+    <p style="margin:6px 0 0;color:#6b7280">จาก 021 บท 05-08 · ⏱ ~1 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 3</span> <strong><a href="03-js-dom.html">JavaScript พื้นฐาน + DOM & Events</a></strong>
+    <p style="margin:6px 0 0">ตัวแปร/Type/Operator · Logic · Loop · Function/Arrow · Array methods (map/filter) · Object/JSON · DOM · Event + preventDefault</p>
+    <p style="margin:6px 0 0;color:#6b7280">จาก 021 บท 09-16 · ⏱ ~1.5 ชม.</p>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 0 — เขียนแบบมืออาชีพตั้งแต่บรรทัดแรก</h2>
+  <div class="card">
+    <p>รูปแบบที่ dev จริงใช้ + วิธีเขียนย่อให้สะอาด เริ่มฝึกตั้งแต่พื้นฐานจะติดเป็นนิสัย:</p>
+
+    <h3>1. ตั้งชื่อให้สื่อความหมาย (สำคัญสุด)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ อ่านแล้วเดาไม่ออก</h4>
+<pre><code>let d = 5;
+let arr2 = [...];
+.box1 { } .box2 { }</code></pre></div>
+      <div class="good"><h4>✅ ชื่อบอกหน้าที่</h4>
+<pre><code>let dayCount = 5;
+let activeUsers = [...];
+.product-card { } .nav-link { }</code></pre></div>
+    </div>
+
+    <h3>2. CSS shorthand — สั้นและอ่านง่ายกว่า</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ยาวเกินจำเป็น</h4>
+<pre><code>margin-top: 10px;
+margin-right: 20px;
+margin-bottom: 10px;
+margin-left: 20px;
+background-color: #fff;
+background-image: url(x.jpg);</code></pre></div>
+      <div class="good"><h4>✅ รวบ</h4>
+<pre><code>margin: 10px 20px;
+
+background: #fff url(x.jpg);</code></pre></div>
+    </div>
+
+    <h3>3. JS shorthand พื้นฐาน</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ verbose</h4>
+<pre><code>let msg = "Hi " + name + "!";
+
+if (age &gt;= 18) { t = "ผู้ใหญ่"; }
+else { t = "เด็ก"; }
+
+const double = (n) =&gt; { return n * 2; };</code></pre></div>
+      <div class="good"><h4>✅ ย่อแบบ ES6</h4>
+<pre><code>let msg = `Hi ${name}!`;       // template literal
+
+const t = age &gt;= 18 ? "ผู้ใหญ่" : "เด็ก";  // ternary
+
+const double = n =&gt; n * 2;     // arrow ย่อ</code></pre></div>
+    </div>
+    <div class="warn"><strong>กฎทอง:</strong> เขียนย่อ "เพื่ออ่านง่ายขึ้น" ไม่ใช่ "เพื่อโชว์เท่" — ถ้าย่อแล้วคนอ่านงง ให้เขียนยาวกว่าแต่ชัด
+    Clean code = คนอื่น (และตัวเราในอีก 6 เดือน) อ่านแล้วเข้าใจทันที</div>
+  </div>
+
+  <div class="tip"><strong>เกณฑ์ "พื้นแน่นพอ" ก่อนเข้า Week 1:</strong> ทำ Practice Mission เหล่านี้จากเว็บต้นทางได้โดยไม่เปิดเฉลย —
+  Dev Hunter (ฟอร์ม+Semantic), StreamFLIX Pricing (Box Model), Aroi Around (Grid), ระบบวิเคราะห์คะแนน (map/filter), ร้านค้าออนไลน์ (DOM render)
+  ทำไม่ได้ข้อไหน = จุดที่ต้องกลับไปทบ ไม่ใช่อ่านเพิ่ม</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 0 · เนื้อหาอ้างอิง <a href="https://021.wwry.net/">021.wwry.net</a> (IT@KKU)</footer>
+</div>
+</body>
+</html>

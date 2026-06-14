@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 0 · บทที่ 2: CSS + Bootstrap</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 0</a> · บทที่ 2</div>
+    <h1>CSS + Bootstrap — แต่งตัวและจัดวาง</h1>
+    <p>สรุปแก่นจาก 021 บท 05-08 — โดยเฉพาะ Box Model ที่เป็นรากของทุก layout บนโลก</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำ</h3>
+    <div class="kw-row">
+      <span class="kw">🧅 หัวหอม 4 ชั้น = Box Model</span>
+      <span class="kw">🛋 ดันของข้างใน = padding · 🚶 ผลักเพื่อนบ้าน = margin</span>
+      <span class="kw">🎯 ชี้เป้า = Selector (.class ใช้บ่อยสุด)</span>
+      <span class="kw">🍱 เค้ก 12 ชิ้น = Bootstrap Grid</span>
+      <span class="kw">📱 col-md-6 = "จอใหญ่พอค่อยแบ่งครึ่ง"</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด & หลักการ</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Everything is a box" — เข้าใจกล่อง = เข้าใจ layout ทั้งหมด</h3>
+    <p>ปัญหา layout 90% (ของไม่ตรง, ช่องว่างประหลาด, ล้นจอ) มีคำตอบอยู่ใน 4 ชั้นของกล่อง: content → padding → border → margin
+    จำง่าย: <em>อยากให้ข้างในหลวม = padding / อยากห่างจากคนอื่น = margin</em>
+    เวลา debug layout ให้เปิด DevTools ดูกล่องสีฟ้า-เขียว-ส้มก่อนเสมอ ไม่ใช่เดาสุ่มแก้เลข</p>
+    <h3>หลักการ 2: "Specificity ก่อนเวทมนตร์" — ทำไม CSS บางทีไม่ทำงาน</h3>
+    <p>เมื่อหลายกฎชี้เป้าเดียวกัน CSS ตัดสินด้วยลำดับความเจาะจง: inline > id > class > tag
+    "CSS ไม่ทำงาน" ส่วนใหญ่คือ<strong>มีกฎอื่นเจาะจงกว่าทับอยู่</strong> ไม่ใช่ browser เพี้ยน —
+    DevTools แท็บ Styles จะขีดฆ่ากฎที่แพ้ให้ดู อ่านตรงนั้นก่อน อย่าเพิ่งใส่ <code>!important</code> (นั่นคือการก่อหนี้)</p>
+    <h3>หลักการ 3: "Mobile-first ไม่ใช่แฟชั่น แต่คือลำดับการเขียน"</h3>
+    <p>Bootstrap ออกแบบ class แบบ "เล็กก่อน ใหญ่ทับ": <code>col-12 col-md-6</code> = มือถือเต็มจอ, จอ ≥768px ค่อยแบ่งครึ่ง
+    เหตุผล: เริ่มจากจอเล็ก (พื้นที่จำกัด บังคับเรียงความสำคัญ) แล้วขยาย ง่ายกว่าเริ่มจากใหญ่แล้วพยายามยัดลงเล็ก
+    — ผู้ใช้ไทยส่วนใหญ่เปิดเว็บจากมือถือ ลูกค้า media-presto ของคุณก็เช่นกัน</p>
+    <div class="tip"><strong>เมื่อไหร่ใช้ Bootstrap / ไม่ใช้:</strong> ใช้เมื่อต้องเร็วและทีมรู้จักมัน (งาน agency, admin panel)
+    / โปรเจกต์ที่ design เฉพาะตัวจัด ๆ มักเขียนเอง หรือใช้ Tailwind (จะเจอใน Week 8 — หลักคิด utility เดียวกัน คุ้น Bootstrap แล้วต่อยอดไว)</div>
+  </div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <rect x="60" y="20" width="360" height="160" rx="8" fill="#fde68a"/>
+      <text x="240" y="40" font-size="11" fill="#92400e" text-anchor="middle">margin — ระยะผลักเพื่อนบ้าน (โปร่งใส)</text>
+      <rect x="100" y="50" width="280" height="110" rx="6" fill="#1f2937"/>
+      <text x="240" y="66" font-size="10" fill="#fff" text-anchor="middle">border — เส้นขอบ</text>
+      <rect x="120" y="74" width="240" height="70" rx="4" fill="#6ee7b7"/>
+      <text x="240" y="90" font-size="10" fill="#064e3b" text-anchor="middle">padding — เบาะดันข้างใน</text>
+      <rect x="150" y="98" width="180" height="34" rx="3" fill="#2563eb"/>
+      <text x="240" y="119" font-size="11" fill="#fff" text-anchor="middle">content — เนื้อหา</text>
+      <text x="540" y="60" font-size="12" fill="#1f2937">วิธีจำ:</text>
+      <text x="540" y="85" font-size="11" fill="#047857">padding = ดันของ"ใน"กล่อง</text>
+      <text x="540" y="108" font-size="11" fill="#92400e">margin = ผลัก"นอก"กล่อง</text>
+      <text x="540" y="131" font-size="11" fill="#1f2937">shorthand: บน ขวา ล่าง ซ้าย</text>
+      <text x="540" y="152" font-size="11" fill="#1f2937">(วนตามเข็มนาฬิกา)</text>
+    </svg>
+    <figcaption>ภาพที่ 1: Box Model — หัวหอม 4 ชั้นที่อยู่เบื้องหลังทุกปัญหา layout</figcaption>
+  </figure>
+
+  <h2>ส่วนที่ 1: 3 วิธีใส่ CSS — และทำไม External ชนะ</h2>
+  <div class="card">
+<pre><code>&lt;!-- 1. Inline — ฝังใน tag (เลี่ยง) --&gt;
+&lt;h1 style="color:blue"&gt;Hi&lt;/h1&gt;
+
+&lt;!-- 2. Internal — ใน &lt;head&gt; (เฉพาะหน้าเดียว) --&gt;
+&lt;style&gt; h1 { color:blue; } &lt;/style&gt;
+
+&lt;!-- 3. External — แยกไฟล์ (มาตรฐาน) --&gt;
+&lt;link rel="stylesheet" href="style.css"&gt;</code></pre>
+    <p><strong>ทำไม External ชนะ 3 เหตุผล:</strong> ① <strong>Cache</strong> — browser โหลด style.css ครั้งเดียวใช้ได้ทุกหน้า เว็บเร็วขึ้น
+    ② <strong>แยกหน้าที่</strong> — HTML=โครง, CSS=หน้าตา แก้สีไม่ต้องยุ่งกับโครง ③ <strong>ทีมทำงานร่วม</strong> — คนทำ style กับคนทำโครงไม่ชนกัน
+    <br>Inline ใช้เมื่อ: ทดสอบเร็ว ๆ หรือ CSS ที่ JS สร้าง dynamic เท่านั้น</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Selectors — ชี้เป้าให้ถูกตัว</h2>
+  <div class="card">
+    <table>
+      <tr><th>Selector</th><th>เลือกอะไร</th><th>ใช้เมื่อ</th></tr>
+      <tr><td><code>p { }</code></td><td>ทุก &lt;p&gt; ในหน้า</td><td>ตั้ง default ทั้งหน้า (ระวังกระทบหมด)</td></tr>
+      <tr><td><code>.box { }</code></td><td>ทุก element ที่มี class="box"</td><td>⭐ ใช้บ่อยสุด — ซ้ำได้ ยืดหยุ่น</td></tr>
+      <tr><td><code>#logo { }</code></td><td>element เดียวที่ id="logo"</td><td>ของชิ้นเดียวห้ามซ้ำ (เหมือนเลขบัตรประชาชน)</td></tr>
+      <tr><td><code>.card p { }</code></td><td>p ทุกตัว"ข้างใน" .card (ลูกหลานทั้งหมด)</td><td>เว้นวรรค = descendant</td></tr>
+      <tr><td><code>.card > p { }</code></td><td>p ที่เป็นลูกตรง ๆ ของ .card เท่านั้น</td><td>&gt; = child (หลานไม่โดน)</td></tr>
+    </table>
+    <p class="muted">หลักปฏิบัติ: ใช้ <code>.class</code> เป็นหลัก เลี่ยง <code>#id</code> ใน CSS (เจาะจงเกินไป แก้ทับยาก) และเลี่ยง tag selector กว้าง ๆ</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Box Model — หัวใจของทุก layout (เจาะลึก)</h2>
+  <div class="card">
+<pre><code>.box {
+  width: 200px;            /* เนื้อใน */
+  padding: 20px;           /* เบาะดันข้างใน (รอบตัว) */
+  border: 5px solid black; /* ขนาด + รูปแบบ + สี (ครบ 3) */
+  margin: 30px;            /* ผลักเพื่อนบ้าน */
+}</code></pre>
+    <p><strong>Shorthand — วนตามเข็มนาฬิกา (บน→ขวา→ล่าง→ซ้าย):</strong></p>
+<pre><code>margin: 10px 20px 30px 40px;  /* บน ขวา ล่าง ซ้าย */
+margin: 10px 20px;            /* (บน-ล่าง) (ซ้าย-ขวา) */
+margin: 10px;                 /* ทุกด้านเท่ากัน */</code></pre>
+    <div class="warn"><strong>กับดักคลาสสิก:</strong> ตั้ง <code>width:200px</code> แต่กล่องกว้าง 250px จริง!
+    เพราะ default <code>box-sizing:content-box</code> นับ width แค่เนื้อใน (200 + padding 20×2 + border 5×2 = 250)
+    ทางแก้มาตรฐานยุคนี้: <code>box-sizing:border-box</code> ทำให้ width = ตัวเลขที่ตั้งจริง (Bootstrap ตั้งให้ทั้งระบบแล้ว)</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Display — ควบคุมการวางตัว</h2>
+  <div class="card">
+    <table>
+      <tr><th>ค่า</th><th>พฤติกรรม</th><th>ตั้ง width/height</th></tr>
+      <tr><td><code>block</code></td><td>เต็มแถว + ขึ้นบรรทัดใหม่</td><td>✅ ได้</td></tr>
+      <tr><td><code>inline</code></td><td>อยู่ในบรรทัดเดียวกัน กว้างเท่าเนื้อหา</td><td>❌ ไม่ได้</td></tr>
+      <tr><td><code>inline-block</code></td><td>อยู่บรรทัดเดียวกัน + ตั้งขนาดได้ (ลูกผสม)</td><td>✅ ได้</td></tr>
+      <tr><td><code>none</code></td><td>หายไปเลย ไม่กินพื้นที่</td><td>—</td></tr>
+    </table>
+    <p><strong><code>display:none</code> vs <code>visibility:hidden</code>:</strong> none = หายสนิทเหมือนไม่เคยมี (พื้นที่หายด้วย) /
+    hidden = มองไม่เห็นแต่ยังกินพื้นที่ (เหมือนใส่ผ้าคลุมล่องหน) — เลือกตามว่าอยากให้ที่ว่างยุบหรือไม่</p>
+  </div>
+
+  <h2>ส่วนที่ 5: Bootstrap Grid — เค้ก 12 ชิ้น</h2>
+  <div class="card">
+<pre><code>&lt;div class="container"&gt;        &lt;!-- คุมความกว้างไม่ให้ล้นจอ --&gt;
+  &lt;div class="row"&gt;            &lt;!-- แถวแนวนอน --&gt;
+    &lt;div class="col-12 col-md-6"&gt;ซ้าย&lt;/div&gt;   &lt;!-- มือถือเต็ม, จอใหญ่ครึ่ง --&gt;
+    &lt;div class="col-12 col-md-6"&gt;ขวา&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+    <p><strong>กฎ:</strong> หน้าจอแบ่ง 12 คอลัมน์เสมอ · col ในแถวรวมกันได้ 12 · container→row→col ต้องซ้อนตามลำดับนี้</p>
+    <table>
+      <tr><th>เขียน</th><th>หมายความว่า</th></tr>
+      <tr><td><code>col</code></td><td>หารเท่ากันเองอัตโนมัติ (ขี้เกียจคิดเลข)</td></tr>
+      <tr><td><code>col-6</code></td><td>ครึ่งจอ <strong>ตลอดกาล</strong> ทุกขนาดจอ</td></tr>
+      <tr><td><code>col-md-6</code></td><td>จอ &lt;768px เต็มจอ (ซ้อนแนวตั้ง), ≥768px ค่อยแบ่งครึ่ง ⭐ ใช้บ่อยสุด</td></tr>
+    </table>
+    <p class="muted">Breakpoints: sm≥576 · md≥768 (แท็บเล็ต) · lg≥992 (แล็ปท็อป) · xl≥1200</p>
+  </div>
+
+  <h2>ส่วนที่ 6: Spacing Utilities + Components</h2>
+  <div class="card">
+    <p><strong>สูตร spacing:</strong> <code>{property}{side}-{size}</code></p>
+    <ul>
+      <li>property: <code>m</code>=margin · <code>p</code>=padding</li>
+      <li>side: <code>t</code>บน <code>b</code>ล่าง <code>s</code>ซ้าย <code>e</code>ขวา <code>x</code>ซ้ายขวา <code>y</code>บนล่าง <code>(ว่าง)</code>ทุกด้าน</li>
+      <li>size: <code>0</code>=0 ถึง <code>5</code>=3rem · <code>auto</code></li>
+    </ul>
+    <p>ตัวอย่าง: <code>mt-5</code>=margin บนเยอะ · <code>px-4</code>=padding ซ้ายขวา · <code>mx-auto</code>=จัดกึ่งกลาง (เหมือน margin:0 auto)</p>
+    <p><strong>Components ที่ควรใช้เป็น</strong> (อ่าน docs เองต่อได้): Navbar (ย่อเป็น hamburger บนมือถืออัตโนมัติ), Card, Carousel (สไลด์), Accordion (FAQ ยืดหด) — เปิด <a href="https://getbootstrap.com/docs/5.3/" target="_blank">getbootstrap.com</a> copy มาปรับ</p>
+  </div>
+
+  <h2>ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> welovefukushima มี CSS bundler ที่รวม partials — หลักการเดียวกับ "External CSS ชนะเพราะ cache + จัดการได้"
+    ที่ scale ใหญ่ขึ้น และ Bootstrap ที่ทบทวนนี้คือตัวเดียวกับใน Project2 ของคุณ — Week 1 Reading List ใช้มันเต็ม ๆ</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> ระบบ admin/internal tool ของบริษัทไทยจำนวนมากคือ Bootstrap ล้วน —
+    เพราะเร็วและทุกคนอ่านออก ส่วน product หน้าบ้านยุคใหม่เทไป Tailwind (Week 8) ซึ่งคุณจะเรียนได้ไวเพราะหลัก utility เดียวกัน</p>
+  </div>
+
+  <h2>🎯 Mission ทบทวน</h2>
+  <div class="mission">
+    <h3>Mission: StreamFLIX + Aroi Around <span class="badge orange">90 นาที</span></h3>
+    <p>ทำ 2 Practice Mission จากต้นทางโดยไม่ดูของเก่า:
+    <a href="https://021.wwry.net/06-box-model.html" target="_blank">StreamFLIX Pricing</a> (Box Model + override class .popular)
+    และ <a href="https://021.wwry.net/07-bootstrap-grid.html" target="_blank">Aroi Around</a> (Grid 8/4 + responsive 3 การ์ด)
+    — เสร็จแล้วย่อจอเช็ค mobile ทั้งคู่</p>
+  </div>
+
+  <h2>📝 Quiz</h2>
+  <details><summary>ข้อ 1: กล่อง width:200px + padding:20px + border:5px — กว้างจริงบนจอกี่ px และทำไมมือใหม่งง?</summary>
+    <p>250px (200+20×2+5×2) เพราะ default <code>box-sizing: content-box</code> นับ width แค่เนื้อใน —
+    มือใหม่งงเพราะตั้ง 200 แต่ได้ 250 ทางแก้มาตรฐานยุคนี้: <code>box-sizing: border-box</code> (นับรวมหมดให้ width = ตัวเลขที่ตั้ง)
+    ซึ่ง Bootstrap ตั้งให้ทั้งระบบอยู่แล้ว</p></details>
+  <details><summary>ข้อ 2: <code>col-6</code> กับ <code>col-md-6</code> ต่างกันยังไงบนมือถือ?</summary>
+    <p><code>col-6</code> = ครึ่งจอ<strong>ตลอดกาล</strong>ทุกขนาดจอ / <code>col-md-6</code> = จอ &lt;768px เต็มจอ (ซ้อนแนวตั้ง), ≥768px ค่อยแบ่งครึ่ง
+    — เกือบทุกเคสจริงต้องการแบบหลัง เพราะครึ่งจอบนมือถือ = เนื้อหาบี้จนอ่านไม่ได้</p></details>
+  <details><summary>ข้อ 3: CSS ที่เขียนไม่ทำงาน — ลำดับการ debug ที่ถูกคืออะไร (ไม่ใช่ใส่ !important)?</summary>
+    <p>① เปิด DevTools เลือก element ดูแท็บ Styles ② ดูว่ากฎเราโดนขีดฆ่าไหม → แพ้ specificity ให้กฎไหน
+    ③ เช็ค selector พิมพ์ถูก/ไฟล์ CSS โหลดจริง (แท็บ Network) ④ แก้ด้วยการเพิ่มความเจาะจงอย่างตั้งใจ
+    — <code>!important</code> คือทางออกสุดท้ายที่สร้างหนี้ เพราะครั้งหน้าต้อง !important ทับ !important</p></details>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-html-foundation.html">← บทที่ 1</a>
+    <a class="btn" href="03-js-dom.html">บทที่ 3: JS + DOM →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 0 บทที่ 2 · อ้างอิง 021.wwry.net</footer>
+</div>
+</body>
+</html>

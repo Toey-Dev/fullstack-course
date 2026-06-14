@@ -64,6 +64,66 @@
     </table>
   </div>
 
+  <h2>🧹 Clean Code ประจำ Week 1 — รูปแบบ async/fetch ที่ dev จริงใช้</h2>
+  <div class="card">
+    <h3>1. async/await ชนะ .then() chain (อ่านเหมือนโค้ดปกติ)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ .then ซ้อน อ่านยาก</h4>
+<pre><code>fetch(url)
+  .then(res =&gt; res.json())
+  .then(data =&gt; {
+    return fetch(url2);
+  })
+  .then(res =&gt; res.json())
+  .then(d =&gt; console.log(d))
+  .catch(e =&gt; ...);</code></pre></div>
+      <div class="good"><h4>✅ async/await เรียงตรง</h4>
+<pre><code>try {
+  const res = await fetch(url);
+  const data = await res.json();
+  const res2 = await fetch(url2);
+  const d = await res2.json();
+  console.log(d);
+} catch (e) { ... }</code></pre></div>
+    </div>
+
+    <h3>2. Guard clause — เช็คแล้ว return เร็ว (เลี่ยง if ซ้อน)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ซ้อนลึก (pyramid)</h4>
+<pre><code>if (res.ok) {
+  const data = await res.json();
+  if (data.items) {
+    render(data.items);
+  }
+}</code></pre></div>
+      <div class="good"><h4>✅ ดักออกก่อน เนื้อหลักไม่ย่อหน้าลึก</h4>
+<pre><code>if (!res.ok) throw new Error(res.status);
+const data = await res.json();
+if (!data.items) return;
+render(data.items);</code></pre></div>
+    </div>
+
+    <h3>3. Optional chaining (?.) + Nullish (??) — กัน null สวย ๆ</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ เช็คมือทีละชั้น</h4>
+<pre><code>const name = data &&
+  data.user &&
+  data.user.name
+    ? data.user.name : "ไม่ระบุ";
+
+let saved = localStorage.getItem("x");
+if (saved === null) saved = "[]";</code></pre></div>
+      <div class="good"><h4>✅ สั้นและปลอดภัย</h4>
+<pre><code>const name = data?.user?.name ?? "ไม่ระบุ";
+
+
+
+const saved = localStorage.getItem("x") ?? "[]";</code></pre></div>
+    </div>
+    <div class="warn"><strong>เอาไปใช้ใน Mission เลย:</strong> Pokedex และ Reading List ใช้ทั้ง 3 รูปแบบนี้ได้ครบ —
+    เขียนแบบ ✅ ตั้งแต่แรก จะติดนิสัยและ reviewer (ผม) ให้คะแนนส่วน "คุณภาพโค้ด" สูงขึ้น</div>
+  </div>
+
   <div class="warn"><strong>กติกาสำคัญ:</strong> Mission ทุกข้อเขียนเองทั้งหมด ห้ามเปิดเฉลยก่อนพยายามครบ 20 นาที
   — ความรู้สึก "ติดขัด" คือตอนที่สมองกำลังสร้างความจำระยะยาว ซึ่งเป็นสิ่งที่คุณบอกว่าขาดมาตลอด</div>
 

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 0 · บทที่ 3: JavaScript พื้นฐาน + DOM & Events</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 0</a> · บทที่ 3</div>
+    <h1>JavaScript พื้นฐาน + DOM & Events</h1>
+    <p>สรุปแก่นจาก 021 บท 09-16 — ส่วนที่ใช้ซ้ำทุกวันตลอดอาชีพ ไม่ว่าจะเขียน frontend หรือ backend</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำ</h3>
+    <div class="kw-row">
+      <span class="kw">📦 const ก่อนเสมอ let เมื่อจำเป็น var ห้ามใช้</span>
+      <span class="kw">⚖️ === เป๊ะทั้งค่าและ type</span>
+      <span class="kw">🏭 function = โรงงาน รับเข้า-คืนออก</span>
+      <span class="kw">🚂 map แปลงทุกตู้ · filter คัดตู้ · find เจอตู้แรก</span>
+      <span class="kw">🌳 DOM = HTML ที่กลายเป็น object ให้ JS จับ</span>
+      <span class="kw">🛑 preventDefault = ห้าม refresh ก่อน</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด & หลักการ</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Immutability mindset" — ทำไม map/filter ชนะ for loop</h3>
+    <p>map/filter <strong>ไม่แก้ array เดิม</strong> แต่สร้างอันใหม่ — ฟังดูสิ้นเปลือง แต่คือเหตุผลที่ระบบใหญ่บั๊กน้อย:
+    ข้อมูลเดิมไม่ถูกใครแอบแก้ ใครเปลี่ยนอะไรเห็นชัดเป็นบรรทัด ๆ
+    React (Week 8) สร้างทั้ง framework บนหลักนี้: state เดิมห้ามแก้ ต้องสร้างใหม่เสมอ — ฝึกนิสัยตั้งแต่วันนี้ = Week 8 ง่ายขึ้นมาก</p>
+    <h3>หลักการ 2: "DOM คือผลลัพธ์ ไม่ใช่ฐานข้อมูล"</h3>
+    <p>มือใหม่เก็บ "ความจริง" ไว้บนหน้าจอ (อ่านค่าจาก DOM มาคิดต่อ) — พังเมื่อหน้าจอซับซ้อน
+    มืออาชีพเก็บความจริงใน <strong>ข้อมูล (array/object/localStorage)</strong> แล้วให้ DOM เป็นแค่ "ภาพฉาย": ข้อมูลเปลี่ยน → วาดใหม่
+    นี่คือ Single Source of Truth จาก Week 1 และคือแก่นของ React — pattern <code>render(data)</code> ที่ฝึกใน Mission ร้านค้า/Guestbook คือซ้อมใหญ่</p>
+    <h3>หลักการ 3: "Event-driven thinking" — โปรแกรมที่รอจังหวะ ไม่ใช่เส้นตรง</h3>
+    <p>โค้ดหน้าเว็บไม่ได้วิ่งบนลงล่างจบ — มันตั้ง "เครื่องดักฟัง" (addEventListener) แล้วรอผู้ใช้ทำอะไรสักอย่าง
+    วิธีคิดนี้ตัวเดียวกับ backend: Express ก็คือ "ดักฟัง request" (Week 2) — เรียนหน้าบ้านเข้าใจ = หลังบ้านเข้าใจฟรี</p>
+    <div class="tip"><strong>กับดักที่พบบ่อยสุดจากโค้ดจริงของคุณ (Project2):</strong> โค้ดทดลองค้างในไฟล์ (ตัวแปรไม่ใช้, comment block ใหญ่)
+    — กฎใหม่: ทดลองเสร็จ ลบทันทีก่อน commit เสมอ reviewer เห็นโค้ดตายแล้วความเชื่อมั่นตก</div>
+  </div>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <rect x="20" y="60" width="150" height="60" rx="8" fill="#7c3aed"/>
+      <text x="95" y="85" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">📦 ข้อมูล (จริง)</text>
+      <text x="95" y="105" font-size="10" fill="#ddd6fe" text-anchor="middle">array / localStorage</text>
+      <path d="M 175 75 L 305 75" stroke="#059669" stroke-width="2.5" marker-end="url(#g9)"/>
+      <text x="240" y="65" font-size="11" fill="#047857" text-anchor="middle">render(data)</text>
+      <path d="M 305 105 L 175 105" stroke="#2563eb" stroke-width="2.5" marker-end="url(#b9)"/>
+      <text x="240" y="125" font-size="11" fill="#1e40af" text-anchor="middle">event → อัปเดตข้อมูล</text>
+      <rect x="310" y="60" width="150" height="60" rx="8" fill="#2563eb"/>
+      <text x="385" y="85" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">🖥 DOM (ภาพฉาย)</text>
+      <text x="385" y="105" font-size="10" fill="#bfdbfe" text-anchor="middle">สิ่งที่ผู้ใช้เห็น</text>
+      <rect x="520" y="60" width="160" height="60" rx="8" fill="#1f2937"/>
+      <text x="600" y="85" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">👆 ผู้ใช้</text>
+      <text x="600" y="105" font-size="10" fill="#9ca3af" text-anchor="middle">click / submit / type</text>
+      <path d="M 515 90 L 465 90" stroke="#d97706" stroke-width="2.5" marker-end="url(#o9)"/>
+      <defs>
+        <marker id="g9" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#059669"/></marker>
+        <marker id="b9" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2563eb"/></marker>
+        <marker id="o9" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#d97706"/></marker>
+      </defs>
+    </svg>
+    <figcaption>ภาพที่ 1: วงจร ข้อมูล → render → DOM → event → กลับมาแก้ข้อมูล — แก่นเดียวกับ React ที่จะเจอ Week 8</figcaption>
+  </figure>
+
+  <h2>ส่วนที่ 1: ตัวแปร + Data Types</h2>
+  <div class="card">
+<pre><code>const pi = 3.14;     // ค่าคงที่ — เปลี่ยนไม่ได้ (ใช้เป็น default)
+let score = 0;       // เปลี่ยนได้ — ใช้เมื่อจำเป็นจริง
+score = 10;          // OK
+// var ❌ ห้ามใช้ — มีปัญหา scope รั่ว ทำให้บั๊กหายาก</code></pre>
+    <p><strong>ทำไม const-first:</strong> เริ่มด้วย const เสมอ เปลี่ยนเป็น let ก็ต่อเมื่อมั่นใจว่าค่าต้องเปลี่ยนจริง
+    — โค้ดที่ใช้ const เยอะ = อ่านแล้วมั่นใจว่าค่าไม่ถูกแอบเปลี่ยน = บั๊กน้อย</p>
+    <table>
+      <tr><th>Type</th><th>ตัวอย่าง</th><th>หมายเหตุ</th></tr>
+      <tr><td>String</td><td><code>"สวัสดี"</code></td><td>อยู่ใน "" '' หรือ ``</td></tr>
+      <tr><td>Number</td><td><code>25</code> <code>99.50</code></td><td>ไม่มี quote คำนวณได้</td></tr>
+      <tr><td>Boolean</td><td><code>true</code> <code>false</code></td><td>หัวใจของ if</td></tr>
+      <tr><td>null</td><td><code>let x = null</code></td><td>ว่าง "แบบตั้งใจ"</td></tr>
+      <tr><td>undefined</td><td><code>let x</code></td><td>สร้างไว้ "ยังไม่ใส่ค่า"</td></tr>
+    </table>
+  </div>
+
+  <h2>ส่วนที่ 2: Logic + Control Flow</h2>
+  <div class="card">
+<pre><code>console.log(5 === "5");  // false — === เช็คทั้งค่าและ type (ใช้ตัวนี้เสมอ)
+console.log(5 == "5");   // true  — == หยวน แปลง type ให้ (เลี่ยง!)
+
+// ternary — if/else บรรทัดเดียว
+const type = age >= 18 ? "ผู้ใหญ่" : "เด็ก";
+
+// logic operators รวมเงื่อนไข
+const canBorrow = isMember && !hasFines;  // เป็นสมาชิก และ ไม่มีค่าปรับ</code></pre>
+    <p><strong>=== vs ==:</strong> ใช้ <code>===</code> เสมอ เพราะ <code>==</code> แปลง type อัตโนมัติทำให้เกิดบั๊กแปลก ๆ
+    (<code>0 == ""</code> เป็น true!) — interviewer ถามเรื่องนี้บ่อยมาก<br>
+    <strong>ternary ใช้เมื่อ:</strong> กำหนดค่าง่าย ๆ บรรทัดเดียว — ถ้า logic ซับซ้อนให้ใช้ if ปกติ อย่าฝืนย่อจนอ่านไม่ออก</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Loop + Function</h2>
+  <div class="card">
+<pre><code>for (let i = 0; i &lt; 5; i++) { }   // รู้จำนวนรอบแน่นอน
+while (energy &gt; 0) { energy -= 1; } // ไม่รู้รอบ รู้แค่เงื่อนไขหยุด
+// break = ออกจาก loop เลย / continue = ข้ามรอบนี้ ไปรอบถัดไป
+
+// Function — โรงงาน รับเข้า (parameter) คืนออก (return)
+function add(a, b) { return a + b; }
+const addArrow = (a, b) => a + b;       // arrow แบบย่อ (บรรทัดเดียว ตัด return)
+const double = n => n * 2;              // 1 param ตัดวงเล็บได้</code></pre>
+    <p><strong>parameter vs return:</strong> parameter = วัตถุดิบที่ส่งเข้า / return = ผลลัพธ์ที่ส่งกลับให้เอาไปใช้ต่อ
+    ฟังก์ชันไม่มี return = ทำงานแล้วจบ (เช่น แค่ console.log) เอาผลไปคำนวณต่อไม่ได้<br>
+    <strong>Scope:</strong> ตัวแปรที่สร้างในฟังก์ชัน ใช้ได้แค่ในนั้น — ออกมาข้างนอก = หาไม่เจอ (Error)</p>
+  </div>
+
+  <h2>ส่วนที่ 4: Array Methods — เลือกตามเจตนา</h2>
+  <div class="card">
+<pre><code>const prices = [100, 200, 300];
+
+prices.map(p =&gt; p * 0.5);        // [50,100,150] — แปลงทุกตัว → array ใหม่
+prices.filter(p =&gt; p &gt; 150);     // [200,300]   — คัดที่ผ่านเงื่อนไข
+prices.find(p =&gt; p &gt; 150);       // 200         — เจอตัวแรกหยุดเลย
+prices.forEach(p =&gt; console.log(p)); // ทำเฉย ๆ ไม่คืน array</code></pre>
+    <table>
+      <tr><th>เจตนา</th><th>ใช้</th></tr>
+      <tr><td>เปลี่ยนทุกตัวได้ชุดใหม่</td><td><code>map</code></td></tr>
+      <tr><td>คัดเอาบางตัว</td><td><code>filter</code></td></tr>
+      <tr><td>หาตัวเดียว</td><td><code>find</code></td></tr>
+      <tr><td>ทำ side effect (log, ส่ง)</td><td><code>forEach</code></td></tr>
+    </table>
+    <p class="muted">map/filter ไม่แก้ array เดิม = immutability ที่พูดในส่วนแนวคิด → รากของ React state</p>
+  </div>
+
+  <h2>ส่วนที่ 5: Object + JSON</h2>
+  <div class="card">
+<pre><code>const user = { name: "Somchai", age: 25 };
+user.name;            // "Somchai" (dot notation)
+
+// JSON — รูปแบบส่งข้อมูลระหว่าง server/web
+const str = JSON.stringify(user);   // Object → String (เตรียมส่ง/เก็บ)
+const obj = JSON.parse(str);        // String → Object (รับมาใช้)
+
+// Destructuring — ดึงค่าออกหลายตัวพร้อมกัน
+const { name, age } = user;
+
+// Spread (...) — copy + รวม
+const admin = { ...user, role: "Admin" };  // copy user + เพิ่ม role</code></pre>
+    <p><strong>stringify/parse คู่ไปกลับ:</strong> localStorage และ API รับส่งได้แค่ String — ทุกครั้งที่เก็บ Object ต้อง stringify ตอนเก็บ, parse ตอนอ่าน (ตรงกับ Week 1 เป๊ะ)<br>
+    <strong>destructuring + spread</strong> เป็น syntax ที่ React ใช้ตลอด — คุ้นตั้งแต่ตอนนี้ได้เปรียบ Week 8</p>
+  </div>
+
+  <h2>ส่วนที่ 6: DOM + Events</h2>
+  <div class="card">
+<pre><code>// เลือก element
+const title = document.querySelector("#title");   // ตัวแรกที่เจอ
+const items = document.querySelectorAll(".item");  // ทุกตัว (NodeList)
+
+// แก้ไข
+title.innerText = "ข้อความใหม่";           // ข้อความล้วน (ปลอดภัย)
+box.classList.toggle("active");           // สลับ class (ดี/ออก)
+
+// ดักฟัง event
+form.addEventListener("submit", (e) =&gt; {
+  e.preventDefault();        // ⭐ กันหน้า refresh
+  const value = input.value;
+  // ...ใช้ค่า
+  input.value = "";          // เคลียร์ช่อง
+});</code></pre>
+    <p><strong>addEventListener ดีกว่า onclick:</strong> ผูกได้หลายตัวบน element เดียว, แยก JS ออกจาก HTML, ถอดออกได้ — onclick ใน HTML เป็นวิธีเก่า<br>
+    <strong>preventDefault ใน submit:</strong> ฟอร์มมีพฤติกรรมดั้งเดิม = refresh หน้าเมื่อกดส่ง (ยุคก่อน JS) — ไม่กัน = state หายหมด หน้ากระพริบ ลืมบรรทัดนี้ = บั๊กอันดับ 1 ของฟอร์ม</p>
+    <div class="danger"><strong>🔐 มุม pentester — innerHTML คือประตู XSS:</strong>
+    <code>el.innerHTML = userInput</code> = ให้คนแปลกหน้าเขียน HTML ลงหน้าเว็บเรา ถ้า input มี script/event handler ฝังมา = โดน
+    กฎ: ข้อความล้วนใช้ <code>innerText</code> / จำเป็นต้องใช้ innerHTML กับข้อมูลผู้ใช้ → ต้อง escape ก่อนเสมอ
+    (โยงตรงไป Quiz localStorage ของ Week 1 และ OWASP ใน Week 17)</div>
+  </div>
+
+  <h2>ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> AJAX filter ของ welovefukushima คือวงจรในภาพที่ 1 เป๊ะ: ผู้ใช้เลือกหมวด (event) → ขอข้อมูล → render รายการใหม่
+    และ automation report ของคุณคือ map/filter บนข้อมูลการตลาดดี ๆ นี่เอง — แค่รันบน server แทน browser</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> feed ของ Facebook/IG คือ pattern เดียวกันเป๊ะที่ scale มหาศาล: ข้อมูลโพสต์ (array) → render การ์ด → event (like/scroll) → อัปเดตข้อมูล → render ใหม่ — เข้าใจวงจรนี้ = เข้าใจเว็บแอปทุกตัวบนโลก</p>
+  </div>
+
+  <h2>🎯 Mission ทบทวน</h2>
+  <div class="mission">
+    <h3>Mission: ร้านค้าออนไลน์ + Guestbook <span class="badge orange">90 นาที</span></h3>
+    <p>ทำ 2 Practice Mission จากต้นทางโดยไม่เปิดของเก่า:
+    <a href="https://021.wwry.net/15-js-dom.html" target="_blank">ร้านค้าออนไลน์</a> (filter + map + render + ternary ขีดฆ่าของหมด)
+    และ <a href="https://021.wwry.net/16-js-events.html" target="_blank">สมุดเยี่ยมชม Guestbook</a> (submit + preventDefault + validation + render object)
+    — สองข้อนี้คือ "ข้อสอบรวบยอด" ของ JS พื้นฐานทั้งหมด ทำได้ลื่น = พร้อม Week 1 แน่นอน</p>
+  </div>
+
+  <h2>📝 Quiz</h2>
+  <details><summary>ข้อ 1: เลือก method ให้ถูก — (ก) เอาเฉพาะสินค้าราคา &lt; 1000 (ข) แปลงทุกราคาเป็น USD (ค) หาสินค้าชิ้นแรกที่ชื่อขึ้นต้น "i" (ง) log ทุกชิ้น</summary>
+    <p>(ก) filter — คัดตามเงื่อนไข (ข) map — แปลงทุกตัวได้ array ใหม่ (ค) find — เจอตัวแรกหยุดเลย (ง) forEach — ทำ side effect เฉย ๆ ไม่คืน array
+    เลือกตามเจตนา ไม่ใช่ใช้ forEach ทำทุกอย่าง — โค้ดบอกเจตนาได้ = อ่านง่าย = ผ่าน review</p></details>
+  <details><summary>ข้อ 2: ลืม e.preventDefault() ใน submit handler — เกิดอะไร และทำไม?</summary>
+    <p>หน้า refresh ทันทีที่กดส่ง — เพราะพฤติกรรมดั้งเดิมของ form คือส่งข้อมูลไป action แล้วโหลดหน้าใหม่ (ยุคก่อน JS)
+    ผล: state ใน JS หายหมด, ข้อมูลที่เพิ่ง render หาย "ฟอร์มกดแล้วหน้ากระพริบแล้วไม่มีอะไรเกิด" = อาการคลาสสิกของบั๊กนี้ จำไว้จะ debug ได้ใน 10 วินาที</p></details>
+  <details><summary>ข้อ 3 (security): โค้ด <code>list.innerHTML += `&lt;li&gt;${comment}&lt;/li&gt;`</code> ใน Guestbook อันตรายยังไง สาธิตการโจมตี 1 แบบ</summary>
+    <p>comment มาจากผู้ใช้ → พิมพ์ <code>&lt;img src=x onerror="alert(document.cookie)"&gt;</code> ลงช่องคอมเมนต์
+    → ถูกฉีดเป็น HTML จริง → script รันในหน้าของ<strong>ทุกคน</strong>ที่เปิดดู = stored XSS
+    แก้: ใช้ <code>innerText</code>/<code>textContent</code> สำหรับข้อความผู้ใช้ หรือ escape ก่อน — นี่คือช่องโหว่อันดับต้นที่คุณเคยล่าในฐานะ pentester ตอนนี้อยู่ฝั่งกัน</p></details>
+
+  <h2>✅ Checkpoint จบ Week 0</h2>
+  <ul class="check">
+    <li>ตาราง "แก่น" ทั้ง 3 บท — อธิบายได้ทุกแถวโดยไม่เปิดดู</li>
+    <li>Mission ทบทวนครบ (Dev Hunter, StreamFLIX, Aroi Around, ร้านค้า, Guestbook)</li>
+    <li>Quiz ตอบเองก่อนเปิดเฉลยครบ 9 ข้อ</li>
+    <li>พร้อมเข้า <a href="../week-01/index.html">Week 1 →</a></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-css-bootstrap.html">← บทที่ 2</a>
+    <a class="btn" href="../week-01/index.html">เข้าสู่ Week 1 →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 0 บทที่ 3 · อ้างอิง 021.wwry.net</footer>
+</div>
+</body>
+</html>
