@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Authentication + JWT</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 5</a> · บทที่ 1</div>
+    <h1>Authentication + JWT — login ที่ปลอดภัยจริง</h1>
+    <p>สร้างระบบยืนยันตัวตนที่ผ่านสายตา pentester — และเข้าใจ JWT ถึงแก่น ไม่ใช่แค่ copy มาใช้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🆔 คุณเป็นใคร = Authentication</span>
+      <span class="kw">🚪 คุณทำอะไรได้ = Authorization</span>
+      <span class="kw">🔨 บดทางเดียว = hash (bcrypt)</span>
+      <span class="kw">🎫 บัตรผ่านมีลายเซ็น = JWT</span>
+      <span class="kw">✍️ signed ≠ encrypted (อ่านได้ แต่ปลอมไม่ได้)</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Authentication ≠ Authorization" (2 คำที่คนสับสน)</h3>
+    <p><strong>Authentication (AuthN)</strong> = "พิสูจน์ว่าคุณเป็นใคร" (login ด้วย email+password) ·
+    <strong>Authorization (AuthZ)</strong> = "คุณมีสิทธิ์ทำอะไรบ้าง" (admin ลบได้ user ลบไม่ได้) ·
+    ทำ AuthN ก่อนเสมอ แล้วค่อย AuthZ — เทียบสนามบิน: เช็คพาสปอร์ต (คุณเป็นใคร) → เช็คตั๋ว (คุณขึ้นเครื่องไหนได้)</p>
+    <h3>หลักการ 2: "Password เป็นความลับที่แม้แต่เราก็ไม่ควรรู้"</h3>
+    <p>ระบบที่ดี <strong>เก็บ password ไม่ได้</strong> (เก็บแค่ hash) — แม้ DB รั่ว แม้ admin ทุจริต ก็เอา password จริงไปไม่ได้
+    hash คือ "บดทางเดียว" — แปลง password → ตัวเลขยาว ๆ ที่ <strong>ถอดกลับไม่ได้</strong>
+    ตอน login เอา password ที่กรอกมา hash ใหม่แล้วเทียบ hash ที่เก็บ ตรงกัน = ผ่าน</p>
+    <h3>หลักการ 3: "Stateless = server ไม่ต้องจำว่าใคร login"</h3>
+    <p>JWT ทำให้ server ไม่ต้องเก็บ session ในหน่วยความจำ — ทุกอย่างที่ต้องรู้ (ใคร, role อะไร) อยู่ใน token เอง
+    server แค่ตรวจ "ลายเซ็น" ว่าจริงไหม ข้อดี: scale ได้ (server หลายตัวไม่ต้องแชร์ session) ข้อเสีย: ยกเลิก token กลางคันยาก (จะคุยใน "ข้อจำกัด")</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Hash Password ด้วย bcrypt</h2>
+  <div class="card">
+<pre><code>npm install bcrypt
+
+// ตอน register — hash ก่อนเก็บ
+const hash = await bcrypt.hash(password, 10);   // 10 = ความแรง (cost)
+// เก็บ hash ลง DB (ไม่ใช่ password)
+
+// ตอน login — เทียบ password ที่กรอก กับ hash ที่เก็บ
+const ok = await bcrypt.compare(inputPassword, user.password);
+if (!ok) return res.status(401).json({ ok: false, error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" });</code></pre>
+    <div class="tip"><strong>ทำไม bcrypt ไม่ใช่ MD5/SHA:</strong> bcrypt ออกแบบมาให้ "ช้าโดยตั้งใจ" (cost factor) —
+    ทำให้ผู้โจมตี brute-force ช้ามาก · MD5/SHA เร็วเกินไป crack ได้เป็นพันล้านครั้ง/วินาที · bcrypt ยังใส่ "salt" อัตโนมัติ
+    (สุ่มต่อท้ายก่อน hash) ทำให้ password เดียวกัน 2 คน ได้ hash ต่างกัน — กัน rainbow table</div>
+    <div class="danger"><strong>🔐 มุม pentester ของคุณ:</strong> คุณเคยเจอระบบที่เก็บ password เป็น MD5/plaintext ตอน pentest มาแล้ว —
+    ตอนนี้รู้แล้วว่า "ทำไมมันพัง" และ "ทำให้ถูกยังไง" นี่คือความรู้ที่ทำให้คุณ review โค้ดคนอื่นได้คมกว่า dev ทั่วไป</div>
+  </div>
+
+  <h2>ส่วนที่ 2: JWT — เข้าใจถึงแก่น (ไม่ใช่แค่ copy)</h2>
+  <div class="card">
+    <p>JWT (JSON Web Token) = "บัตรผ่านที่มีลายเซ็น" มี 3 ส่วนคั่นด้วยจุด <code>xxxxx.yyyyy.zzzzz</code>:</p>
+    <figure class="figure">
+      <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="20" y="40" width="200" height="100" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+        <text x="120" y="62" font-size="12" font-weight="700" fill="#1e40af" text-anchor="middle">① Header</text>
+        <text x="120" y="84" font-size="10" fill="#1e3a8a" text-anchor="middle">{ alg: "HS256",</text>
+        <text x="120" y="100" font-size="10" fill="#1e3a8a" text-anchor="middle">type: "JWT" }</text>
+        <text x="120" y="124" font-size="9" fill="#6b7280" text-anchor="middle">ใช้อัลกอริทึมอะไร</text>
+        <rect x="245" y="40" width="200" height="100" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+        <text x="345" y="62" font-size="12" font-weight="700" fill="#92400e" text-anchor="middle">② Payload</text>
+        <text x="345" y="84" font-size="10" fill="#78350f" text-anchor="middle">{ userId: 7,</text>
+        <text x="345" y="100" font-size="10" fill="#78350f" text-anchor="middle">role: "admin", exp }</text>
+        <text x="345" y="124" font-size="9" fill="#6b7280" text-anchor="middle">ข้อมูล (อ่านได้! ไม่ลับ)</text>
+        <rect x="470" y="40" width="210" height="100" rx="10" fill="#dcfce7" stroke="#059669" stroke-width="2"/>
+        <text x="575" y="62" font-size="12" font-weight="700" fill="#047857" text-anchor="middle">③ Signature</text>
+        <text x="575" y="84" font-size="10" fill="#065f46" text-anchor="middle">เซ็นด้วย secret</text>
+        <text x="575" y="100" font-size="10" fill="#065f46" text-anchor="middle">ที่ server เท่านั้นรู้</text>
+        <text x="575" y="124" font-size="9" fill="#6b7280" text-anchor="middle">ปลอมไม่ได้ ✓</text>
+        <text x="350" y="165" font-size="11" fill="#dc2626" text-anchor="middle" font-weight="700">⚠️ JWT = signed ไม่ใช่ encrypted — ใครก็อ่าน payload ได้ (อย่าใส่ความลับ!)</text>
+      </svg>
+      <figcaption>ภาพที่ 1: JWT 3 ส่วน — payload อ่านได้ (base64 ธรรมดา) แต่ signature ทำให้ปลอมไม่ได้</figcaption>
+    </figure>
+<pre><code>npm install jsonwebtoken
+
+// ตอน login สำเร็จ — ออก token
+const token = jwt.sign(
+  { userId: user.id, role: user.role },   // payload (ข้อมูลที่อยากแนบ)
+  process.env.JWT_SECRET,                  // secret (อยู่ใน .env!)
+  { expiresIn: "1h" }                      // หมดอายุ
+);
+res.json({ ok: true, token });
+
+// ตอนตรวจ token (ใน middleware)
+const decoded = jwt.verify(token, process.env.JWT_SECRET);  // ปลอม/หมดอายุ = throw
+// decoded = { userId: 7, role: "admin", iat, exp }</code></pre>
+    <div class="danger"><strong>🔐 จุดที่ pentester ต้องรู้ (และ dev ทั่วไปพลาด):</strong><br>
+    ① <strong>payload อ่านได้</strong> — เป็นแค่ base64 ใครเอา token ไปแปะ jwt.io ก็เห็นข้อมูลข้างใน → <strong>ห้ามใส่ password/ข้อมูลลับใน payload</strong><br>
+    ② signature กันแค่ "ปลอม" ไม่ได้กัน "อ่าน" — JWT คือ signed ไม่ใช่ encrypted<br>
+    ③ JWT_SECRET หลุด = ปลอม token ได้ทั้งระบบ → อยู่ใน .env เสมอ ยาว ๆ สุ่ม ๆ</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Token เก็บที่ไหน — เฉลยคำถามค้างจาก Week 1</h2>
+  <div class="card">
+    <p>จำได้ไหม Week 1 เราคุยว่า localStorage โดน XSS ขโมยได้ — ตอนนี้ token มาจริงแล้ว ต้องตัดสินใจ:</p>
+    <table>
+      <tr><th>เก็บที่</th><th>ข้อดี</th><th>ความเสี่ยง</th></tr>
+      <tr><td>localStorage</td><td>ง่าย ใช้กับ API ข้าม domain ง่าย</td><td>🔴 XSS อ่านได้ (script อ่าน localStorage)</td></tr>
+      <tr><td>HttpOnly Cookie</td><td>🟢 JS อ่านไม่ได้ → XSS ขโมยไม่ได้</td><td>ต้องระวัง CSRF (Week 17)</td></tr>
+    </table>
+    <p><strong>คำตอบที่ตรงไปตรงมา:</strong> ไม่มีที่ไหนสมบูรณ์แบบ — เลือกตาม "ภัยที่กลัวกว่า":
+    ระบบที่มีเนื้อหาผู้ใช้เยอะ (เสี่ยง XSS) → HttpOnly Cookie · SPA ที่คุม XSS ได้ดี → localStorage ก็ใช้ได้ถ้า token อายุสั้น
+    <strong>สิ่งที่ผิดเสมอ:</strong> เก็บ token อายุยาว (เป็นเดือน) ใน localStorage โดยไม่มี refresh — โดน XSS ทีเดียวเสียยาว</p>
+    <div class="tip"><strong>ความรู้ที่ทำให้คุณดู senior:</strong> ตอบ interview ว่า "ขึ้นกับ threat model" + อธิบาย trade-off ได้
+    = คะแนนเต็ม · ตอบว่า "localStorage เสมอ" หรือ "Cookie เสมอ" = ยังไม่เข้าใจลึก</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Register / Login Flow เต็ม</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <text x="30" y="30" font-size="11" font-weight="700" fill="#1f2937">Register:</text>
+        <rect x="30" y="40" width="120" height="30" rx="5" fill="#dbeafe"/><text x="90" y="60" font-size="9" fill="#1e3a8a" text-anchor="middle">รับ email+pass</text>
+        <path d="M 152 55 L 178 55" stroke="#6b7280" stroke-width="2" marker-end="url(#a1)"/>
+        <rect x="180" y="40" width="110" height="30" rx="5" fill="#dbeafe"/><text x="235" y="60" font-size="9" fill="#1e3a8a" text-anchor="middle">hash password</text>
+        <path d="M 292 55 L 318 55" stroke="#6b7280" stroke-width="2" marker-end="url(#a1)"/>
+        <rect x="320" y="40" width="110" height="30" rx="5" fill="#dcfce7"/><text x="375" y="60" font-size="9" fill="#065f46" text-anchor="middle">INSERT user</text>
+        <text x="30" y="100" font-size="11" font-weight="700" fill="#1f2937">Login:</text>
+        <rect x="30" y="110" width="100" height="30" rx="5" fill="#fef3c7"/><text x="80" y="130" font-size="9" fill="#78350f" text-anchor="middle">หา user by email</text>
+        <path d="M 132 125 L 158 125" stroke="#6b7280" stroke-width="2" marker-end="url(#a1)"/>
+        <rect x="160" y="110" width="120" height="30" rx="5" fill="#fef3c7"/><text x="220" y="130" font-size="9" fill="#78350f" text-anchor="middle">bcrypt.compare</text>
+        <path d="M 282 125 L 308 125" stroke="#6b7280" stroke-width="2" marker-end="url(#a1)"/>
+        <rect x="310" y="110" width="100" height="30" rx="5" fill="#dcfce7"/><text x="360" y="130" font-size="9" fill="#065f46" text-anchor="middle">sign JWT</text>
+        <path d="M 412 125 L 438 125" stroke="#6b7280" stroke-width="2" marker-end="url(#a1)"/>
+        <rect x="440" y="110" width="110" height="30" rx="5" fill="#dcfce7"/><text x="495" y="130" font-size="9" fill="#065f46" text-anchor="middle">ส่ง token กลับ</text>
+        <defs><marker id="a1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#6b7280"/></marker></defs>
+      </svg>
+      <figcaption>ภาพที่ 2: Register (hash แล้วเก็บ) vs Login (เทียบ hash แล้วออก token)</figcaption>
+    </figure>
+    <div class="warn"><strong>🔐 จุด security ที่ต้องระวังตอน login:</strong> ถ้า email ไม่มี ตอบ "ไม่พบอีเมล" / ถ้ารหัสผิด ตอบ "รหัสผิด" —
+    ผู้โจมตีใช้แยกได้ว่า email ไหน "มีในระบบ" (user enumeration) → ตอบกลาง ๆ เหมือนกัน <code>"อีเมลหรือรหัสผ่านไม่ถูกต้อง"</code> ทั้ง 2 เคส</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ข้อจำกัดของ JWT (เล่าได้ = ดู senior)</h2>
+  <div class="card">
+    <p>JWT ไม่ใช่ยาวิเศษ — interviewer ชอบถามข้อเสีย:</p>
+    <ul>
+      <li><strong>ยกเลิกกลางคันยาก</strong> — token ที่ออกไปแล้ว valid จนหมดอายุ ต่อให้ user โดนแบนก็ยังใช้ได้จนหมดเวลา (ทางแก้: token อายุสั้น + refresh token, หรือ blacklist)</li>
+      <li><strong>payload โตทำให้ทุก request หนักขึ้น</strong> — token แนบไปทุก request อย่าใส่ข้อมูลเยอะ</li>
+      <li><strong>secret หลุด = จบ</strong> — ปลอม token ได้ทั้งระบบ</li>
+    </ul>
+    <p class="muted">ทางเลือก: session-based (server เก็บ session, ยกเลิกง่าย แต่ scale ยากกว่า) — เลือกตามระบบ ไม่มีถูกผิดเด็ดขาด</p>
+  </div>
+
+  <h2>ส่วนที่ 6: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> ถ้าทำ dashboard ให้ลูกค้าหลายรายดูสถิติ — แต่ละลูกค้าต้อง login เห็นแค่ข้อมูลตัวเอง (authZ)
+    JWT แนบ clientId ใน payload, middleware เช็คว่า request ขอข้อมูล clientId ตรงกับใน token ไหม — กันลูกค้า A แอบดูข้อมูลลูกค้า B</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> JWT เป็นมาตรฐานของ API สมัยใหม่ (microservices ส่ง token ต่อกันได้) ·
+    แต่ fintech/banking มักใช้ session + token อายุสั้นมาก เพราะ "ยกเลิกได้ทันที" สำคัญกว่า scale · เข้าใจ trade-off = ผ่าน interview สาย security</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: Authentication กับ Authorization ต่างกันยังไง ทำอันไหนก่อน?</summary>
+    <p>Authentication = "คุณเป็นใคร" (login) · Authorization = "คุณทำอะไรได้" (สิทธิ์) · ทำ AuthN ก่อนเสมอ แล้วค่อย AuthZ
+    เทียบสนามบิน: เช็คพาสปอร์ต (เป็นใคร) ก่อน เช็คตั๋ว (ขึ้นเครื่องไหนได้)</p></details>
+  <details><summary>ข้อ 2: ทำไม bcrypt ดีกว่า MD5/SHA สำหรับ password?</summary>
+    <p>① bcrypt "ช้าโดยตั้งใจ" (cost factor) ทำให้ brute-force ช้ามาก ส่วน MD5/SHA เร็วเกินไป crack ได้พันล้าน/วินาที
+    ② bcrypt ใส่ salt อัตโนมัติ → password เดียวกัน 2 คนได้ hash ต่างกัน กัน rainbow table</p></details>
+  <details><summary>ข้อ 3 (security): เพื่อนบอก "JWT เข้ารหัสข้อมูลแล้ว ใส่ password ใน payload ได้" — ผิดยังไง?</summary>
+    <p>ผิด! JWT คือ <strong>signed ไม่ใช่ encrypted</strong> — payload เป็นแค่ base64 ใครเอา token ไปแปะ jwt.io ก็อ่านได้หมด
+    signature กันแค่ "ปลอม" ไม่ได้กัน "อ่าน" → ห้ามใส่ password/ข้อมูลลับใน payload เด็ดขาด</p></details>
+  <details><summary>ข้อ 4 (security): login ตอบ "ไม่พบอีเมล" กับ "รหัสผ่านผิด" แยกกัน อันตรายยังไง?</summary>
+    <p>User Enumeration — ผู้โจมตีลองหลาย email ดูว่าอันไหนตอบ "รหัสผิด" (= email นี้มีในระบบ) เก็บรายชื่อ user จริงไปโจมตีต่อ
+    แก้: ตอบกลาง ๆ เหมือนกันทั้ง 2 เคส "อีเมลหรือรหัสผ่านไม่ถูกต้อง"</p></details>
+  <details><summary>ข้อ 5: ข้อเสียของ JWT ที่ interviewer ชอบถามคืออะไร?</summary>
+    <p>ยกเลิก token กลางคันยาก — token valid จนหมดอายุ ต่อให้ user โดนแบนก็ยังใช้ได้ · ทางแก้: token อายุสั้น + refresh token หรือ blacklist ·
+    ตอบได้ = แสดงว่าเข้าใจ trade-off ไม่ได้ท่องมา</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>hash password ด้วย bcrypt + เทียบด้วย compare</li>
+    <li>ออก/ตรวจ JWT ด้วย jsonwebtoken (secret ใน .env)</li>
+    <li>อธิบายได้ว่า JWT signed≠encrypted + token เก็บที่ไหนปลอดภัย</li>
+    <li>login error ตอบกลาง ๆ (กัน enumeration)</li>
+    <li>Quiz + โน้ต <code>notes/auth-jwt.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 5</a>
+    <a class="btn" href="02-protect-transaction.html">บทที่ 2: Protect + Transaction →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 5 บทที่ 1</footer>
+</div>
+</body>
+</html>

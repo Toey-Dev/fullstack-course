@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: TypeScript Basics</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 6</a> · บทที่ 1</div>
+    <h1>TypeScript Basics — ทำไม + types พื้นฐาน</h1>
+    <p>เข้าใจว่า TypeScript แก้ปัญหาอะไร ก่อนเรียน syntax — ไม่งั้นจะรู้สึกว่ามันแค่ "จุกจิก"</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🔍 ตรวจก่อนรัน = compile-time check</span>
+      <span class="kw">📋 พิมพ์เขียวของข้อมูล = type/interface</span>
+      <span class="kw">🚪 อย่างใดอย่างหนึ่ง = union (|)</span>
+      <span class="kw">🤖 TS เดาเอง = type inference</span>
+      <span class="kw">⚠️ any = ปิดสวิตช์ TS</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "เจอ error ตอนพิมพ์ ดีกว่าตอนผู้ใช้เจอ"</h3>
+    <p>JavaScript เงียบเวลาผิด type — <code>user.nmae</code> (พิมพ์ผิด) รันได้ แต่ได้ <code>undefined</code> แล้วพังที่อื่นทีหลัง หาสาเหตุยาก
+    TypeScript ตรวจตอน "compile" (ก่อนรัน) — พิมพ์ผิดปุ๊บ editor ขีดแดงทันที · นี่คือการย้าย bug จาก "production ตอนกลางคืน" มา "ตอนพิมพ์ตอนกลางวัน"
+    ยิ่งระบบใหญ่ ยิ่งคุ้ม — library-system ที่จะโตอีกหลายสัปดาห์ต้องการความปลอดภัยนี้</p>
+    <h3>หลักการ 2: "Type คือเอกสารที่บังคับให้ตรง"</h3>
+    <p><code>function borrow(memberId, bookId)</code> — JS ไม่บอกว่ารับอะไร (string? number? object?)
+    TS: <code>function borrow(memberId: number, bookId: number)</code> — อ่านปุ๊บรู้ทันที และ <strong>บังคับ</strong>ว่าส่งผิด type ไม่ได้
+    type = comment ที่ไม่มีวันโกหก (เพราะถ้าโค้ดเปลี่ยน type ไม่ตรง TS เตือน)</p>
+    <h3>หลักการ 3: "TS = JS + ชั้นตรวจสอบ (ลบออกตอนรัน)"</h3>
+    <p>TypeScript ไม่ใช่ภาษาใหม่ทั้งหมด — มันคือ JavaScript + ระบบ type · ตอน build type ถูก "ลบทิ้ง" เหลือ JS ธรรมดารัน
+    แปลว่าทุกอย่างที่คุณรู้จาก 5 สัปดาห์ที่ผ่านมา (async, array methods, Express) ใช้ได้หมด แค่เพิ่ม "ป้ายบอก type"</p>
+  </div>
+
+  <h2>ส่วนที่ 1: ดูปัญหาที่ TS แก้ (ก่อนดู syntax)</h2>
+  <div class="card">
+<pre><code>// JavaScript — เงียบ พังตอนรัน
+function getPrice(book) {
+  return book.price * 1.07;
+}
+getPrice({ titel: "Clean Code" });   // พิมพ์ผิด title + ไม่มี price
+// → undefined * 1.07 = NaN → พังเงียบ ๆ หาสาเหตุยาก
+
+// TypeScript — เตือนตอนพิมพ์
+function getPrice(book: { title: string; price: number }) {
+  return book.price * 1.07;
+}
+getPrice({ titel: "Clean Code" });
+// ❌ editor ขีดแดงทันที: "titel ไม่มีในtype, ขาด price"</code></pre>
+    <p class="muted">นี่คือคุณค่าหลักของ TS — ไม่ใช่ "เขียนยากขึ้น" แต่ "ผิดยากขึ้น"</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Types พื้นฐาน</h2>
+  <div class="card">
+<pre><code>// primitive
+let name: string = "Vee";
+let age: number = 29;
+let active: boolean = true;
+
+// array
+let scores: number[] = [80, 90];
+let names: string[] = ["a", "b"];
+
+// object
+let user: { id: number; email: string } = { id: 1, email: "v@x.com" };
+
+// function — type ของ param และ return
+function add(a: number, b: number): number {
+  return a + b;
+}
+
+// optional (?) และ default
+function greet(name: string, title?: string) {  // title มีหรือไม่มีก็ได้
+  return title ? `${title} ${name}` : name;
+}</code></pre>
+  </div>
+
+  <h2>ส่วนที่ 3: Type Inference — อย่า annotate เกิน</h2>
+  <div class="card">
+    <p>TS ฉลาดพอเดา type เองจากค่า — ใส่ type ซ้ำที่มันเดาได้ = รก:</p>
+<pre><code>let name = "Vee";          // TS รู้เองว่า string (ไม่ต้องเขียน : string)
+let nums = [1, 2, 3];      // TS รู้เองว่า number[]
+const double = (n: number) =&gt; n * 2;   // param ต้องบอก, return TS เดาเองว่า number</code></pre>
+    <div class="tip"><strong>กฎเมื่อไหร่ต้องใส่ type:</strong> ใส่ที่ <strong>"ขอบ"</strong> — input ฟังก์ชัน (TS เดา param ไม่ได้),
+    return ของ API (เพื่อความชัด), ตัวแปรที่ยังไม่มีค่า (<code>let book: Book</code>) · ปล่อย infer ที่เหลือ
+    — มือใหม่ชอบใส่ type ทุกที่ (รก) มืออาชีพใส่เท่าที่จำเป็น</div>
+  </div>
+
+  <h2>ส่วนที่ 4: interface vs type — สร้าง "พิมพ์เขียว" ของข้อมูล</h2>
+  <div class="card">
+<pre><code>// interface — นิยมสำหรับ "รูปร่าง object"
+interface Book {
+  id: number;
+  title: string;
+  author?: string;       // optional
+  available: boolean;
+}
+
+// type — ยืดหยุ่นกว่า (ทำ union, primitive ได้)
+type Status = "available" | "borrowed" | "lost";   // literal union
+type ID = number | string;                         // union
+
+// ใช้งาน
+const book: Book = { id: 1, title: "Clean Code", available: true };
+const status: Status = "available";   // ใส่ค่าอื่น = TS เตือน</code></pre>
+    <table>
+      <tr><th></th><th>interface</th><th>type</th></tr>
+      <tr><td>ใช้กับ</td><td>รูปร่าง object เป็นหลัก</td><td>ได้ทุกอย่าง (union, primitive, object)</td></tr>
+      <tr><td>ขยาย (extends)</td><td>extends ได้สวย</td><td>ใช้ & (intersection)</td></tr>
+      <tr><td>คำแนะนำ</td><td>object/model → interface</td><td>union/alias → type</td></tr>
+    </table>
+    <p class="muted">ในทางปฏิบัติ: ใช้อันไหนก็ได้สำหรับ object · ทีมส่วนใหญ่เลือกอันใดอันหนึ่งให้สม่ำเสมอ · จำง่าย: object→interface, union→type</p>
+  </div>
+
+  <h2>ส่วนที่ 5: Union & Literal — "อย่างใดอย่างหนึ่ง"</h2>
+  <div class="card">
+<pre><code>// union — ได้หลาย type
+function printId(id: number | string) {
+  // ต้อง "narrow" ก่อนใช้ method เฉพาะ type
+  if (typeof id === "string") return id.toUpperCase();  // ตรงนี้ TS รู้ว่า string
+  return id.toFixed(0);                                  // ตรงนี้ TS รู้ว่า number
+}
+
+// literal union — จำกัดค่าที่เป็นไปได้ (ดีมากสำหรับ status/role)
+type Role = "admin" | "user";
+function setRole(role: Role) { ... }
+setRole("admin");   // ✅
+setRole("manager"); // ❌ TS เตือน: ไม่ใช่ค่าที่อนุญาต</code></pre>
+    <div class="tip"><strong>literal union ทรงพลังกว่าที่คิด:</strong> แทน <code>status: string</code> (รับอะไรก็ได้ รวมค่าผิด)
+    ใช้ <code>status: "available" | "borrowed"</code> — TS กันค่าผิดตั้งแต่พิมพ์ + editor auto-complete ให้ · ใช้กับ role, status, type ทุกที่</div>
+  </div>
+
+  <h2>ส่วนที่ 6: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation report รับ config จากหลายแหล่ง — type <code>Platform = "meta" | "line" | "ig" | "ga4"</code>
+    กันพิมพ์ชื่อแพลตฟอร์มผิด (typo ที่ JS จะปล่อยผ่านจน report เพี้ยน) · และ type ของข้อมูลที่ดึงมา ทำให้ refactor logic สรุปได้ปลอดภัย</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> codebase ใหญ่ (Agoda แสนไฟล์) อยู่ไม่ได้ถ้าไม่มี TS — เพราะแก้จุดหนึ่งต้องรู้ว่ากระทบที่ไหน
+    TS บอกได้ทันที (เปลี่ยน type → ทุกที่ที่ใช้ผิดขีดแดง) · นี่คือเหตุผลที่ TS = requirement ของบริษัทใหญ่ทุกที่</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: คุณค่าหลักของ TypeScript คืออะไร (ไม่ใช่ "เขียนยากขึ้น")?</summary>
+    <p>เจอ error ตอน compile (ก่อนรัน) แทนตอน runtime (ตอนผู้ใช้เจอ) — ย้าย bug จาก production มาตอนพิมพ์ ·
+    บวก: type = เอกสารที่บังคับให้ตรง + ทำให้ refactor codebase ใหญ่ปลอดภัย (เปลี่ยน type → ที่ผิดขีดแดงหมด)</p></details>
+  <details><summary>ข้อ 2: เมื่อไหร่ควรใส่ type เอง เมื่อไหร่ปล่อย infer?</summary>
+    <p>ใส่ที่ "ขอบ" — param ฟังก์ชัน (TS เดาไม่ได้), return API (ความชัด), ตัวแปรที่ยังไม่มีค่า · ปล่อย infer ตัวแปรที่มีค่าชัด
+    (<code>let x = 5</code> ไม่ต้องเขียน : number) · ใส่เกิน = รก, ใส่น้อยไป = เสียประโยชน์</p></details>
+  <details><summary>ข้อ 3: ทำไม <code>status: "available" | "borrowed"</code> ดีกว่า <code>status: string</code>?</summary>
+    <p>literal union จำกัดค่าได้แค่ที่อนุญาต — กันค่าผิด (typo, สถานะที่ไม่มีจริง) ตั้งแต่พิมพ์ + editor auto-complete ให้ ·
+    <code>string</code> รับอะไรก็ได้ รวมค่าผิด = เสียประโยชน์ TS</p></details>
+  <details><summary>ข้อ 4: ใช้ <code>any</code> แก้ปัญหา type error — ทำไมเป็นนิสัยที่ไม่ดี?</summary>
+    <p><code>any</code> = "ปิดสวิตช์ TS" ตรงนั้น — TS เลิกตรวจ พิมพ์ผิด/เรียก method ที่ไม่มีก็ไม่เตือน กลับไปเป็น JS เงียบ ๆ
+    ถ้าไม่รู้ type จริงใช้ <code>unknown</code> (บังคับ narrow ก่อนใช้) ปลอดภัยกว่า · any ใน codebase = จุดที่ bug ซ่อนได้</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>อธิบายได้ว่า TS แก้ปัญหาอะไร (compile-time vs runtime)</li>
+    <li>เขียน type พื้นฐาน + interface + union/literal เป็น</li>
+    <li>รู้ว่าเมื่อไหร่ใส่ type / เมื่อไหร่ปล่อย infer · เลี่ยง any</li>
+    <li>ลองเล่นใน <a href="https://www.typescriptlang.org/play" target="_blank">TS Playground</a> · Quiz + โน้ต <code>notes/ts-basics.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 6</a>
+    <a class="btn" href="02-typescript-express.html">บทที่ 2: Generics + Express →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 6 บทที่ 1</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Docker — แก้ปัญหา "รันในเครื่องผมได้"</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 4</a> · บทที่ 1</div>
+    <h1>Docker — แก้ปัญหา "แต่มันรันในเครื่องผมได้นะ!"</h1>
+    <p>เครื่องมือที่ทุกบริษัทยุคใหม่ใช้ — และทำให้คุณรัน PostgreSQL ได้โดยไม่ลงเลอะเครื่อง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📦 กล่องพร้อมของครบ = Container</span>
+      <span class="kw">📜 พิมพ์เขียวสร้างกล่อง = Image</span>
+      <span class="kw">🍱 สั่งหลายกล่องทีเดียว = docker-compose</span>
+      <span class="kw">🏠 "รันในเครื่องผมได้" = ปัญหาที่ Docker แก้</span>
+      <span class="kw">🔌 ต่อท่อออกมา = port mapping</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Works on my machine" คือปัญหาที่ Docker เกิดมาเพื่อฆ่า</h3>
+    <p>คุณเขียนโค้ดในเครื่อง Windows + Node 20 + PostgreSQL 15 → ส่งให้เพื่อน Mac + Node 18 → พัง
+    เพราะเวอร์ชันไม่ตรง, library ไม่ครบ, config ต่าง Docker แก้ด้วยการ <strong>"แพ็คทุกอย่าง (โค้ด+runtime+config) ลงกล่องเดียว"</strong>
+    กล่องนี้รันเหมือนกันเป๊ะทุกเครื่อง — เครื่อง dev, เครื่องเพื่อน, server production</p>
+    <h3>หลักการ 2: "Isolation" — แยกของแต่ละโปรเจกต์ไม่ให้ชนกัน</h3>
+    <p>โปรเจกต์ A ต้องการ PostgreSQL 14, โปรเจกต์ B ต้องการ 16 — ลงลงเครื่องตรง ๆ ชนกันแน่
+    Docker ให้แต่ละโปรเจกต์มี container ของตัวเอง แยกกันสนิท ลบทิ้งก็ไม่เลอะเครื่อง
+    (นี่คือเหตุผลที่เราใช้ Docker รัน PostgreSQL แทนลงลงเครื่อง — สะอาด ลบง่าย)</p>
+    <h3>หลักการ 3: "Infrastructure as Code" — โครงสร้างเป็นไฟล์ที่อ่านได้</h3>
+    <p><code>docker-compose.yml</code> 1 ไฟล์บอกครบว่าระบบต้องมี service อะไรบ้าง (app, db, redis) เวอร์ชันไหน ต่อกันยังไง —
+    เพื่อนร่วมทีม clone แล้วพิมพ์ <code>docker compose up</code> ได้ระบบเหมือนคุณเป๊ะ ไม่ต้องไล่ลงทีละอย่าง
+    config ที่เป็น "โค้ด" = version control ได้ review ได้ ทำซ้ำได้</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Image vs Container — เข้าใจ 2 คำนี้ = เข้าใจ Docker ครึ่งหนึ่ง</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="40" y="40" width="180" height="100" rx="10" fill="#1f2937"/>
+        <text x="130" y="68" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">📜 Image</text>
+        <text x="130" y="90" font-size="10" fill="#9ca3af" text-anchor="middle">พิมพ์เขียว (อ่านอย่างเดียว)</text>
+        <text x="130" y="108" font-size="10" fill="#9ca3af" text-anchor="middle">เช่น postgres:16</text>
+        <text x="130" y="126" font-size="10" fill="#9ca3af" text-anchor="middle">ดาวน์โหลดครั้งเดียว</text>
+        <path d="M 225 90 L 285 90" stroke="#059669" stroke-width="2.5" marker-end="url(#d1)"/>
+        <text x="255" y="80" font-size="10" fill="#047857" text-anchor="middle">run</text>
+        <rect x="290" y="25" width="170" height="55" rx="8" fill="#059669"/>
+        <text x="375" y="48" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">📦 Container 1</text>
+        <text x="375" y="66" font-size="9" fill="#d1fae5" text-anchor="middle">DB ของ project A</text>
+        <rect x="290" y="100" width="170" height="55" rx="8" fill="#059669"/>
+        <text x="375" y="123" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">📦 Container 2</text>
+        <text x="375" y="141" font-size="9" fill="#d1fae5" text-anchor="middle">DB ของ project B (แยกกัน)</text>
+        <text x="560" y="80" font-size="10" fill="#6b7280">1 image สร้างได้</text>
+        <text x="560" y="98" font-size="10" fill="#6b7280">หลาย container</text>
+        <defs><marker id="d1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#059669"/></marker></defs>
+      </svg>
+      <figcaption>ภาพที่ 1: Image = พิมพ์เขียว (template) · Container = ของจริงที่รันจาก image (เหมือน class กับ object)</figcaption>
+    </figure>
+    <table>
+      <tr><th></th><th>Image 📜</th><th>Container 📦</th></tr>
+      <tr><td>คือ</td><td>template อ่านอย่างเดียว</td><td>instance ที่กำลังรันจริง</td></tr>
+      <tr><td>เทียบกับโค้ด</td><td>class</td><td>object (new จาก class)</td></tr>
+      <tr><td>เทียบกับครัว</td><td>สูตรอาหาร</td><td>จานที่ทำเสร็จ</td></tr>
+    </table>
+  </div>
+
+  <h2>ส่วนที่ 2: รัน PostgreSQL ด้วย docker-compose</h2>
+  <div class="card">
+    <p>สร้างไฟล์ <code>docker-compose.yml</code> ที่ root ของ library-system:</p>
+<pre><code>services:
+  db:
+    image: postgres:16              # ใช้ image สำเร็จรูปจาก Docker Hub
+    container_name: library-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecret   # ⚠️ จริง ๆ ควรมาจาก .env
+      POSTGRES_DB: library
+    ports:
+      - "5432:5432"                 # ต่อท่อ: port เครื่องเรา : port ใน container
+    volumes:
+      - db_data:/var/lib/postgresql/data   # เก็บข้อมูลถาวร (ไม่หายตอนลบ container)
+
+volumes:
+  db_data:</code></pre>
+    <p>แล้วรัน:</p>
+<pre><code>docker compose up -d      # -d = รันเบื้องหลัง
+docker compose ps         # ดูว่า container รันอยู่ไหม
+docker compose down       # หยุด (ข้อมูลยังอยู่ใน volume)
+docker compose logs db    # ดู log ถ้ามีปัญหา</code></pre>
+    <div class="warn"><strong>2 จุดที่มือใหม่งง:</strong><br>
+    ① <strong>port "5432:5432"</strong> — ซ้าย = port เครื่องเรา (Node เชื่อมผ่านอันนี้), ขวา = port ใน container ·
+    ถ้าเครื่องมี PostgreSQL อยู่แล้วชน ให้เปลี่ยนซ้ายเป็น "5433:5432"<br>
+    ② <strong>volume</strong> — ถ้าไม่ใส่ ข้อมูลหายตอน <code>down</code> · ใส่แล้วข้อมูลอยู่ถาวรแม้ลบ container</div>
+  </div>
+
+  <h2>ส่วนที่ 3: ดูข้อมูลด้วย DBeaver (GUI)</h2>
+  <div class="card">
+    <p>PostgreSQL ใน container มองไม่เห็นด้วยตา — ใช้ <strong>DBeaver</strong> (ฟรี) ต่อเข้าไปดู/แก้ตารางได้:</p>
+    <ul>
+      <li>Host: <code>localhost</code> · Port: <code>5432</code> · Database: <code>library</code></li>
+      <li>User: <code>postgres</code> · Password: <code>mysecret</code> (ตามที่ตั้งใน compose)</li>
+    </ul>
+    <p class="muted">DBeaver = เครื่องมือดู database แบบ GUI ที่ทุก dev มีติดเครื่อง — เห็นตาราง รัน SQL ทดสอบ ดูข้อมูลจริง ก่อนเขียนโค้ด</p>
+  </div>
+
+  <h2>ส่วนที่ 4: .env — เก็บความลับให้ถูกที่</h2>
+  <div class="card">
+<pre><code># .env (ห้าม commit! ใส่ใน .gitignore)
+DATABASE_URL=postgresql://postgres:mysecret@localhost:5432/library
+PORT=3000</code></pre>
+<pre><code>// โหลด .env ใน Node
+require("dotenv").config();      // npm i dotenv
+const url = process.env.DATABASE_URL;</code></pre>
+    <div class="danger"><strong>🔐 มุม pentester:</strong> password, connection string, API key <strong>ห้ามอยู่ในโค้ดที่ commit</strong> —
+    เพราะ push ขึ้น GitHub public แล้ว bot จะสแกนเจอใน &lt; 1 นาที (มี bot ไล่หา secret ใน repo ตลอดเวลา)
+    ใส่ใน <code>.env</code> + <code>.gitignore</code> เสมอ และทำ <code>.env.example</code> (ไม่มีค่าจริง) ไว้บอกเพื่อนว่าต้องตั้งอะไรบ้าง</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> ถ้า rebuild automation report เป็น service (Week 16) — Docker ทำให้คุณรัน + ส่งให้เพื่อนทดสอบได้โดยไม่ต้องไล่ตั้งค่า
+    "compose up" จบ ลูกค้า/ทีมได้ระบบเหมือนกันเป๊ะ</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> ทุกบริษัท 100k+ deploy ด้วย container — โค้ดที่ test ในเครื่อง dev (ใน Docker) จะรันเหมือนกันบน production
+    กำจัดปัญหา "เครื่อง dev ได้ แต่ production พัง" ที่เคยกินเวลา debug เป็นวัน · Docker คือทักษะที่ JD ของ DevSecOps (สาย B ของคุณ) ขอแทบทุกตำแหน่ง</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: Image กับ Container ต่างกันยังไง เทียบกับโค้ด?</summary>
+    <p>Image = class (template อ่านอย่างเดียว) · Container = object (instance ที่รันจริงจาก image) — 1 image สร้างได้หลาย container
+    เช่น postgres:16 (image) → รันได้หลาย container แยกกันสำหรับแต่ละโปรเจกต์</p></details>
+  <details><summary>ข้อ 2: ใน <code>ports: "5433:5432"</code> เลขซ้ายกับขวาคืออะไร เมื่อไหร่ต้องเปลี่ยน?</summary>
+    <p>ซ้าย (5433) = port บนเครื่องเรา (Node เชื่อมผ่านอันนี้) · ขวา (5432) = port ใน container (PostgreSQL ฟังอันนี้) ·
+    เปลี่ยนซ้ายเมื่อ port เครื่องชน (เช่นมี PostgreSQL ลงเครื่องอยู่แล้วใช้ 5432) — ขวาไม่ต้องเปลี่ยน</p></details>
+  <details><summary>ข้อ 3: ถ้าไม่ใส่ volume ใน compose แล้ว <code>docker compose down</code> เกิดอะไรกับข้อมูล?</summary>
+    <p>ข้อมูลหายหมด — เพราะ container ถูกลบ และข้อมูลที่อยู่ในตัว container ก็หายไปด้วย · volume คือ "ที่เก็บถาวรนอก container"
+    ทำให้ข้อมูลรอด down/up · production ต้องมี volume เสมอ</p></details>
+  <details><summary>ข้อ 4 (security): commit ไฟล์ที่มี DB password ขึ้น GitHub public อันตรายแค่ไหน?</summary>
+    <p>อันตรายมาก — มี bot สแกน secret ใน public repo ตลอดเวลา เจอใน &lt; 1 นาที · แม้ลบ commit ทีหลังก็ยังอยู่ใน git history
+    ป้องกัน: .env + .gitignore เสมอ, ใช้ .env.example (ไม่มีค่าจริง) บอกโครง, ถ้าหลุดแล้วต้อง rotate (เปลี่ยน) password ทันที</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>docker-compose.yml รัน PostgreSQL ขึ้น (<code>docker compose ps</code> เห็น running)</li>
+    <li>ต่อ DBeaver เข้า database ได้</li>
+    <li>.env + .gitignore (password ไม่หลุดเข้า git)</li>
+    <li>Quiz + โน้ต <code>notes/docker-basics.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 4</a>
+    <a class="btn" href="02-postgres-zod.html">บทที่ 2: PostgreSQL + Zod →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 4 บทที่ 1</footer>
+</div>
+</body>
+</html>

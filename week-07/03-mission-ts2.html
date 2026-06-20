@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: ขัด library-system type ให้แข็งแรง</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 7</a> · Mission ใหญ่</div>
+    <h1>💎 ขัด library-system type ให้แข็งแรง</h1>
+    <p>จาก "type ผ่าน" สู่ "type แข็งแรงระดับ production" — ปิดเฟส 1 อย่างสมบูรณ์</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้ปิดเฟส 1 ได้สวย</h3>
+    <p>หลังจบ Mission นี้ library-system จะมี type ที่ "ออกแบบให้บั๊กบางอย่างเป็นไปไม่ได้" — ApiResponse แบบ discriminated,
+    generic repository, 0 any · นี่คือระดับโค้ดที่เล่าใน interview ได้ว่า "ใช้ TS เป็นเครื่องมือออกแบบ ไม่ใช่แค่กันพิมพ์ผิด"
+    + test (Week 3) ยืนยันทุกอย่างยังทำงาน = portfolio piece ที่สมบูรณ์</p>
+    <div class="warn"><strong>หมายเหตุ:</strong> Mission นี้ "ขัดของที่มี" ไม่ใช่สร้างใหม่ — ต่อยอด library-system ที่แปลง TS แล้วจาก Week 6</div>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 7.1 — typed ApiResponse (discriminated) <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>สร้าง <code>type ApiResponse&lt;T&gt; = { ok: true; data: T } | { ok: false; error: string }</code></li>
+      <li>ทุก controller คืน response ตาม type นี้ (success มี data, error มี error)</li>
+      <li>helper <code>ok(data)</code> / <code>fail(error)</code> สร้าง response แบบ type-safe</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> ลองสร้าง <code>{ ok: true, error: "x" }</code> → TS ต้องเตือน (สถานะผิดเขียนไม่ได้)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 7.2 — Generic Repository <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li><code>Repository&lt;T extends { id: number }&gt;</code> — findAll, findById, create</li>
+      <li>ใช้กับ books (และเตรียมไว้สำหรับ members/borrows)</li>
+      <li>type ผลจาก pg query ให้ตรง (จัดการ null จาก findById)</li>
+    </ol>
+    <div class="warn"><strong>คิดแบบ pentester:</strong> table name มาจากเราคุมเอง (ปลอดภัย) แต่ทุกค่า id/input ยังต้องใช้ <code>$1</code> — อย่าให้ generic ทำให้เผลอต่อ string ค่า input</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 7.3 — กวาด any + type guard <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>ไล่หา <code>any</code> ทุกตัว → แทนด้วย type จริง / unknown + type guard</li>
+      <li>จุดรับข้อมูลภายนอก (JSON.parse, req ที่ไม่ผ่าน Zod) → ใช้ type guard เช็คจริง</li>
+      <li>error handling: type <code>err: unknown</code> ใน catch → narrow ก่อนใช้ (<code>err instanceof Error</code>)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> search "any" ในโปรเจกต์ = 0 (หรือมี comment เหตุผลทุกตัวที่เหลือ)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 7.4 — test เขียว + push + ปิดเฟส 1 <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li><code>npm run build</code> ผ่าน strict · <code>npm test</code> เขียว</li>
+      <li>README สรุปสมบูรณ์: Tech Stack (Node/Express/TS/PostgreSQL/Zod/JWT/Vitest), Features, Setup, What I Learned, AI Usage</li>
+      <li>push — นี่คือ portfolio piece หลักของเฟส 1 · pin ไว้บน GitHub</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> เปิด repo จากสายตา recruiter — README ครบ, โค้ด type แข็งแรง, test เขียว, commit history เล่าเรื่องได้</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Type design</td><td>35%</td><td>ApiResponse discriminated · generic repo · make impossible states impossible</td></tr>
+      <tr><td>0 any</td><td>25%</td><td>ไม่มี any ลอย ๆ · ใช้ type guard กับข้อมูลภายนอก · catch err: unknown</td></tr>
+      <tr><td>Test + build</td><td>20%</td><td>build strict ผ่าน · test เขียว</td></tr>
+      <tr><td>Portfolio polish</td><td>20%</td><td>README สมบูรณ์ · commit ดี · pin repo</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์ + จบเฟส 1 🎉</h2>
+  <ul class="check">
+    <li>ApiResponse แบบ discriminated union ทุก controller</li>
+    <li>generic Repository · 0 any · type guard ที่ขอบระบบ</li>
+    <li>build strict + test เขียว</li>
+    <li>README สมบูรณ์ + pin repo (portfolio piece หลัก)</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #6 ใน chat</li>
+    <li><strong>🎉 จบเฟส 1!</strong> library-system = API เต็มระบบ TypeScript strict + test + auth + DB · พร้อมเข้าเฟส 2 (Production: Docker/CI/CD)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-advanced-generics.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 7</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 7 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

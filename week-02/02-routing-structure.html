@@ -108,6 +108,19 @@ app.get("/api/books", (req, res) => {
     <div class="danger"><strong>🔐 มุม pentester:</strong> error message ห้ามรั่วข้อมูลภายใน เช่น
     อย่าตอบ <code>"column 'titl' does not exist in table books"</code> — บอกโครง database ให้ผู้โจมตีฟรี
     ตอบแค่ <code>"invalid input"</code> ก็พอ (หลักการนี้คือ Quiz ของ AI Review Drill สัปดาห์นี้)</div>
+
+    <h3>HTTP Status Code ที่ต้องรู้ (จำเป็นทุกวันในงาน API)</h3>
+    <table>
+      <tr><th>กลุ่ม</th><th>code</th><th>ความหมาย</th><th>ใช้เมื่อ</th></tr>
+      <tr><td rowspan="2">2xx สำเร็จ</td><td><code>200</code> OK</td><td>สำเร็จทั่วไป</td><td>GET, PUT สำเร็จ</td></tr>
+      <tr><td><code>201</code> Created</td><td>สร้างใหม่สำเร็จ</td><td>POST สำเร็จ</td></tr>
+      <tr><td rowspan="4">4xx ผิดที่ client</td><td><code>400</code> Bad Request</td><td>ข้อมูลส่งมาผิด</td><td>validation ไม่ผ่าน</td></tr>
+      <tr><td><code>401</code> Unauthorized</td><td>ยังไม่ login</td><td>ไม่มี token (Week 5)</td></tr>
+      <tr><td><code>403</code> Forbidden</td><td>login แล้วแต่ไม่มีสิทธิ์</td><td>user ทั่วไปแตะของ admin</td></tr>
+      <tr><td><code>404</code> Not Found</td><td>ไม่เจอทรัพยากร</td><td>หา id ไม่เจอ</td></tr>
+      <tr><td>5xx ผิดที่ server</td><td><code>500</code> Internal Error</td><td>โค้ดเราพังเอง</td><td>bug, DB ล่ม</td></tr>
+    </table>
+    <p class="muted">หลักจำ: 4xx = "คุณผิด" (client), 5xx = "เราผิด" (server) · 401 = ไม่รู้ว่าคุณเป็นใคร / 403 = รู้แล้วว่าใคร แต่ห้ามเข้า</p>
   </div>
 
   <h2>ส่วนที่ 3: แยกโครงสร้าง — ทำจริง</h2>
@@ -123,6 +136,34 @@ app.get("/api/books", (req, res) => {
     <p><strong>ทำไมโครงนี้:</strong> วันที่เพิ่ม members, borrow, return (Kcode Day 4-5) คุณแค่เพิ่มไฟล์คู่ใหม่
     ไม่ต้องแตะของเดิม — นี่คือ "ขยายได้โดยไม่พัง" ที่ทำให้ codebase อยู่รอดเป็นปี
     และเป็นโครงเดียวกับที่ Kcode สอน (handlers/routes/repositories) แค่เราเข้าใจ "ทำไม" ลึกกว่า</p>
+
+    <h3>โค้ดจริงของการแยก 3 ไฟล์ (เห็นภาพการไหล)</h3>
+<pre><code>// server.js — บางมาก แค่ setup + ผูก
+const express = require("express");
+const app = express();
+app.use(express.json());
+app.use("/api/books", require("./routes/books.routes"));  // ส่งงานต่อ
+app.listen(3000);
+
+// routes/books.routes.js — ป้ายบอกทาง (path → controller)
+const router = require("express").Router();
+const ctrl = require("../controllers/books.controller");
+router.get("/", ctrl.list);          // GET /api/books
+router.get("/:id", ctrl.getById);    // GET /api/books/:id
+router.post("/", ctrl.create);       // POST /api/books
+module.exports = router;
+
+// controllers/books.controller.js — logic จริง
+const books = require("../data/books");
+exports.list = (req, res) => res.json({ ok: true, data: books });
+exports.getById = (req, res) => {
+  const book = books.find(b => b.id === Number(req.params.id));
+  if (!book) return res.status(404).json({ ok: false, error: "not found" });
+  res.json({ ok: true, data: book });
+};</code></pre>
+    <p class="muted">สังเกตการไหล: request → server.js → routes (จับคู่ path) → controller (ทำงาน) → data — แต่ละไฟล์รู้หน้าที่ตัวเอง แก้จุดเดียวไม่กระทบที่อื่น</p>
+    <div class="tip"><strong>หลักคิด layered architecture:</strong> ยุคต่อไป (Week 4-5) จะแทรกชั้น "service" (business logic) และ "repository" (คุย DB)
+    เพิ่ม → routes → controller → service → repository → DB · แต่ละชั้นคุยกับชั้นติดกันเท่านั้น = test ง่าย เปลี่ยน DB ไม่กระทบ controller</div>
   </div>
 
   <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
@@ -131,6 +172,36 @@ app.get("/api/books", (req, res) => {
     คุณทำถูกอยู่แล้วโดยสัญชาตญาณ บทนี้แค่ทำให้คุณ "อธิบายได้ว่าทำไม" ซึ่งคือสิ่งที่แยก mid กับ senior</p>
     <p><strong>🌏 อุตสาหกรรม:</strong> e-commerce ทุกเจ้าออกแบบ <code>GET /products?category=&sort=&page=</code> แบบเดียวกันเป๊ะ —
     เพราะเป็น convention เรียนครั้งเดียวใช้ได้ทุกที่ นี่คือพลังของมาตรฐาน</p>
+  </div>
+
+  <h2>🧹 Clean Code: เขียน Express แบบ production</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Response รูปแบบเดียวกันทั้งระบบ (Response Contract)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ แต่ละ endpoint ตอบคนละแบบ</h4>
+<pre><code>res.json(books);              // array เปล่า
+res.json({ book });           // object
+res.json({ error: "..." });   // คนละ key
+// frontend ต้องเดาทุก endpoint</code></pre></div>
+      <div class="good"><h4>✅ contract เดียว { ok, data, error }</h4>
+<pre><code>res.json({ ok: true, data: books });
+res.json({ ok: true, data: book });
+res.status(400).json({ ok: false, error: "..." });
+// frontend เช็ค res.ok แบบเดียวจบ</code></pre></div>
+    </div>
+
+    <h3>2. Destructure req + guard clause (ทบจาก Week 1)</h3>
+<pre><code>exports.create = (req, res) => {
+  const { title, author } = req.body;        // ดึงครั้งเดียว
+  if (!title) return res.status(400).json({ ok: false, error: "title required" });
+  // ...เนื้อหลักอยู่ระดับบนสุด ไม่ย่อหน้าลึก
+  res.status(201).json({ ok: true, data: newBook });
+};</code></pre>
+
+    <h3>3. server.js ต้องบาง — logic อยู่ใน controller</h3>
+    <p class="muted">ถ้า server.js เริ่มมี logic (if/loop/คำนวณ) = สัญญาณว่าต้องย้ายไป controller — server.js ควรมีแค่ setup + ผูก route</p>
+    <div class="warn"><strong>กฎทอง:</strong> response contract เดียวทั้งระบบ · validate + guard clause ก่อนทำงาน · status code ให้ตรงความหมาย ·
+    error ไม่รั่วข้อมูลภายใน · แยกชั้นตามหน้าที่ — ทั้งหมดนี้คือเกณฑ์ review ของ Mission สัปดาห์นี้</div>
   </div>
 
   <h2>📝 Quiz ท้ายบท</h2>
@@ -144,6 +215,15 @@ app.get("/api/books", (req, res) => {
     <p>ไม่พอ — เช็คว่ามีค่าผ่าน แต่เนื้อหาเป็น XSS payload ถ้าเอาไปแสดงบนหน้าเว็บตรง ๆ จะโดนโจมตี
     validation ที่ดีต้องคิดถึง "เนื้อหาอันตราย" ไม่ใช่แค่ "มี/ไม่มี" — Week 4 (Zod) และ Week 17 (OWASP) จะลงลึกเรื่องนี้
     คุณในฐานะ pentester มองออกก่อนคนอื่น = จุดแข็ง</p></details>
+  <details><summary>ข้อ 4: เลือก status code — (ก) login ผิดรหัส (ข) ไม่มี token เลย (ค) user ทั่วไปจะลบของ admin (ง) หา id ไม่เจอ</summary>
+    <p>(ก) <code>401</code> หรือ <code>400</code> (รหัสผิด = ยังไม่ผ่าน auth) (ข) <code>401</code> Unauthorized (ไม่รู้ว่าเป็นใคร)
+    (ค) <code>403</code> Forbidden (รู้ว่าเป็นใครแล้ว แต่ไม่มีสิทธิ์) (ง) <code>404</code> Not Found — จำหลัก: 401=ไม่รู้จักคุณ / 403=รู้จักแต่ห้ามเข้า</p></details>
+  <details><summary>ข้อ 5 (clean code): ทำไม API ควรตอบ contract เดียว <code>{ ok, data, error }</code> ทั้งระบบ?</summary>
+    <p>frontend เขียนโค้ดจัดการ response แบบเดียวใช้ได้ทุก endpoint (เช็ค <code>res.ok</code> + อ่าน <code>data</code>/<code>error</code>) —
+    ถ้าแต่ละ endpoint ตอบคนละรูป frontend ต้องเขียน logic เฉพาะทุกอัน = โค้ดซ้ำ บั๊กเยอะ เป็น contract ที่ทีมตกลงกันล่วงหน้า</p></details>
+  <details><summary>ข้อ 6: layered architecture (routes→controller→service→repository) ช่วยอะไรตอนเปลี่ยนจาก JSON file เป็น PostgreSQL (Week 4)?</summary>
+    <p>เปลี่ยนแค่ชั้น repository (ชั้นที่คุยกับที่เก็บข้อมูล) — controller/service/routes ไม่ต้องแตะเลย เพราะแต่ละชั้นคุยกับชั้นติดกันผ่าน "สัญญา" เดียวกัน
+    นี่คือพลังของการแยกชั้น: เปลี่ยนเทคโนโลยีข้างใต้โดยไม่กระทบข้างบน</p></details>
 
   <h2>✅ Checkpoint</h2>
   <ul class="check">

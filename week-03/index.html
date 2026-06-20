@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 3 — Express Core + Testing (Vitest/Supertest)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 1</div>
+    <h1>Week 3 — Express Core + เริ่มเขียน Test</h1>
+    <p>ทำให้ API ทนทานระดับ production (error handling, 404) · และก้าวสำคัญที่สุดของสัปดาห์: <strong>เขียน test เป็น</strong></p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>Week 2 คุณสร้าง API ที่ "ทำงานได้" — Week 3 ทำให้มัน "ทำงานได้แม้เจอเรื่องร้าย" (error handling, 404 ที่เป็นระบบ)
+    แล้วเข้าสู่ทักษะที่ <strong>แยกคุณออกจาก dev ส่วนใหญ่ในตลาดไทย: การเขียน automated test</strong></p>
+    <ul class="check">
+      <li>ทำ centralized error handling + 404 handler แบบมืออาชีพ (ไม่ใช่ try/catch ซ้ำทุก route)</li>
+      <li>เข้าใจว่า "ทำไมต้องเขียน test" และ test pyramid — ไม่ใช่แค่ "เขียนยังไง"</li>
+      <li>เขียน unit test ด้วย Vitest + API test ด้วย Supertest</li>
+      <li>library-system มี test suite จริง (coverage ≥ 70%) — โค้ดเริ่ม "ไล่ทัน resume"</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้สำคัญเป็นพิเศษ:</strong> resume คุณเขียนว่า "Conducted software testing, API testing" —
+    Week 3 คือสัปดาห์ที่ทำให้โค้ดจริงพิสูจน์คำนั้นได้ และ test คือสิ่งที่ทำให้ refactor ในอนาคต (TypeScript Week 6, DB Week 4) ปลอดภัย</div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-error-handling.html">Error Handling + 404 — ทำ API ให้ทนทาน</a></strong>
+    <p style="margin:6px 0 0">ทำไม try/catch ทุก route คือหนี้ · centralized error handler (middleware 4 args) · 404 handler · async error · ไม่รั่วข้อมูล (security)</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-testing-fundamentals.html">Testing Fundamentals — ทำไมต้อง test + Vitest</a></strong>
+    <p style="margin:6px 0 0">ทำไม test ไม่ใช่ของฟุ่มเฟือย · test pyramid · AAA pattern · เขียน unit test ด้วย Vitest · TDD เบื้องต้น</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-api-testing.html">ใส่ Test ให้ library-system (Supertest)</a></strong>
+    <p style="margin:6px 0 0">เพิ่ม error middleware + เขียน API test ครอบทุก endpoint (GET/POST/404/400) ด้วย Supertest + วัด coverage</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (error handling + 404) + ใส่เข้า library-system</td><td>2 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>บทที่ 2 ครึ่งแรก (ทำไม test + test pyramid + AAA)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 ครึ่งหลัง (เขียน unit test แรกด้วย Vitest)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 3.1-3.2 (setup Supertest + test GET)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild B1 (Express server จากความจำ) + 🤖 AI Review Drill #2</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 3.3-3.4 (test POST/error + coverage) + push + review</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 3 — เขียน test ที่ดี</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. ชื่อ test บอก "พฤติกรรม" ไม่ใช่ "ฟังก์ชัน"</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ชื่อคลุมเครือ</h4>
+<pre><code>test("getById", () => { ... });
+test("test1", () => { ... });</code></pre></div>
+      <div class="good"><h4>✅ อ่านแล้วรู้ว่าทดสอบอะไร</h4>
+<pre><code>test("คืน 404 เมื่อหา book id ไม่เจอ", () => {});
+test("คืน 201 + book เมื่อ POST ข้อมูลถูก", () => {});</code></pre></div>
+    </div>
+
+    <h3>2. โครง AAA — Arrange / Act / Assert</h3>
+<pre><code>test("บวกเลขถูกต้อง", () => {
+  const a = 2, b = 3;              // Arrange — เตรียมข้อมูล
+  const result = add(a, b);        // Act — เรียกสิ่งที่ทดสอบ
+  expect(result).toBe(5);          // Assert — ตรวจผล
+});</code></pre>
+
+    <h3>3. test แต่ละอันต้องอิสระ (ไม่พึ่งกัน)</h3>
+    <p class="muted">test ต้องรันสลับลำดับแล้วยังผ่าน · ไม่แชร์ state ระหว่าง test · ทดสอบ "1 พฤติกรรม 1 test" — ผิดแล้วรู้ทันทีว่าพังตรงไหน</p>
+    <div class="warn"><strong>กฎทอง:</strong> test คือ "เอกสารที่รันได้" — คนอ่าน test แล้วเข้าใจว่าโค้ดควรทำงานยังไงโดยไม่ต้องอ่าน implementation</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #2 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน test ให้ฟังก์ชัน <code>validateEmail</code> แล้ว<strong>หา "เคสที่ AI ลืมทดสอบ"</strong> ให้ได้ ≥ 2
+  (ใบ้: email ว่าง? ไม่มี @? มี @ หลายตัว? ช่องว่างหน้า-หลัง? — AI มักเขียนแค่ happy path) จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 3</footer>
+</div>
+</body>
+</html>

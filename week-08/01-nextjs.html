@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Next.js — App Router, Server/Client</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 8</a> · บทที่ 1</div>
+    <h1>Next.js — App Router, Server/Client, Routing</h1>
+    <p>React framework ที่ตลาดไทยต้องการ — เข้าใจว่ามันเพิ่มอะไรจาก React เปล่า ๆ</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📁 โฟลเดอร์ = route (file-based routing)</span>
+      <span class="kw">🖥 server component = render ที่ server (default)</span>
+      <span class="kw">🖱 'use client' = interactive (state/event)</span>
+      <span class="kw">🎁 layout = กรอบที่ห่อทุกหน้า</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Next.js = React + สิ่งที่ production ต้องการ"</h3>
+    <p>React เปล่า ๆ ให้แค่ "วาด UI" — แต่เว็บจริงต้องการ routing, SEO, performance, server rendering อีกเยอะ
+    Next.js เติมส่วนเหล่านี้ให้ครบ (file-based routing, SSR, image optimization) · นี่คือเหตุผลที่บริษัทไทย (LINE MAN, Agoda)
+    ใช้ Next.js ไม่ใช่ React เปล่า — และทำไม resume ที่มี Next.js แข็งกว่า React อย่างเดียว</p>
+    <h3>หลักการ 2: "Server-first — render ที่ server ก่อน ส่งของเสร็จไป"</h3>
+    <p>App Router default ทุก component เป็น "server component" — render ที่ server แล้วส่ง HTML เสร็จไป browser
+    (เร็ว, SEO ดี, ดึง data ใกล้ DB) · ใช้ 'use client' เฉพาะส่วนที่ต้อง interactive (ปุ่ม, form, state)
+    หลักคิด: ทำที่ server ได้ทำที่ server — ส่งของน้อย เร็วกว่า</p>
+    <h3>หลักการ 3: "Convention over configuration — โครงไฟล์คือ config"</h3>
+    <p>Next.js ใช้ "ชื่อไฟล์/โฟลเดอร์" กำหนดพฤติกรรม — <code>page.tsx</code> = หน้า, <code>layout.tsx</code> = กรอบ,
+    โฟลเดอร์ = path · ไม่ต้องเขียน config routing เอง · เหมือน Express ที่มี convention แต่ Next.js เคร่งกว่า (โครงไฟล์ = ระบบ)</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Setup + โครงสร้าง App Router</h2>
+  <div class="card">
+<pre><code>npx create-next-app@latest library-web   # เลือก TypeScript + Tailwind + App Router
+
+src/app/
+├── layout.tsx          # กรอบห่อทุกหน้า (nav, font)
+├── page.tsx            # หน้าแรก "/"
+├── books/
+│   └── page.tsx        # "/books"
+├── books/[id]/
+│   └── page.tsx        # "/books/123" (dynamic)
+├── login/
+│   └── page.tsx        # "/login"
+└── globals.css         # Tailwind</code></pre>
+    <table>
+      <tr><th>ไฟล์/โฟลเดอร์</th><th>กลายเป็น</th></tr>
+      <tr><td>โฟลเดอร์ <code>books/</code></td><td>path <code>/books</code></td></tr>
+      <tr><td><code>page.tsx</code></td><td>หน้าที่แสดงจริง</td></tr>
+      <tr><td><code>[id]/</code></td><td>dynamic route (<code>/books/123</code> → params.id = "123")</td></tr>
+      <tr><td><code>layout.tsx</code></td><td>กรอบที่ห่อ page (nav, footer ที่ทุกหน้าใช้)</td></tr>
+    </table>
+    <p class="muted">เทียบ Week 2: Express route เขียนใน code · Next.js route = โครงไฟล์ — convention แบบเดียวกัน คนละวิธีประกาศ</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Server vs Client Component</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="30" y="20" width="300" height="120" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+        <text x="180" y="42" font-size="12" font-weight="700" fill="#047857" text-anchor="middle">🖥 Server Component (default)</text>
+        <text x="180" y="64" font-size="10" fill="#065f46" text-anchor="middle">render ที่ server</text>
+        <text x="180" y="82" font-size="10" fill="#065f46" text-anchor="middle">✅ fetch data, ใกล้ DB</text>
+        <text x="180" y="100" font-size="10" fill="#065f46" text-anchor="middle">✅ SEO ดี, เร็ว</text>
+        <text x="180" y="118" font-size="10" fill="#dc2626" text-anchor="middle">❌ ใช้ state/event/onClick ไม่ได้</text>
+        <rect x="370" y="20" width="300" height="120" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+        <text x="520" y="42" font-size="12" font-weight="700" fill="#1e40af" text-anchor="middle">🖱 Client Component ('use client')</text>
+        <text x="520" y="64" font-size="10" fill="#1e3a8a" text-anchor="middle">render ที่ browser</text>
+        <text x="520" y="82" font-size="10" fill="#1e3a8a" text-anchor="middle">✅ useState, onClick, form</text>
+        <text x="520" y="100" font-size="10" fill="#1e3a8a" text-anchor="middle">✅ interactive</text>
+        <text x="520" y="118" font-size="10" fill="#6b7280" text-anchor="middle">ใส่ 'use client' บนสุดของไฟล์</text>
+      </svg>
+      <figcaption>ภาพที่ 1: server component (default, fetch+SEO) vs client component (interactive)</figcaption>
+    </figure>
+<pre><code>// Server Component (default) — fetch data ตรง
+async function BooksPage() {
+  const res = await fetch("http://localhost:3000/api/books");  // ดึงที่ server
+  const { data } = await res.json();
+  return &lt;ul&gt;{data.map(b =&gt; &lt;li key={b.id}&gt;{b.title}&lt;/li&gt;)}&lt;/ul&gt;;
+}
+
+// Client Component — ต้องมี 'use client' ถึงใช้ state/event ได้
+"use client";
+import { useState } from "react";
+function SearchBar() {
+  const [q, setQ] = useState("");
+  return &lt;input value={q} onChange={e =&gt; setQ(e.target.value)} /&gt;;
+}</code></pre>
+    <div class="tip"><strong>กฎเลือก:</strong> default = server (fetch, แสดงผล) · ใส่ 'use client' เฉพาะส่วนที่ต้อง state/event/hook
+    · pattern จริง: หน้าเป็น server component (fetch) แล้วใส่ client component เล็ก ๆ (ปุ่ม, form) ข้างใน — ส่ง JS ไป browser น้อยสุด</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Layout + Navigation</h2>
+  <div class="card">
+<pre><code>// app/layout.tsx — กรอบที่ห่อทุกหน้า
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    &lt;html lang="th"&gt;
+      &lt;body&gt;
+        &lt;nav&gt;...เมนูที่ทุกหน้าใช้...&lt;/nav&gt;
+        {children}        {/* หน้าแต่ละ page มาแทรกตรงนี้ */}
+      &lt;/body&gt;
+    &lt;/html&gt;
+  );
+}
+
+// navigation — ใช้ Link (ไม่ reload หน้า ต่างจาก &lt;a&gt;)
+import Link from "next/link";
+&lt;Link href="/books"&gt;ดูหนังสือ&lt;/Link&gt;</code></pre>
+    <p class="muted"><code>&lt;Link&gt;</code> = navigation แบบ SPA (ไม่ reload หน้าทั้งหมด เร็วกว่า <code>&lt;a&gt;</code>) · layout = DRY ของ UI (nav/footer เขียนครั้งเดียว)</p>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> dashboard การตลาดที่ทำให้ลูกค้า — server component fetch ข้อมูลสรุป (เร็ว, SEO ถ้าต้องการ),
+    client component สำหรับ filter/กราฟ interactive · Next.js เหมาะกับ dashboard มาก (mix server+client)</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> Next.js เป็น framework frontend อันดับต้นในไทยและโลก (LINE MAN, Agoda บางทีม, startup ส่วนใหญ่) ·
+    เข้าใจ server/client component = เข้าใจ React ยุคใหม่ (RSC) ที่ interviewer ถามแน่นอน</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: Next.js เพิ่มอะไรจาก React เปล่า ๆ ทำไมบริษัทใช้?</summary>
+    <p>React ให้แค่วาด UI · Next.js เติม routing (file-based), server rendering (SEO+เร็ว), image optimization, API routes —
+    สิ่งที่เว็บ production ต้องการครบ · ทำให้ resume Next.js แข็งกว่า React อย่างเดียว</p></details>
+  <details><summary>ข้อ 2: server component กับ client component ต่างกันยังไง เลือกอันไหนเมื่อไหร่?</summary>
+    <p>server (default) render ที่ server — fetch data, SEO ดี, เร็ว, แต่ใช้ state/event ไม่ได้ · client ('use client') render ที่ browser —
+    ใช้ useState/onClick/form ได้ · เลือก: default server, ใส่ 'use client' เฉพาะส่วน interactive</p></details>
+  <details><summary>ข้อ 3: ทำไม <code>&lt;Link&gt;</code> ดีกว่า <code>&lt;a&gt;</code> ใน Next.js?</summary>
+    <p><code>&lt;Link&gt;</code> = navigation แบบ SPA — เปลี่ยนหน้าโดยไม่ reload ทั้งหน้า (เร็ว, รักษา state) + prefetch หน้าถัดไปให้ ·
+    <code>&lt;a&gt;</code> reload ทั้งหน้า (ช้า, state หาย) · ใช้ Link สำหรับ navigation ภายในเว็บเสมอ</p></details>
+  <details><summary>ข้อ 4: layout.tsx มีไว้ทำอะไร เกี่ยวกับ DRY ยังไง?</summary>
+    <p>กรอบที่ห่อทุกหน้า (nav, footer, font) — เขียนครั้งเดียวใช้ทุกหน้า แทนที่จะ copy nav ลงทุก page · เป็น DRY ของ UI
+    เหมือน middleware ที่ใช้ร่วม แต่ฝั่ง layout</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>create Next.js (TS + Tailwind + App Router) + รันได้</li>
+    <li>เข้าใจ file-based routing (โฟลเดอร์ = path)</li>
+    <li>แยก server vs client component ได้ (เลือกถูก)</li>
+    <li>ทำ layout + navigation ด้วย Link</li>
+    <li>Quiz + โน้ต <code>notes/nextjs-basics.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 8</a>
+    <a class="btn" href="02-tailwind-integration.html">บทที่ 2: Tailwind + เชื่อม API →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 8 บทที่ 1</footer>
+</div>
+</body>
+</html>

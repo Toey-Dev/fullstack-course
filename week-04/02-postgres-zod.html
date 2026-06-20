@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: PostgreSQL + เชื่อม Node + Zod</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 4</a> · บทที่ 2</div>
+    <h1>PostgreSQL + เชื่อม Node + Zod Validation</h1>
+    <p>เก็บข้อมูลแบบมืออาชีพ · ป้องกัน SQL Injection · validate ด้วยมาตรฐานอุตสาหกรรม</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📊 ตาราง = relational database</span>
+      <span class="kw">🔑 ทุกแถวมีบัตรประชาชน = Primary Key</span>
+      <span class="kw">💉 ต่อ string = SQL Injection</span>
+      <span class="kw">🛡 $1 $2 = parameterized (ปลอดภัย)</span>
+      <span class="kw">✅ Zod = ด่านตรวจ input ที่แปลง type ให้</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Relational = ข้อมูลมีโครงและความสัมพันธ์"</h3>
+    <p>JSON file เก็บอะไรก็ได้มั่ว ๆ — database แบบ relational บังคับ "โครง" (schema): book ต้องมี title เป็นข้อความ, price เป็นเลข
+    ความเข้มงวดนี้คือข้อดี: ข้อมูลสะอาด, query เร็ว (index), เชื่อมตารางได้ (book → member ที่ยืม)
+    library-system จะมี books, members, borrows ที่เชื่อมกัน — นี่คืองานของ relational DB</p>
+    <h3>หลักการ 2: "Never trust input — รวมถึงตอนคุยกับ DB"</h3>
+    <p>SQL Injection คือช่องโหว่อันดับ 1 ของ OWASP มานานหลายปี — เกิดจากเอา input ผู้ใช้ไป "ต่อ string" เป็น SQL ตรง ๆ
+    คุณในฐานะ pentester เคยใช้มันเจาะระบบมาแล้ว ตอนนี้เรียนวิธี "ปิด" ด้วย parameterized query (DB แยกคำสั่งกับข้อมูลออกจากกัน)</p>
+    <h3>หลักการ 3: "Validate ที่ขอบระบบ — ก่อนข้อมูลเข้าไปข้างใน"</h3>
+    <p>validation ควรเกิดที่ "ประตู" (รับ request) ก่อนข้อมูลไหลเข้า business logic — เหมือนด่านตรวจที่สนามบิน
+    Zod ทำให้ validation เป็น "schema เดียว" ที่อธิบายว่าข้อมูลที่ถูกต้องหน้าตายังไง ใช้ซ้ำได้ แปลง type ให้ และ error สวยกว่า if มือ</p>
+  </div>
+
+  <h2>ส่วนที่ 1: SQL พื้นฐาน — CRUD 4 คำสั่ง</h2>
+  <div class="card">
+    <p>สร้างตารางก่อน (รันใน DBeaver):</p>
+<pre><code>CREATE TABLE books (
+  id        SERIAL PRIMARY KEY,        -- auto เพิ่มเลขเอง + เป็นบัตรประชาชนของแถว
+  title     VARCHAR(200) NOT NULL,     -- ข้อความ ห้ามว่าง
+  author    VARCHAR(200),
+  available BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT now()
+);</code></pre>
+    <table>
+      <tr><th>งาน (CRUD)</th><th>SQL</th></tr>
+      <tr><td>Create</td><td><code>INSERT INTO books (title, author) VALUES ('Clean Code', 'Martin');</code></td></tr>
+      <tr><td>Read ทั้งหมด</td><td><code>SELECT * FROM books;</code></td></tr>
+      <tr><td>Read เฉพาะ</td><td><code>SELECT * FROM books WHERE id = 1;</code></td></tr>
+      <tr><td>Update</td><td><code>UPDATE books SET available = false WHERE id = 1;</code></td></tr>
+      <tr><td>Delete</td><td><code>DELETE FROM books WHERE id = 1;</code></td></tr>
+    </table>
+    <p class="muted">CRUD = Create/Read/Update/Delete — ตรงกับ POST/GET/PUT/DELETE ของ REST ที่เรียน Week 2 พอดี (API คือหน้ากากของ SQL)</p>
+  </div>
+
+  <h2>ส่วนที่ 2: เชื่อม Express กับ PostgreSQL ด้วย pg</h2>
+  <div class="card">
+<pre><code>npm install pg                    # PostgreSQL client สำหรับ Node
+
+// src/db.js — สร้าง connection pool ใช้ร่วมทั้งแอป
+const { Pool } = require("pg");
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+module.exports = pool;</code></pre>
+    <p>ใช้ใน repository (ชั้นที่คุย DB):</p>
+<pre><code>// src/repositories/books.repo.js
+const pool = require("../db");
+
+exports.findAll = async () => {
+  const result = await pool.query("SELECT * FROM books ORDER BY id");
+  return result.rows;          // pg คืน { rows, rowCount, ... }
+};
+
+exports.findById = async (id) => {
+  const result = await pool.query("SELECT * FROM books WHERE id = $1", [id]);
+  return result.rows[0] ?? null;   // ไม่เจอ = undefined → คืน null
+};</code></pre>
+    <div class="tip"><strong>ทำไมใช้ Pool ไม่ใช่ connect ทุกครั้ง:</strong> เปิด connection ใหม่ทุก request ช้ามากและเปลือง —
+    Pool = "ถังคอนเนกชันสำรอง" reuse ได้ เร็วกว่าหลายเท่า (production มาตรฐาน)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: 🔐 SQL Injection — ช่องโหว่ที่คุณต้องปิดเป็น</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="20" y="20" width="320" height="120" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+        <text x="180" y="42" font-size="12" font-weight="700" fill="#dc2626" text-anchor="middle">❌ ต่อ string</text>
+        <text x="35" y="64" font-size="9.5" fill="#991b1b" font-family="monospace">`...WHERE id = ${input}`</text>
+        <text x="35" y="86" font-size="9.5" fill="#991b1b" font-family="monospace">input = "1; DROP TABLE books"</text>
+        <text x="35" y="112" font-size="10" fill="#991b1b">→ DB ลบตารางทิ้งทั้งหมด 💀</text>
+        <text x="35" y="130" font-size="9" fill="#6b7280">DB อ่าน input เป็น "คำสั่ง"</text>
+        <rect x="370" y="20" width="310" height="120" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+        <text x="525" y="42" font-size="12" font-weight="700" fill="#047857" text-anchor="middle">✅ parameterized</text>
+        <text x="385" y="64" font-size="9.5" fill="#065f46" font-family="monospace">"...WHERE id = $1", [input]</text>
+        <text x="385" y="90" font-size="9.5" fill="#065f46" font-family="monospace">input = "1; DROP TABLE"</text>
+        <text x="385" y="112" font-size="10" fill="#065f46">→ หา id ที่ชื่อนี้ (ไม่เจอ) ปลอดภัย</text>
+        <text x="385" y="130" font-size="9" fill="#6b7280">DB อ่าน input เป็น "ข้อมูล" เท่านั้น</text>
+      </svg>
+      <figcaption>ภาพที่ 1: parameterized query แยก "คำสั่ง" ออกจาก "ข้อมูล" — input ไม่มีทางกลายเป็นคำสั่ง</figcaption>
+    </figure>
+    <p><strong>กฎเหล็ก:</strong> ห้ามเอา input ผู้ใช้ไปต่อใน SQL string เด็ดขาด — ใช้ <code>$1, $2</code> (placeholder) แล้วส่งค่าเป็น array เสมอ
+    pg จะ escape ให้อัตโนมัติ ทำให้ input เป็นได้แค่ "ข้อมูล" ไม่มีทางกลายเป็น "คำสั่ง"</p>
+    <div class="danger"><strong>มุม pentester ของคุณ:</strong> นี่คือช่องโหว่ที่คุณเคยล่าตาม OWASP — ตอนนี้คุณเป็นคนสร้างกำแพง
+    AI Review Drill สัปดาห์นี้ให้หา SQL Injection ในโค้ด AI เพราะ AI มักต่อ string ตรง ๆ (จุดที่คุณมองออกก่อนคนอื่น)</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Zod — validation ที่เป็นมาตรฐาน</h2>
+  <div class="card">
+<pre><code>npm install zod
+
+// src/schemas/book.schema.js
+const { z } = require("zod");
+
+const BookSchema = z.object({
+  title:  z.string().min(1, "ต้องมีชื่อหนังสือ").max(200),
+  author: z.string().optional(),
+  available: z.boolean().default(true),
+});
+
+module.exports = { BookSchema };</code></pre>
+    <p>ใช้เป็น middleware validate ก่อนเข้า controller:</p>
+<pre><code>// validate middleware
+const validate = (schema) => (req, res, next) => {
+  const result = schema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ ok: false, error: result.error.issues });
+  }
+  req.body = result.data;     // ⭐ ใช้ข้อมูลที่ผ่าน+แปลง type แล้ว
+  next();
+};
+
+router.post("/", validate(BookSchema), booksController.create);</code></pre>
+    <table>
+      <tr><th>Zod ทำให้</th><th>ต่างจาก if มือยังไง</th></tr>
+      <tr><td>เช็คครบในที่เดียว</td><td>if กระจายหลายบรรทัด ลืมง่าย</td></tr>
+      <tr><td>แปลง type ให้ ("5" → 5)</td><td>if ต้องแปลงเอง</td></tr>
+      <tr><td>error message มีโครง</td><td>if ต้องเขียน error เอง</td></tr>
+      <tr><td>schema ใช้ซ้ำได้ (สร้าง/แก้ ใช้ตัวเดียว)</td><td>if ต้อง copy</td></tr>
+    </table>
+    <div class="tip"><strong>safeParse vs parse:</strong> <code>safeParse</code> คืน <code>{success, data/error}</code> ไม่ throw (เหมาะกับ middleware) ·
+    <code>parse</code> throw error ถ้าผิด (เหมาะกับที่มี try/catch) — เลือกตามว่าอยากจัดการ error แบบไหน</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation report ที่รับ config ลูกค้า (ช่วงเวลา, แพลตฟอร์ม) — Zod schema validate ว่า config ถูกต้องก่อนยิง API
+    กัน config พังทำให้ report เพี้ยน · และถ้าเก็บ data ลง PostgreSQL จะ query/สรุปได้เร็วกว่าอ่านไฟล์มาก</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> Zod เป็นมาตรฐานในทีม TypeScript ทั่วโลก (จะเข้าคู่กับ TS ใน Week 6 ได้สวยมาก — infer type จาก schema) ·
+    parameterized query เป็นข้อบังคับใน code review ทุกที่ที่ใส่ใจ security — เขียนผิดครั้งเดียวอาจเป็นข่าวข้อมูลรั่ว</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไม relational DB (PostgreSQL) ดีกว่าเก็บ JSON file สำหรับ library-system?</summary>
+    <p>① บังคับโครง (schema) ข้อมูลสะอาด ② query เร็ว (index) ③ หลายคนเข้าพร้อมกันได้ (JSON file ชนกัน)
+    ④ เชื่อมตารางได้ (book ↔ member ที่ยืม) ⑤ transaction (ยืม-คืนต้องสำเร็จทั้งคู่ — Week 5)</p></details>
+  <details><summary>ข้อ 2 (security): <code>`SELECT * FROM books WHERE id = ${id}`</code> อันตรายยังไง แก้ยังไง?</summary>
+    <p>SQL Injection — ถ้า id = <code>"1; DROP TABLE books"</code> DB จะอ่านเป็นคำสั่งและลบตาราง · แก้ด้วย parameterized:
+    <code>query("...WHERE id = $1", [id])</code> — DB แยก "คำสั่ง" (มี $1) ออกจาก "ข้อมูล" (array) input เป็นได้แค่ข้อมูล</p></details>
+  <details><summary>ข้อ 3: Zod ดีกว่า if เช็คมือยังไง (3 ข้อ)?</summary>
+    <p>① เช็คครบในที่เดียว (schema) ไม่กระจาย ② แปลง type ให้ ("5"→5, default value) ③ error มีโครงพร้อมใช้ ·
+    บวก: schema ใช้ซ้ำได้ทุก route และ infer TypeScript type ได้ (Week 6)</p></details>
+  <details><summary>ข้อ 4: ทำไมใช้ connection Pool ไม่ใช่ <code>pool.connect()</code> ใหม่ทุก request?</summary>
+    <p>เปิด connection ใหม่ทุก request ช้ามาก (handshake กับ DB) และเปลือง resource จนเต็มได้ · Pool = ถังคอนเนกชันสำรองที่ reuse ได้
+    request มาก็หยิบจากถัง ใช้เสร็จคืน — เร็วกว่าหลายเท่า เป็น production มาตรฐาน</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>สร้างตาราง books + รัน SQL CRUD ใน DBeaver ได้</li>
+    <li>เชื่อม Express → PostgreSQL ด้วย pg (Pool)</li>
+    <li>ใช้ parameterized query ($1) ทุกที่ที่มี input</li>
+    <li>เขียน Zod schema + validate middleware</li>
+    <li>Quiz + โน้ต <code>notes/postgres-zod.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-docker.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-db.html">Mission ใหญ่: DB →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 4 บทที่ 2</footer>
+</div>
+</body>
+</html>

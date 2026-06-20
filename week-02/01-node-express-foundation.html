@@ -118,6 +118,66 @@ app.listen(PORT, () => console.log(`Server on :${PORT}`));  // 7</code></pre>
     ใส่ตั้งแต่วันแรก = ติดนิสัยคิดแบบ production ฟรี ๆ (Week 15 จะ monitor ตัวนี้จริง)</div>
   </div>
 
+  <h2>ส่วนที่ 2.5: กายวิภาคของ Request &amp; Response (ต้องเห็นภาพนี้)</h2>
+  <div class="card">
+    <p>ทุก endpoint คือการรับ "ซองคำขอ" (req) แล้วส่ง "ซองคำตอบ" (res) กลับ — รู้จักส่วนประกอบของมันคือพื้นฐานที่ debug ทุกอย่างต้องใช้:</p>
+    <figure class="figure">
+      <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="20" y="20" width="310" height="180" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+        <text x="175" y="42" font-size="13" font-weight="700" fill="#1e40af" text-anchor="middle">📨 Request (req) — ขาเข้า</text>
+        <text x="38" y="68" font-size="11" fill="#1e3a8a"><tspan font-weight="700">method</tspan> : GET / POST / PUT / DELETE</text>
+        <text x="38" y="90" font-size="11" fill="#1e3a8a"><tspan font-weight="700">url</tspan> : /api/books/42?sort=name</text>
+        <text x="38" y="112" font-size="11" fill="#1e3a8a"><tspan font-weight="700">req.params</tspan> : { id: "42" }</text>
+        <text x="38" y="134" font-size="11" fill="#1e3a8a"><tspan font-weight="700">req.query</tspan> : { sort: "name" }</text>
+        <text x="38" y="156" font-size="11" fill="#1e3a8a"><tspan font-weight="700">req.body</tspan> : { title, author }</text>
+        <text x="38" y="178" font-size="11" fill="#1e3a8a"><tspan font-weight="700">req.headers</tspan> : { Authorization,... }</text>
+        <rect x="370" y="20" width="310" height="180" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+        <text x="525" y="42" font-size="13" font-weight="700" fill="#047857" text-anchor="middle">📩 Response (res) — ขาออก</text>
+        <text x="388" y="68" font-size="11" fill="#065f46"><tspan font-weight="700">res.status(code)</tspan> : 200/404/500</text>
+        <text x="388" y="90" font-size="11" fill="#065f46"><tspan font-weight="700">res.json(obj)</tspan> : ส่ง JSON กลับ</text>
+        <text x="388" y="112" font-size="11" fill="#065f46"><tspan font-weight="700">res.send(text)</tspan> : ส่งข้อความ</text>
+        <text x="388" y="134" font-size="11" fill="#065f46"><tspan font-weight="700">res.set(header)</tspan> : ตั้ง header</text>
+        <text x="388" y="166" font-size="10" fill="#6b7280">⚠️ ตอบได้ครั้งเดียว/request</text>
+        <text x="388" y="184" font-size="10" fill="#6b7280">(ตอบซ้ำ = error "headers sent")</text>
+      </svg>
+      <figcaption>ภาพที่ 2: req (ขาเข้า) มีหลายช่องให้อ่าน · res (ขาออก) ตอบได้ครั้งเดียวต่อ request</figcaption>
+    </figure>
+    <div class="warn"><strong>กับดักจริง "Cannot set headers after they are sent":</strong> เรียก res 2 ครั้งใน request เดียว
+    (เช่นลืม <code>return</code> หลัง res.status(400)) — แก้ด้วยใส่ <code>return</code> ทุกครั้งที่ตอบ (เชื่อมกับ guard clause)</div>
+  </div>
+
+  <h2>ส่วนที่ 2.6: Middleware — หัวใจของ Express (แนวคิดที่ต้องเข้าใจ)</h2>
+  <div class="card">
+    <p>Express ทั้งระบบคือ "ท่อส่งน้ำ" ที่ request ไหลผ่าน <strong>middleware</strong> ทีละชั้นก่อนถึงปลายทาง —
+    เข้าใจอันนี้ = เข้าใจ Express 80%:</p>
+    <figure class="figure">
+      <svg viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <text x="30" y="35" font-size="12" fill="#1f2937">📨 Request</text>
+        <path d="M 95 30 L 130 30" stroke="#6b7280" stroke-width="2" marker-end="url(#m1)"/>
+        <rect x="135" y="15" width="110" height="34" rx="6" fill="#93c5fd"/><text x="190" y="37" font-size="10" fill="#1e3a8a" text-anchor="middle">express.json()</text>
+        <path d="M 248 32 L 278 32" stroke="#6b7280" stroke-width="2" marker-end="url(#m1)"/>
+        <rect x="283" y="15" width="110" height="34" rx="6" fill="#93c5fd"/><text x="338" y="37" font-size="10" fill="#1e3a8a" text-anchor="middle">logger</text>
+        <path d="M 396 32 L 426 32" stroke="#6b7280" stroke-width="2" marker-end="url(#m1)"/>
+        <rect x="431" y="15" width="110" height="34" rx="6" fill="#93c5fd"/><text x="486" y="37" font-size="10" fill="#1e3a8a" text-anchor="middle">auth check</text>
+        <path d="M 544 32 L 574 32" stroke="#6b7280" stroke-width="2" marker-end="url(#m1)"/>
+        <rect x="579" y="15" width="100" height="34" rx="6" fill="#059669"/><text x="629" y="37" font-size="10" fill="#fff" text-anchor="middle">route handler</text>
+        <text x="300" y="85" font-size="11" fill="#6b7280" text-anchor="middle">แต่ละชั้นทำงานแล้วเรียก next() เพื่อส่งต่อชั้นถัดไป — ถ้าไม่เรียก next() = ท่อตัน request ค้าง</text>
+        <defs><marker id="m1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#6b7280"/></marker></defs>
+      </svg>
+      <figcaption>ภาพที่ 3: request ไหลผ่าน middleware ทีละชั้น → ถึง route handler</figcaption>
+    </figure>
+<pre><code>// middleware = ฟังก์ชันที่มี (req, res, next)
+const logger = (req, res, next) => {
+  console.log(`${req.method} ${req.url}`);   // ทำงานบางอย่าง
+  next();          // ⭐ ส่งต่อชั้นถัดไป — ลืม next() = request ค้างตลอดกาล
+};
+app.use(logger);   // ใช้กับทุก request
+
+// express.json() ที่เราใส่ ก็คือ middleware สำเร็จรูป — มันแกะ body ให้ก่อนถึง handler</code></pre>
+    <div class="tip"><strong>ทำไมแนวคิดนี้ทรงพลัง:</strong> งานที่ต้องทำ "ทุก request" (log, ตรวจ auth, จำกัด rate, เพิ่ม CORS header)
+    เขียนเป็น middleware ชั้นเดียว ใช้ได้ทั้งระบบ ไม่ต้อง copy ลงทุก route — JWT auth (Week 5) และ security headers (Week 17) ก็คือ middleware</div>
+  </div>
+
   <h2>ส่วนที่ 3: ตัวอย่างการประยุกต์ในงานจริง</h2>
   <div class="card">
     <h3 style="margin-top:0">🏢 งานของวี: automation report ที่ media-presto</h3>
@@ -161,6 +221,12 @@ app.listen(PORT, () => console.log(`Server on :${PORT}`));  // 7</code></pre>
   <details><summary>ข้อ 3 (security): /api/health ควรตอบอะไร และ "ไม่ควร" ตอบอะไร — คิดแบบ pentester</summary>
     <p>ควรตอบแค่ ok/เวลา/เวอร์ชันคร่าว ๆ — <strong>ไม่ควร</strong>ตอบ: เวอร์ชัน dependency ละเอียด, ชื่อ database, path ภายใน, stack trace
     เพราะ health endpoint มักเปิด public และเป็นจุดแรกที่ผู้โจมตี (เช่นคุณในอดีต) ใช้ทำ recon เก็บข้อมูลระบบ</p></details>
+  <details><summary>ข้อ 4 (middleware): logger middleware ที่ลืมเรียก <code>next()</code> จะเกิดอะไร?</summary>
+    <p>request <strong>ค้างตลอดกาล</strong> (browser หมุนไม่จบ) เพราะ middleware ทำงานเสร็จแต่ไม่ส่งต่อชั้นถัดไป —
+    request ไปไม่ถึง route handler ที่จะตอบ res ดังนั้นทุก middleware ที่ไม่ได้จบด้วย res ต้องเรียก next() เสมอ</p></details>
+  <details><summary>ข้อ 5: error "Cannot set headers after they are sent" เกิดจากอะไร แก้ยังไง?</summary>
+    <p>เรียก res 2 ครั้งใน request เดียว (res ตอบได้ครั้งเดียว) — มักเพราะลืม <code>return</code> หลัง <code>res.status(400).json(...)</code>
+    โค้ดเลยไหลต่อไปเรียก res อีกครั้ง แก้ด้วยใส่ <code>return</code> ทุกครั้งที่ตอบ response</p></details>
 
   <h2>✅ Checkpoint</h2>
   <ul class="check">

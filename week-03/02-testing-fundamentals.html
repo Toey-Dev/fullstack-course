@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Testing Fundamentals + Vitest</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 3</a> · บทที่ 2</div>
+    <h1>Testing Fundamentals — ทำไมต้อง test + Vitest</h1>
+    <p>ทักษะที่ dev ส่วนใหญ่ในตลาดไทยไม่มี — และเป็นสิ่งที่ resume คุณสัญญาไว้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🛡 ตาข่ายนิรภัย = test ให้ refactor กล้า</span>
+      <span class="kw">🔺 ฐานกว้างยอดแคบ = test pyramid</span>
+      <span class="kw">📋 เตรียม-ทำ-ตรวจ = AAA</span>
+      <span class="kw">🔴🟢 แดงก่อนเขียว = TDD</span>
+      <span class="kw">📊 coverage = วัดว่าทดสอบครอบแค่ไหน</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Test เป็นตาข่ายนิรภัย ไม่ใช่ภาระ"</h3>
+    <p>มือใหม่คิดว่า test = งานเพิ่ม เสียเวลา — มืออาชีพรู้ว่า test คือสิ่งที่ทำให้ <strong>กล้าแก้โค้ด</strong>
+    ไม่มี test = แก้อะไรนิดเดียวก็กลัวพังที่อื่น ต้องไล่กดเทสต์มือทุกหน้า / มี test = แก้แล้วรัน 1 คำสั่งรู้ทันทีว่าพังตรงไหน
+    ยิ่งโปรเจกต์โต test ยิ่งมีค่า — library-system ที่จะโตอีก 20 สัปดาห์ต้องมี test ตั้งแต่ตอนนี้</p>
+    <h3>หลักการ 2: "Test พฤติกรรม ไม่ใช่ implementation"</h3>
+    <p>test ที่ดีถามว่า "ใส่ x เข้าไป ได้ y ออกมาไหม" (พฤติกรรม) ไม่ใช่ "ฟังก์ชันเรียก method นี้กี่ครั้ง" (ภายใน) —
+    เพราะถ้า test ผูกกับ implementation พอ refactor (เปลี่ยนวิธีข้างใน ผลเหมือนเดิม) test จะพังทั้งที่โค้ดถูก = test ที่เปราะ ไร้ค่า</p>
+    <h3>หลักการ 3: "Test คือเอกสารที่รันได้และไม่มีวันล้าสมัย"</h3>
+    <p>comment โกหกได้ (โค้ดเปลี่ยนแต่ลืมแก้ comment) — แต่ test โกหกไม่ได้ ถ้าพฤติกรรมเปลี่ยน test แดงทันที
+    dev ใหม่เข้าทีมอ่าน test แล้วเข้าใจว่าระบบควรทำงานยังไง เร็วกว่าอ่าน implementation</p>
+    <div class="tip"><strong>เชื่อมกับ resume:</strong> คุณเขียนว่า "Conducted software testing including test case creation and API testing"
+    — Week 3 ทำให้คุณพูดได้เต็มปากว่าทำ automated test เป็น ไม่ใช่แค่กดทดสอบมือ (ซึ่งคนละระดับในสายตา interviewer)</div>
+  </div>
+
+  <h2>ส่วนที่ 1: Test Pyramid — ทดสอบอะไร แค่ไหน</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <polygon points="300,20 360,80 240,80" fill="#dc2626"/>
+        <text x="300" y="62" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">E2E</text>
+        <polygon points="240,82 360,82 420,150 180,150" fill="#d97706"/>
+        <text x="300" y="122" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">Integration / API</text>
+        <polygon points="180,152 420,152 480,220 120,220" fill="#059669"/>
+        <text x="300" y="195" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">Unit (ฐานกว้างสุด)</text>
+        <text x="500" y="60" font-size="10" fill="#dc2626">น้อย · ช้า · แพง</text>
+        <text x="500" y="120" font-size="10" fill="#92400e">ปานกลาง</text>
+        <text x="500" y="195" font-size="10" fill="#047857">เยอะ · เร็ว · ถูก</text>
+      </svg>
+      <figcaption>ภาพที่ 1: Test Pyramid — เขียน unit เยอะสุด (เร็ว/ถูก), E2E น้อยสุด (ช้า/เปราะ)</figcaption>
+    </figure>
+    <table>
+      <tr><th>ระดับ</th><th>ทดสอบอะไร</th><th>เครื่องมือ (คอร์สนี้)</th></tr>
+      <tr><td><strong>Unit</strong></td><td>ฟังก์ชันเดียวโดด ๆ (เช่น addVat, validateEmail)</td><td>Vitest (บทนี้)</td></tr>
+      <tr><td><strong>Integration/API</strong></td><td>หลายส่วนทำงานร่วม (route + controller + data)</td><td>Supertest (Mission)</td></tr>
+      <tr><td><strong>E2E</strong></td><td>ทั้งระบบเหมือนผู้ใช้จริง (เปิด browser คลิก)</td><td>Playwright (เฟสหลัง)</td></tr>
+    </table>
+    <p class="muted">หลักคิด: เขียน unit เยอะ ๆ (เร็ว รันทุกครั้งที่ save) · API test ครอบ flow สำคัญ · E2E แค่ flow critical (login, จ่ายเงิน) เพราะช้าและเปราะ</p>
+  </div>
+
+  <h2>ส่วนที่ 2: เขียน Unit Test แรกด้วย Vitest</h2>
+  <div class="card">
+<pre><code>npm install -D vitest      # ติดตั้ง (devDependency)
+
+// package.json
+"scripts": { "test": "vitest" }</code></pre>
+    <p>สมมติมีฟังก์ชันใน <code>src/utils/vat.js</code>:</p>
+<pre><code>// src/utils/vat.js
+export const addVat = (price) => {
+  if (typeof price !== "number" || price &lt; 0) throw new Error("ราคาไม่ถูกต้อง");
+  return Math.round(price * 1.07);
+};</code></pre>
+    <p>เขียน test ใน <code>src/utils/vat.test.js</code> (ลงท้าย <code>.test.js</code> Vitest หาเจอเอง):</p>
+<pre><code>import { describe, it, expect } from "vitest";
+import { addVat } from "./vat.js";
+
+describe("addVat", () => {
+  it("บวก VAT 7% แล้วปัดเศษ", () => {
+    expect(addVat(100)).toBe(107);     // Arrange+Act+Assert ในบรรทัดเดียว
+  });
+
+  it("ปัดเศษถูกต้อง", () => {
+    expect(addVat(99)).toBe(106);      // 99*1.07 = 105.93 → 106
+  });
+
+  it("โยน error เมื่อราคาติดลบ", () => {
+    expect(() => addVat(-50)).toThrow("ราคาไม่ถูกต้อง");
+  });
+
+  it("โยน error เมื่อไม่ใช่ตัวเลข", () => {
+    expect(() => addVat("100")).toThrow();
+  });
+});</code></pre>
+    <p><strong>คำศัพท์ที่ต้องรู้:</strong> <code>describe</code> = กลุ่ม test · <code>it</code>/<code>test</code> = 1 เคส ·
+    <code>expect(x).toBe(y)</code> = ตรวจว่า x เท่ากับ y · <code>.toThrow()</code> = ตรวจว่าโยน error</p>
+    <table>
+      <tr><th>matcher</th><th>ใช้ตรวจ</th></tr>
+      <tr><td><code>toBe(x)</code></td><td>ค่าเท่ากันเป๊ะ (number, string, boolean)</td></tr>
+      <tr><td><code>toEqual(obj)</code></td><td>object/array เนื้อในเท่ากัน</td></tr>
+      <tr><td><code>toThrow()</code></td><td>โยน error</td></tr>
+      <tr><td><code>toBeTruthy()</code> / <code>toBeNull()</code></td><td>เช็คความจริง/null</td></tr>
+      <tr><td><code>toContain(x)</code></td><td>array/string มี x</td></tr>
+    </table>
+  </div>
+
+  <h2>ส่วนที่ 3: คิดเคสให้ครบ — "ทดสอบอะไรบ้าง"</h2>
+  <div class="card">
+    <p>มือใหม่เขียน test แค่ "ทางสำเร็จ" — มืออาชีพคิดครบ 3 กลุ่ม (นี่คือสิ่งที่ AI มักลืม → AI Review Drill สัปดาห์นี้):</p>
+    <table>
+      <tr><th>กลุ่ม</th><th>ตัวอย่าง (addVat)</th></tr>
+      <tr><td>✅ Happy path</td><td>ราคาปกติ → ได้ผลถูก</td></tr>
+      <tr><td>⚠️ Edge case (ขอบ)</td><td>ราคา 0, ทศนิยมที่ต้องปัด, เลขใหญ่มาก</td></tr>
+      <tr><td>❌ Error case (พัง)</td><td>ติดลบ, ไม่ใช่ตัวเลข, undefined, null</td></tr>
+    </table>
+    <div class="tip"><strong>หลักคิด:</strong> ถามตัวเอง "ผู้ใช้/ระบบอื่นจะส่งอะไรแปลก ๆ มาได้บ้าง" — ทุกอย่างที่นึกออกควรมี test
+    คุณในฐานะอดีต pentester ได้เปรียบ เพราะคิดเคส "ป่วน" เป็นนิสัยอยู่แล้ว</div>
+  </div>
+
+  <h2>ส่วนที่ 4: TDD เบื้องต้น — แดงก่อนเขียว</h2>
+  <div class="card">
+    <p>Test-Driven Development = เขียน test ก่อนเขียนโค้ดจริง วน 3 จังหวะ:</p>
+    <ol>
+      <li><strong>🔴 Red</strong> — เขียน test ที่ยังต้องพัง (เพราะยังไม่มีโค้ด)</li>
+      <li><strong>🟢 Green</strong> — เขียนโค้ดน้อยที่สุดให้ test ผ่าน</li>
+      <li><strong>🔵 Refactor</strong> — ปรับโค้ดให้สวย (test เป็นตาข่ายกันพัง)</li>
+    </ol>
+    <p class="muted">ไม่ต้องทำ TDD ทุกครั้งในชีวิตจริง — แต่เข้าใจวงจรนี้ช่วยให้คิด "ผลลัพธ์ที่ต้องการ" ก่อนเขียนโค้ด และ interviewer ถามบ่อย</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> ฟังก์ชันแปลงข้อมูล GA4/Meta ใน automation report — แต่ละตัวควรมี unit test
+    (ใส่ข้อมูลตัวอย่าง → เช็คว่าสรุปถูก) พอแก้ logic แล้วรัน test รู้ทันทีว่าตัวเลขยังถูกไหม ไม่ต้องไล่เช็คมือทุกลูกค้า</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> ทุกบริษัทที่จ่าย 100k+ บังคับ test — PR ที่ไม่มี test ไม่ผ่าน review,
+    CI (Week 13) รัน test อัตโนมัติทุก push ถ้าแดง = merge ไม่ได้ test คือ "ใบเบิกทาง" เข้าทีมจริงจัง</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไม unit test ควรมีเยอะกว่า E2E test (test pyramid)?</summary>
+    <p>unit test เร็ว (มิลลิวินาที) ถูก เขียนง่าย รันได้ทุกครั้งที่ save · E2E ช้า (เปิด browser จริง) เปราะ (UI เปลี่ยนนิดเดียวพัง) แพงในการดูแล
+    → เขียน unit เยอะครอบ logic ละเอียด, E2E แค่ flow สำคัญสุด (login, จ่ายเงิน)</p></details>
+  <details><summary>ข้อ 2: "test พฤติกรรม ไม่ใช่ implementation" หมายความว่าอะไร ทำไมสำคัญ?</summary>
+    <p>ทดสอบ "ใส่ x ได้ y" (ผลลัพธ์) ไม่ใช่ "เรียก method ภายในกี่ครั้ง" — เพราะถ้าผูกกับ implementation พอ refactor (เปลี่ยนวิธีข้างใน ผลเหมือนเดิม) test จะพังทั้งที่โค้ดถูก
+    test ที่ดีต้องรอด refactor = ทดสอบสัญญา (input→output) ไม่ใช่วิธีการ</p></details>
+  <details><summary>ข้อ 3: เขียน test ให้ <code>addVat</code> ควรมีกี่กลุ่มเคส ยกตัวอย่าง</summary>
+    <p>3 กลุ่ม: happy (ราคาปกติ→ถูก), edge (0, ทศนิยมปัดเศษ, เลขใหญ่), error (ติดลบ, ไม่ใช่ตัวเลข, null/undefined)
+    — เขียนแค่ happy path = test ที่ดูเหมือนผ่านแต่ระบบพังจริงตอนเจอ input แปลก</p></details>
+  <details><summary>ข้อ 4: TDD 3 จังหวะคืออะไร และ "Red" ก่อนมีประโยชน์ยังไง?</summary>
+    <p>🔴 Red (เขียน test ที่พังก่อน) → 🟢 Green (เขียนโค้ดให้ผ่าน) → 🔵 Refactor (ปรับสวย) ·
+    Red ก่อนพิสูจน์ว่า test "ทำงานจริง" (ถ้าเขียนโค้ดก่อนแล้ว test เขียว อาจเป็นเพราะ test ไม่เคยเช็คอะไรเลย) + บังคับคิดผลลัพธ์ที่ต้องการก่อนเขียน</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>ติดตั้ง Vitest + เขียน unit test แรกผ่าน (addVat หรือฟังก์ชันของตัวเอง)</li>
+    <li>test ครบ 3 กลุ่ม (happy/edge/error) อย่างน้อย 1 ฟังก์ชัน</li>
+    <li>อธิบาย test pyramid + "test พฤติกรรม" ได้</li>
+    <li>Quiz + โน้ต <code>notes/testing-basics.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-error-handling.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-api-testing.html">Mission ใหญ่: API Testing →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 3 บทที่ 2</footer>
+</div>
+</body>
+</html>

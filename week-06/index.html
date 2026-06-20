@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 6 — TypeScript I: แปลง backend เป็น TS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 1</div>
+    <h1>Week 6 — TypeScript I</h1>
+    <p>ทักษะที่แยกคุณจาก dev ส่วนใหญ่ในตลาดไทย — และเป็นสิ่งที่บริษัท 100k+ เกือบทุกที่บังคับ</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>5 สัปดาห์ที่ผ่านมาเขียน JavaScript — มันยืดหยุ่นแต่ "เงียบ" เวลาผิด (เจอ error ตอนรันจริงตอนผู้ใช้ใช้แล้ว)
+    Week 6 เพิ่ม <strong>TypeScript</strong>: ภาษาที่ "ตรวจ type ก่อนรัน" — เจอบั๊กตั้งแต่ตอนพิมพ์ ไม่ใช่ตอน production
+    เราจะแปลง library-system backend เป็น TS ทั้งระบบ โดยมี test (Week 3) เป็นตาข่ายว่าแปลงแล้วยังทำงานถูก</p>
+    <ul class="check">
+      <li>เข้าใจว่า "ทำไม" TypeScript ไม่ใช่แค่ "JavaScript ที่จุกจิก"</li>
+      <li>types พื้นฐาน + interface/type + union/literal + type inference</li>
+      <li>typed functions + generics เบื้องต้น + utility types (Partial/Pick/Omit)</li>
+      <li>type req/res ของ Express + infer type จาก Zod schema (เชื่อม Week 4)</li>
+      <li>library-system backend เป็น TS strict mode + test ยังเขียว</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้เปลี่ยนระดับคุณ:</strong> JD ของ Agoda, LINE MAN, KBTG เกือบทุกตำแหน่งเขียน "TypeScript required" —
+    Week 6-7 คือสัปดาห์ที่ resume คุณเพิ่มคำว่า TypeScript ได้อย่างมีหลักฐาน และทำให้ refactor ในอนาคต (DB, feature ใหม่) ปลอดภัยขึ้นมาก</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-typescript-basics.html">TypeScript Basics — ทำไม + types พื้นฐาน</a></strong>
+    <p style="margin:6px 0 0">ทำไม TS (เจอ error ก่อนรัน) · types พื้นฐาน · interface vs type · union/literal · type inference (อย่า over-annotate)</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-typescript-express.html">TS ในงานจริง — Generics + Express + Zod</a></strong>
+    <p style="margin:6px 0 0">typed functions · generics เบื้องต้น · utility types · type req/res Express · z.infer จาก Zod · tsconfig strict</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-ts.html">แปลง library-system เป็น TypeScript</a></strong>
+    <p style="margin:6px 0 0">setup TS + strict · แปลงทีละชั้น (data→repo→controller→route) · type ครบ · test ยังเขียว · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (ทำไม TS + types + interface)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>ฝึก type ฟังก์ชัน/object ของตัวเอง (เล่นใน TS Playground)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (generics + utility types + Express + Zod)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 6.1-6.2 (setup + แปลง data/repo)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (type ฟังก์ชันจากความจำ) + 🤖 AI Review Drill #5</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 6.3-6.4 (แปลง controller/route + test เขียว) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 6</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. ปล่อยให้ TS infer — อย่า annotate เกินจำเป็น</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ใส่ type ทุกที่ (รก)</h4>
+<pre><code>const name: string = "Vee";
+const nums: number[] = [1, 2, 3];
+const double = (n: number): number =&gt; n * 2;</code></pre></div>
+      <div class="good"><h4>✅ ใส่เฉพาะที่ TS เดาเองไม่ได้</h4>
+<pre><code>const name = "Vee";        // TS รู้ว่า string
+const nums = [1, 2, 3];    // TS รู้ว่า number[]
+const double = (n: number) =&gt; n * 2;  // param ต้องบอก, return infer เอง</code></pre></div>
+    </div>
+
+    <h3>2. หลีกเลี่ยง <code>any</code> — มันคือ "ปิดสวิตช์ TS"</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ any = กลับไปเป็น JS</h4>
+<pre><code>function process(data: any) {
+  return data.titel;  // พิมพ์ผิด TS ไม่เตือน!
+}</code></pre></div>
+      <div class="good"><h4>✅ type จริง หรือ unknown</h4>
+<pre><code>function process(data: Book) {
+  return data.titel;  // ❌ TS เตือนทันที: ไม่มี titel
+}</code></pre></div>
+    </div>
+    <div class="warn"><strong>กฎทอง:</strong> ใส่ type ที่ "ขอบ" (input ฟังก์ชัน, req.body, return ของ API) ปล่อย infer ข้างใน ·
+    เลี่ยง <code>any</code> (ใช้ unknown ถ้าไม่รู้จริง) · 1 type ใช้ซ้ำ (สร้าง Book type ที่เดียว) · เปิด strict mode</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #5 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI แปลงฟังก์ชัน JS เป็น TS แล้ว<strong>หาจุดที่ AI ใช้ <code>any</code> เลี่ยงปัญหา</strong> (≥2 จุด) —
+  AI ชอบใส่ any เมื่อ type ซับซ้อน ซึ่งทำให้เสียประโยชน์ TS ทั้งหมด · จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 6</footer>
+</div>
+</body>
+</html>

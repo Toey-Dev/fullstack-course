@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 4 — Docker + PostgreSQL + Zod Validation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 1</div>
+    <h1>Week 4 — Docker + PostgreSQL + Zod</h1>
+    <p>ก้าวที่ทำให้ data ของ library-system "อยู่จริง" — จากไฟล์ JSON สู่ database ที่รัน production ได้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>3 สัปดาห์ที่ผ่านมา data ของคุณอยู่ใน array/ไฟล์ JSON (restart server บางทีก็หาย, หลายคนเข้าพร้อมกันพัง) —
+    Week 4 ยกระดับเป็น <strong>PostgreSQL</strong> database จริง ที่รันใน <strong>Docker</strong> (ไม่ต้องลงเลอะเครื่อง)
+    และเปลี่ยน validation มือ ๆ เป็น <strong>Zod</strong> ที่เป็นมาตรฐานอุตสาหกรรม</p>
+    <ul class="check">
+      <li>เข้าใจ Docker: container/image คืออะไร แก้ปัญหา "รันในเครื่องผมได้" ยังไง</li>
+      <li>รัน PostgreSQL ด้วย docker-compose (ไม่ต้องลง DB ลงเครื่องตรง ๆ)</li>
+      <li>เขียน SQL พื้นฐาน + เชื่อม Express กับ PostgreSQL</li>
+      <li>validate ด้วย Zod แทน if เช็คมือ — สั้นลง ปลอดภัยขึ้น</li>
+      <li>library-system ใช้ DB จริง + Zod (test ที่เขียน Week 3 ยังเขียวอยู่ = refactor ปลอดภัย)</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้สำคัญ:</strong> resume คุณเขียน "MySQL, PostgreSQL... CRUD with database integration" และ "request validation" —
+    Week 4 คือสัปดาห์ที่ทำให้โค้ดจริงพิสูจน์ทั้งสองคำ และ Docker คือทักษะ DevOps ที่ทุกบริษัท 100k+ ต้องการ</div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-docker.html">Docker — แก้ปัญหา "รันในเครื่องผมได้"</a></strong>
+    <p style="margin:6px 0 0">ทำไม Docker เกิด · image vs container · docker-compose · รัน PostgreSQL + DBeaver ดูข้อมูล · .env</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-postgres-zod.html">PostgreSQL + เชื่อม Node + Zod Validation</a></strong>
+    <p style="margin:6px 0 0">SQL พื้นฐาน (CRUD) · ทำไม relational · เชื่อม Express ด้วย pg · กัน SQL Injection · Zod แทน validation มือ</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-db.html">library-system → PostgreSQL + Zod</a></strong>
+    <p style="margin:6px 0 0">ย้าย books จาก JSON เป็น PostgreSQL · repository layer · Zod schema · test ยังเขียว · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (Docker + รัน PostgreSQL ด้วย compose)</td><td>2 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>บทที่ 2 ครึ่งแรก (SQL + เชื่อม Node)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 ครึ่งหลัง (Zod validation)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 4.1-4.2 (compose + schema + repository)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild B3 (Zod schema จากความจำ) + 🤖 AI Review Drill #3</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 4.3-4.4 (CRUD เชื่อม DB + test เขียว) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 4</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Schema เป็น single source of truth ของ "ข้อมูลที่ถูกต้อง"</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ เช็คมือ กระจาย ลืมง่าย</h4>
+<pre><code>if (!title) return res.status(400)...
+if (typeof title !== "string") ...
+if (title.length &gt; 200) ...
+if (price &lt; 0) ...  // ซ้ำทุก route</code></pre></div>
+      <div class="good"><h4>✅ Zod schema ที่เดียว ใช้ซ้ำ</h4>
+<pre><code>const BookSchema = z.object({
+  title: z.string().min(1).max(200),
+  price: z.number().nonnegative(),
+});
+// ใช้ได้ทุก route + แปลง type ให้ + error สวย</code></pre></div>
+    </div>
+
+    <h3>2. อย่าต่อ SQL ด้วย string (SQL Injection)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ช่องโหว่ร้ายแรง</h4>
+<pre><code>db.query(`SELECT * FROM books
+  WHERE id = ${req.params.id}`);
+// id = "1; DROP TABLE books" = หายนะ</code></pre></div>
+      <div class="good"><h4>✅ parameterized query</h4>
+<pre><code>db.query("SELECT * FROM books WHERE id = $1",
+  [req.params.id]);
+// ค่าถูก escape อัตโนมัติ ปลอดภัย</code></pre></div>
+    </div>
+    <div class="warn"><strong>กฎทอง:</strong> validate ทุก input ด้วย schema · ไม่ต่อ SQL ด้วย string เด็ดขาด · เก็บ config (DB password) ใน .env ไม่ commit ·
+    แยก repository layer (โค้ดคุย DB) ออกจาก controller</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #3 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน endpoint <code>GET /api/books/:id</code> ที่ query PostgreSQL แล้ว<strong>หาช่องโหว่ SQL Injection + จุดที่ไม่ validate</strong>
+  (AI มักต่อ string ตรง ๆ หรือไม่เช็ค input) จดลง <code>notes/ai-review-log.md</code> — จุดแข็ง pentester ของคุณโดยตรง</div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 4</footer>
+</div>
+</body>
+</html>

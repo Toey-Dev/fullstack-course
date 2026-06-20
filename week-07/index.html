@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 7 — TypeScript II: Patterns ที่ทำให้โค้ดแข็งแรง</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 1</div>
+    <h1>Week 7 — TypeScript II</h1>
+    <p>จาก "type เป็น" สู่ "ใช้ type ออกแบบให้บั๊กเกิดไม่ได้" — ระดับที่แยก mid จาก senior</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>Week 6 คุณ "ใส่ type ให้โค้ด" — Week 7 ใช้ type เป็น "เครื่องมือออกแบบ" ที่ทำให้สถานะผิด ๆ เกิดขึ้นไม่ได้เลย
+    (make impossible states impossible) · เรียน type narrowing, discriminated unions, generic constraints
+    แล้วขัด library-system ให้ type แข็งแรงระดับ production จบเฟส 1</p>
+    <ul class="check">
+      <li>Type narrowing + type guards — TS รู้ type แคบลงในแต่ละ branch</li>
+      <li>Discriminated unions — ออกแบบ type ที่ "ผิดไม่ได้"</li>
+      <li>Generic constraints + mapped types เบื้องต้น</li>
+      <li>enums vs union — เลือกให้ถูก</li>
+      <li>library-system type แข็งแรง: typed API response, generic repository, 0 any</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้ทำให้คุณดู senior:</strong> dev ทั่วไปใช้ TS แค่ "กันพิมพ์ผิด" — senior ใช้ TS "ออกแบบให้บั๊กเป็นไปไม่ได้"
+    เช่น API response ที่ถ้า success ต้องมี data / ถ้า error ต้องมี message (เป็นอื่นไม่ได้) นี่คือทักษะที่ interviewer สังเกตเห็น</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-narrowing-unions.html">Narrowing + Type Guards + Discriminated Unions</a></strong>
+    <p style="margin:6px 0 0">type narrowing · typeof/in/instanceof · custom type guard · discriminated union (make impossible states impossible)</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-advanced-generics.html">Generic Constraints + Mapped Types + Enums</a></strong>
+    <p style="margin:6px 0 0">generic constraints (extends) · mapped types · Record · enums vs union · generic repository pattern</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-ts2.html">ขัด library-system type ให้แข็งแรง</a></strong>
+    <p style="margin:6px 0 0">typed ApiResponse (discriminated) · generic repository · 0 any · type-safe error · test เขียว · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (narrowing + discriminated unions)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>ฝึกออกแบบ type ของ API response ตัวเอง</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (generic constraints + mapped + enums)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 7.1-7.2 (ApiResponse + generic repo)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (discriminated union จากความจำ) + 🤖 AI Drill #6</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 7.3-7.4 (0 any + test) + push + 🎉 จบเฟส 1!</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 7</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. "Make impossible states impossible" — ออกแบบ type ให้ผิดไม่ได้</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ type หลวม (สถานะผิดเกิดได้)</h4>
+<pre><code>type Res = {
+  ok: boolean;
+  data?: Book;
+  error?: string;
+};
+// เกิด { ok: true, error: "x" } ได้ (ขัดแย้ง!)</code></pre></div>
+      <div class="good"><h4>✅ discriminated union (ผิดไม่ได้)</h4>
+<pre><code>type Res =
+  | { ok: true; data: Book }
+  | { ok: false; error: string };
+// ok:true ต้องมี data / ok:false ต้องมี error</code></pre></div>
+    </div>
+
+    <h3>2. ใช้ type guard แทน <code>as</code> (type assertion)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ as = โกหก TS</h4>
+<pre><code>const book = data as Book;  // บังคับ ไม่ได้เช็คจริง
+book.title;  // พังถ้า data ไม่ใช่ Book จริง</code></pre></div>
+      <div class="good"><h4>✅ เช็คจริงด้วย guard</h4>
+<pre><code>if (isBook(data)) {
+  data.title;  // TS มั่นใจว่า Book จริง
+}</code></pre></div>
+    </div>
+    <div class="warn"><strong>กฎทอง:</strong> ออกแบบ type ให้สถานะขัดแย้งเกิดไม่ได้ · เลี่ยง <code>as</code> (assertion = ปิดการตรวจ) ·
+    ใช้ discriminated union กับทุกอย่างที่มี "หลายสถานะ" (API response, state, event)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #6 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI ออกแบบ type ของ "ผลการชำระเงิน" (สำเร็จ/ล้มเหลว/รอ) แล้ว<strong>หาว่า type หลวมตรงไหน</strong> (สถานะขัดแย้งเกิดได้ไหม?
+  ใช้ optional แทน discriminated union ไหม?) จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 7</footer>
+</div>
+</body>
+</html>

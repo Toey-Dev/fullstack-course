@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 8 — Next.js + Tailwind + Full-Stack Integration</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 1 (จบ)</div>
+    <h1>Week 8 — Next.js + Tailwind + Full-Stack</h1>
+    <p>ประกอบหน้าบ้านกับหลังบ้านเป็นระบบเต็ม — library-system มีหน้าตาที่ใช้งานได้จริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>เฟส 1 ที่ผ่านมาสร้าง backend (API) แข็งแรง — Week 8 สร้าง <strong>frontend</strong> ที่ต่อกับมัน
+    ด้วย <strong>Next.js</strong> (React framework ที่ตลาดไทยต้องการ) + <strong>Tailwind</strong> (utility CSS) ·
+    คุณจะได้ full-stack app ที่ login ได้ ดูหนังสือได้ ยืมได้ — เชื่อมทุกอย่างที่เรียนมา 8 สัปดาห์</p>
+    <ul class="check">
+      <li>Next.js App Router: routing, layout, server vs client components</li>
+      <li>Tailwind: utility-first (ต่อยอด Bootstrap ที่รู้แล้ว)</li>
+      <li>fetch จาก library-system API + จัดการ 4 สถานะ (loading/success/error/empty)</li>
+      <li>หน้า login + เก็บ token + protected page (ใช้ความรู้ auth Week 5)</li>
+      <li>full-stack app เชื่อม frontend ↔ backend ที่สร้างเอง</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้ปิดเฟส 1 ได้สมบูรณ์:</strong> ตอนนี้คุณมีทั้งหลังบ้าน (API: TS/test/DB/auth) และหน้าบ้าน (Next.js) —
+    full-stack จริง · Next.js เป็นที่ต้องการในตลาดไทยมากกว่า React เปล่า ๆ และเป็นคำที่ใส่ใน resume ได้เลย</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-nextjs.html">Next.js — App Router, Server/Client, Routing</a></strong>
+    <p style="margin:6px 0 0">ทำไม Next.js (ไม่ใช่ React เปล่า) · App Router + file conventions · server vs client component · layout · routing/navigation</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-tailwind-integration.html">Tailwind + เชื่อม API + Auth</a></strong>
+    <p style="margin:6px 0 0">Tailwind utility (ต่อจาก Bootstrap) · fetch API + 4 สถานะ · route handler (proxy) · login + token + protected page</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-fullstack.html">Frontend ให้ library-system (full-stack)</a></strong>
+    <p style="margin:6px 0 0">หน้า book list (fetch API) · login + เก็บ token · protected page (ยืมหนังสือ) · responsive · deploy</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (Next.js setup + App Router + components)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>ฝึก routing + layout + Tailwind พื้นฐาน</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (เชื่อม API + login flow)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 8.1-8.2 (book list + fetch)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (fetch+render จากความจำ) + 🤖 AI Drill #7</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 8.3-8.4 (login + protected + deploy) + 🎉 จบเฟส 1!</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 8</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. แยก component ตามหน้าที่ (ไม่ยัดทุกอย่างในไฟล์เดียว)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ page เดียว 300 บรรทัด</h4>
+<pre><code>// page.tsx — fetch + state + UI ทั้งหมดปนกัน
+export default function Page() {
+  // 300 บรรทัด...
+}</code></pre></div>
+      <div class="good"><h4>✅ แยก component + hook</h4>
+<pre><code>// useBooks.ts — logic fetch
+// BookCard.tsx — UI การ์ด
+// page.tsx — ประกอบ (บาง)</code></pre></div>
+    </div>
+
+    <h3>2. type props ทุก component (TS ต่อจาก Week 6-7)</h3>
+<pre><code>type BookCardProps = { book: Book; onBorrow: (id: number) =&gt; void };
+function BookCard({ book, onBorrow }: BookCardProps) { ... }</code></pre>
+    <div class="warn"><strong>กฎทอง:</strong> component ทำหน้าที่เดียว · type props เสมอ · แยก data fetching (hook) จาก UI (component) ·
+    'use client' เฉพาะที่ต้อง interactive (state/event) — default เป็น server component</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #7 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียนหน้า login (Next.js) ที่เก็บ token แล้ว<strong>หาประเด็น security</strong> (เก็บ token ที่ไหน? โชว์ใน console? ส่ง credential ผ่าน GET?)
+  — เชื่อมความรู้ Week 1 (localStorage) + Week 5 (JWT) จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 8 (จบเฟส 1)</footer>
+</div>
+</body>
+</html>

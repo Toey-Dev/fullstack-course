@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: แปลง library-system เป็น TypeScript</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 6</a> · Mission ใหญ่</div>
+    <h1>🔷 แปลง library-system เป็น TypeScript</h1>
+    <p>ผ่าตัดทั้งระบบเป็น TS strict — โดยมี test เป็นตาข่ายว่าแปลงแล้วยังทำงานถูก</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือก้าวเปลี่ยนระดับ</h3>
+    <p>หลังจบ Mission นี้ library-system เป็น TypeScript strict ทั้งระบบ — resume คุณเพิ่ม "TypeScript" ได้อย่างมีหลักฐานจริง
+    และระหว่างแปลง คุณจะเจอบั๊กที่ JS ซ่อนไว้ (ค่าที่อาจ undefined, type ที่ส่งผิด) ที่ strict mode จับให้ —
+    test (Week 3) ยืนยันว่าหลังแปลงระบบยังทำงานถูก · นี่คือการ refactor ใหญ่ที่ปลอดภัยเพราะมี test</p>
+    <div class="warn"><strong>กลยุทธ์:</strong> แปลงทีละชั้น (ล่างขึ้นบน) ไม่ใช่ทีเดียวทั้งระบบ — แปลงชั้นล่าง รัน build ดู error แก้ แล้วค่อยขึ้นชั้นถัดไป</div>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 6.1 — Setup TS + types พื้นฐาน <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>ติดตั้ง typescript, tsx, @types/node, @types/express + <code>tsc --init</code></li>
+      <li>tsconfig: <code>"strict": true</code>, rootDir src, outDir dist</li>
+      <li>scripts: dev (tsx watch), build (tsc), start (node dist) — ปรับ test ให้รัน TS</li>
+      <li>สร้าง <code>src/types/book.ts</code> — interface Book หรือ z.infer จาก BookSchema</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> <code>npm run build</code> ผ่าน (ยังไม่มี error) · <code>npm run dev</code> server รัน</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 6.2 — แปลงชั้น data + repository <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>เปลี่ยน <code>.js</code> → <code>.ts</code> ของ data/repository</li>
+      <li>type ของ repository function: <code>findById(id: number): Promise&lt;Book | null&gt;</code></li>
+      <li>type ผลจาก pg query (rows เป็น Book[])</li>
+    </ol>
+    <div class="warn"><strong>จุดที่ strict จะเตือน:</strong> <code>rows[0]</code> อาจ undefined → ต้องจัดการ (คืน null) — นี่คือบั๊กที่ JS ซ่อนไว้</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 6.3 — แปลง controller + middleware + route <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>controller: type <code>(req: Request, res: Response)</code> + type req.body จาก Zod infer</li>
+      <li>auth middleware (Week 5): type req.user (ขยาย Request type)</li>
+      <li>error handler: type <code>(err: Error, req, res, next)</code></li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> <code>npm run build</code> ผ่านโดยไม่มี any (ยกเว้นจุดที่จำเป็นจริง + comment เหตุผล)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 6.4 — test ยังเขียว + push <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>ปรับ test เป็น TS (หรือให้ vitest รัน .ts) — <code>npm test</code> ต้องเขียว</li>
+      <li>ไล่ลบ <code>any</code> ที่หลงเหลือ (เป้า: 0 any ที่ไม่จำเป็น)</li>
+      <li>push — README อัปเดต Tech Stack เพิ่ม TypeScript + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> build ผ่าน + test เขียว + ไม่มี any ลอย ๆ = แปลงสำเร็จสมบูรณ์</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Type correctness</td><td>35%</td><td>strict mode ผ่าน · type ครบทุกชั้น · จัดการ null/undefined</td></tr>
+      <tr><td>เลี่ยง any</td><td>25%</td><td>ไม่มี any ลอย ๆ · ใช้ z.infer/utility types แทนเขียน type ซ้ำ</td></tr>
+      <tr><td>Test ยังเขียว</td><td>20%</td><td>npm test ผ่านหลังแปลง (ระบบยังทำงานถูก)</td></tr>
+      <tr><td>Git + README</td><td>20%</td><td>commit เป็นจังหวะ (ทีละชั้น) · README + AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>library-system เป็น TypeScript strict ทั้งระบบ (build ผ่าน)</li>
+    <li>ใช้ z.infer/utility types · ไม่มี any ลอย ๆ</li>
+    <li>จัดการ null/undefined ที่ strict จับได้ (บั๊กที่ JS ซ่อน)</li>
+    <li><code>npm test</code> ยังเขียวหลังแปลง</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #5 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 7 (TypeScript II)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-typescript-express.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 6</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 6 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Generic Constraints + Mapped Types + Enums</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 7</a> · บทที่ 2</div>
+    <h1>Generic Constraints + Mapped Types + Enums</h1>
+    <p>เครื่องมือ TS ขั้นสูงที่ทำให้เขียนโค้ด reusable และ type-safe พร้อมกัน</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🔒 generic ที่มีเงื่อนไข = constraints (extends)</span>
+      <span class="kw">🗺 แปลงทุก key = mapped types</span>
+      <span class="kw">📇 dictionary แบบ type = Record</span>
+      <span class="kw">📋 ชุดค่าคงที่ = enum vs union</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Reusable + type-safe ไปด้วยกันได้"</h3>
+    <p>generic constraints ทำให้เขียนฟังก์ชัน/class ที่ "ใช้ได้หลาย type แต่ยังรู้ว่า type นั้นมีอะไร" —
+    เช่น repository ที่ทำงานกับ entity ไหนก็ได้ แต่ทุก entity ต้องมี id · ได้ทั้ง reuse และ safety ไม่ต้องเลือก</p>
+    <h3>หลักการ 2: "Derive อย่าซ้ำ — type ใหม่ควรมาจาก type เดิม"</h3>
+    <p>mapped types + utility types ทำให้สร้าง type ใหม่จากที่มี (แทนเขียนซ้ำ) · แก้ต้นทางที่เดียว ทุก type ที่ derive ตามหมด ·
+    นี่คือ DRY ระดับ type — codebase ใหญ่อยู่ได้เพราะหลักนี้</p>
+    <h3>หลักการ 3: "เลือกเครื่องมือให้พอดี — อย่า over-engineer type"</h3>
+    <p>TS ทำ type magic ได้ลึกมาก (conditional types, recursive) แต่ 90% ของงานจริงใช้แค่ basics + utility + discriminated union ·
+    type ที่ซับซ้อนจนทีมอ่านไม่ออก = หนี้ เหมือนโค้ดที่ฉลาดเกิน · เลือกความเรียบง่ายก่อนเสมอ</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Generic Constraints — generic ที่มีเงื่อนไข</h2>
+  <div class="card">
+<pre><code>// ❌ generic ล้วน — ไม่รู้ว่า T มี id ไหม
+function getId&lt;T&gt;(item: T) {
+  return item.id;   // ❌ TS เตือน: T อาจไม่มี id
+}
+
+// ✅ constraint: T ต้อง "extends" (มีอย่างน้อย) { id: number }
+function getId&lt;T extends { id: number }&gt;(item: T) {
+  return item.id;   // ✅ TS มั่นใจว่า T มี id
+}
+getId({ id: 1, title: "x" });   // ✅
+getId({ title: "x" });          // ❌ ไม่มี id</code></pre>
+    <p class="muted"><code>extends</code> ใน generic = "T ต้องมีอย่างน้อยรูปร่างนี้" — ใช้สร้าง utility/repository ที่ทำงานกับ type ไหนก็ได้ที่ตรงเงื่อนไข</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Generic Repository Pattern (ใช้จริงใน Mission)</h2>
+  <div class="card">
+<pre><code>// repository ที่ทำงานกับ entity ไหนก็ได้ (Book, Member, ...) ที่มี id
+class Repository&lt;T extends { id: number }&gt; {
+  constructor(private table: string) {}
+
+  async findById(id: number): Promise&lt;T | null&gt; {
+    const res = await pool.query(
+      `SELECT * FROM ${this.table} WHERE id = $1`, [id]
+    );
+    return (res.rows[0] as T) ?? null;
+  }
+  async findAll(): Promise&lt;T[]&gt; {
+    const res = await pool.query(`SELECT * FROM ${this.table}`);
+    return res.rows as T[];
+  }
+}
+
+// ใช้ — type-safe ต่อ entity
+const bookRepo = new Repository&lt;Book&gt;("books");
+const memberRepo = new Repository&lt;Member&gt;("members");
+const book = await bookRepo.findById(1);   // book: Book | null</code></pre>
+    <div class="tip"><strong>ทำไมทรงพลัง:</strong> เขียน repository ครั้งเดียว ใช้ได้ทุก entity โดยยังรู้ type — ไม่ต้อง copy BookRepo, MemberRepo
+    · นี่คือ pattern ที่ทีมจริงใช้ลด boilerplate · <strong>หมายเหตุ:</strong> table name ต่อ string ตรงนี้ปลอดภัยเพราะเราคุมเอง (ไม่ใช่ input ผู้ใช้) — ค่า id ยังใช้ $1</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Mapped Types + Record</h2>
+  <div class="card">
+<pre><code>// Record&lt;K, V&gt; — object ที่ key เป็น K ค่าเป็น V (dictionary แบบ type)
+type BookStock = Record&lt;string, number&gt;;   // { [title]: จำนวน }
+const stock: BookStock = { "Clean Code": 5, "Refactoring": 2 };
+
+// Record กับ literal union — บังคับครบทุก key
+type RolePermission = Record&lt;"admin" | "user", string[]&gt;;
+const perms: RolePermission = {
+  admin: ["read", "write", "delete"],
+  user: ["read"],
+  // ลืม key ไหน TS เตือน
+};</code></pre>
+    <p>mapped types (เบื้องหลัง Partial/Pick) — "วน key ของ type แล้วแปลง":</p>
+<pre><code>// นี่คือวิธีที่ Partial ทำงานข้างใน (รู้ไว้พออ่านโค้ดออก)
+type MyPartial&lt;T&gt; = { [K in keyof T]?: T[K] };   // ทุก key เป็น optional</code></pre>
+    <p class="muted">งานทั่วไปใช้ Record บ่อย, ใช้ utility (Partial/Pick) ที่ build จาก mapped types · เขียน mapped type เองตอนทำ library/util ขั้นสูง</p>
+  </div>
+
+  <h2>ส่วนที่ 4: Enums vs Union — เลือกให้ถูก</h2>
+  <div class="card">
+<pre><code>// enum — มีตัวตนตอน runtime (object จริง)
+enum Role { Admin = "admin", User = "user" }
+Role.Admin;   // "admin"
+
+// literal union — เป็นแค่ type (หายตอน compile, เบากว่า)
+type Role = "admin" | "user";</code></pre>
+    <table>
+      <tr><th></th><th>enum</th><th>literal union</th></tr>
+      <tr><td>runtime</td><td>มี object จริง (กิน bundle)</td><td>ไม่มี (หายตอน compile)</td></tr>
+      <tr><td>iterate ค่าได้</td><td>ได้ (Object.values)</td><td>ไม่ได้ตรง ๆ</td></tr>
+      <tr><td>คำแนะนำยุคใหม่</td><td>ใช้เมื่อต้อง iterate/map ค่า</td><td>⭐ default — เบา ง่าย พอสำหรับ status/role ส่วนใหญ่</td></tr>
+    </table>
+    <p class="muted">เทรนด์ TS ยุคใหม่เอนไป literal union (+ <code>as const</code>) มากกว่า enum เพราะเบาและตรงไปตรงมา · enum ยังดีเมื่อต้องวนค่าทั้งหมด</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> generic Repository ใช้กับทุกตารางใน library-system (books, members, borrows) — เขียนครั้งเดียว ·
+    Record&lt;Platform, Metrics&gt; เก็บผลแต่ละแพลตฟอร์มของ automation report แบบ type-safe (ลืมแพลตฟอร์มไหน TS เตือน)</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> generic repository/service เป็น pattern มาตรฐานลด boilerplate · Record ใช้ทุกที่ที่มี dictionary ·
+    การเลือก enum vs union ถูกถามใน code review จริง — เข้าใจ trade-off = ดู mature</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: <code>&lt;T extends { id: number }&gt;</code> แก้ปัญหาอะไรของ generic ล้วน?</summary>
+    <p>generic ล้วน <code>&lt;T&gt;</code> ไม่รู้ว่า T มี property อะไร (ใช้ item.id ไม่ได้) · constraint <code>extends { id: number }</code>
+    บอกว่า "T ต้องมีอย่างน้อย id" → ใช้ item.id ได้อย่าง type-safe และยังรับ type ไหนก็ได้ที่มี id</p></details>
+  <details><summary>ข้อ 2: <code>Record&lt;"admin"|"user", string[]&gt;</code> ให้ประโยชน์อะไรเหนือ object ธรรมดา?</summary>
+    <p>บังคับว่าต้องมี key ครบทุกค่าใน union (admin และ user) — ลืม key ไหน TS เตือน · และค่าต้องเป็น string[] ทุกอัน ·
+    object ธรรมดาไม่บังคับ → อาจลืม role ไหนแล้วพังตอนรัน</p></details>
+  <details><summary>ข้อ 3: enum vs literal union — ยุคใหม่นิยมอันไหน เพราะอะไร?</summary>
+    <p>literal union (default) — เบากว่า (หายตอน compile ไม่กิน bundle), ตรงไปตรงมา, พอสำหรับ status/role ส่วนใหญ่ ·
+    enum ใช้เมื่อต้อง iterate ค่าทั้งหมดตอน runtime (Object.values) · เลือกตามว่าต้องใช้ค่าตอน runtime ไหม</p></details>
+  <details><summary>ข้อ 4: TS ทำ type ซับซ้อนได้ลึกมาก — ทำไมไม่ควร over-engineer?</summary>
+    <p>type ที่ซับซ้อนจนทีมอ่านไม่ออก = หนี้ (เหมือนโค้ดฉลาดเกิน) · 90% ของงานใช้แค่ basics + utility + discriminated union ·
+    เลือกความเรียบง่ายที่ทีม maintain ได้ ก่อน type magic — readability over cleverness (หลักเดิมจากทั้งคอร์ส)</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>ใช้ generic constraints (extends) ได้</li>
+    <li>เขียน generic Repository หรือ utility ที่ reusable + type-safe</li>
+    <li>ใช้ Record + เข้าใจ mapped types เบื้องต้น</li>
+    <li>เลือก enum vs union ได้ตามสถานการณ์</li>
+    <li>Quiz + โน้ต <code>notes/advanced-generics.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-narrowing-unions.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-ts2.html">Mission ใหญ่: ขัด type →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 7 บทที่ 2</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Narrowing + Type Guards + Discriminated Unions</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 7</a> · บทที่ 1</div>
+    <h1>Narrowing + Type Guards + Discriminated Unions</h1>
+    <p>ใช้ type เป็นเครื่องมือออกแบบ — ทำให้สถานะผิด ๆ เกิดขึ้นไม่ได้เลย</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🔬 บีบ type ให้แคบลง = narrowing</span>
+      <span class="kw">🕵️ ฟังก์ชันยืนยัน type = type guard</span>
+      <span class="kw">🏷 field บอกชนิด = discriminant (ok, type, status)</span>
+      <span class="kw">🚫 สถานะผิดเกิดไม่ได้ = make impossible states impossible</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Make impossible states impossible"</h3>
+    <p>แทนที่จะเขียนโค้ดเช็คว่า "สถานะนี้ถูกไหม" ตลอด — ออกแบบ type ให้ "สถานะผิดเขียนไม่ได้ตั้งแต่แรก"
+    เช่น API response: ถ้า success ต้องมี data, ถ้า fail ต้องมี error — ไม่มีทางเกิด "success แต่ไม่มี data" หรือ "success และมี error พร้อมกัน"
+    type ที่ดีคือ type ที่ "บั๊กบางอย่างเป็นไปไม่ได้"</p>
+    <h3>หลักการ 2: "TS narrow ตาม control flow — ใช้ให้เป็น"</h3>
+    <p>TS ฉลาดพอตาม logic: ในกิ่ง <code>if (typeof x === "string")</code> มันรู้ว่า x เป็น string แน่ —
+    นี่เรียก narrowing · เข้าใจมันทำให้เขียน TS ไหลลื่น ไม่ต้อง <code>as</code> (ซึ่งคือการโกหก compiler)</p>
+    <h3>หลักการ 3: "Assertion (as) คือทางออกสุดท้าย ไม่ใช่ทางลัด"</h3>
+    <p><code>data as Book</code> = บอก TS "เชื่อฉัน นี่คือ Book" โดยไม่ได้เช็คจริง — ถ้าผิด พังตอนรัน (เสียประโยชน์ TS)
+    ใช้ type guard (เช็คจริง) แทน · as ใช้เฉพาะตอนรู้มากกว่า TS จริง ๆ (เช่น DOM element ที่ TS เดาไม่ได้) และควรมี comment</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Type Narrowing — TS รู้ type แคบลงตาม logic</h2>
+  <div class="card">
+<pre><code>function format(value: string | number) {
+  // ตรงนี้ value เป็น string | number (ยังกว้าง)
+  if (typeof value === "string") {
+    return value.toUpperCase();   // ✅ TS รู้: ในกิ่งนี้ value = string
+  }
+  return value.toFixed(2);        // ✅ TS รู้: เหลือแค่ number
+}</code></pre>
+    <table>
+      <tr><th>วิธี narrow</th><th>ใช้กับ</th><th>ตัวอย่าง</th></tr>
+      <tr><td><code>typeof</code></td><td>primitive</td><td><code>typeof x === "string"</code></td></tr>
+      <tr><td><code>in</code></td><td>เช็คว่า object มี property</td><td><code>"email" in user</code></td></tr>
+      <tr><td><code>instanceof</code></td><td>class instance</td><td><code>err instanceof Error</code></td></tr>
+      <tr><td>เช็ค null</td><td>กัน undefined/null</td><td><code>if (!book) return</code></td></tr>
+    </table>
+    <p class="muted">narrowing คือเหตุผลที่ guard clause (ทบจาก Week 1) ทำงานดีกับ TS — <code>if (!book) return</code> แล้วหลังจากนั้น TS รู้ว่า book ไม่ null</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Custom Type Guard — ฟังก์ชันที่ยืนยัน type</h2>
+  <div class="card">
+<pre><code>// type predicate: "value is Book" บอก TS ว่าถ้า return true = เป็น Book
+function isBook(value: unknown): value is Book {
+  return (
+    typeof value === "object" &amp;&amp; value !== null &amp;&amp;
+    "title" in value &amp;&amp; "id" in value
+  );
+}
+
+// ใช้งาน
+function process(data: unknown) {
+  if (isBook(data)) {
+    data.title;   // ✅ TS มั่นใจว่า Book — auto-complete ให้
+  }
+}</code></pre>
+    <div class="tip"><strong>เมื่อไหร่ใช้:</strong> ตอนรับข้อมูลที่ TS ไม่รู้ type (API response, JSON.parse, input ภายนอก) —
+    guard เช็คจริงแล้วยืนยัน type ให้ ปลอดภัยกว่า <code>as</code> · ใช้คู่กับ <code>unknown</code> (type ที่บังคับต้องเช็คก่อนใช้)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Discriminated Union — หัวใจของบทนี้</h2>
+  <div class="card">
+    <p>type ที่มี "field บอกชนิด" (discriminant) ทำให้ TS narrow ได้แม่นยำ และออกแบบให้สถานะผิดเกิดไม่ได้:</p>
+<pre><code>// แต่ละสถานะมี field ที่ต้องมีคู่กัน — ผิดไม่ได้
+type ApiResponse&lt;T&gt; =
+  | { ok: true;  data: T }          // success ต้องมี data
+  | { ok: false; error: string };   // fail ต้องมี error
+
+function handle(res: ApiResponse&lt;Book&gt;) {
+  if (res.ok) {
+    res.data;      // ✅ TS รู้: ต้องมี data (ไม่มี error)
+    // res.error;  // ❌ TS เตือน: ไม่มี error ในกิ่งนี้
+  } else {
+    res.error;     // ✅ TS รู้: ต้องมี error (ไม่มี data)
+  }
+}</code></pre>
+    <figure class="figure">
+      <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="40" y="20" width="280" height="50" rx="8" fill="#dcfce7" stroke="#059669" stroke-width="2"/>
+        <text x="180" y="40" font-size="11" fill="#047857" text-anchor="middle" font-weight="700">{ ok: true, data: Book }</text>
+        <text x="180" y="58" font-size="9" fill="#065f46" text-anchor="middle">มี data เท่านั้น</text>
+        <rect x="40" y="85" width="280" height="50" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+        <text x="180" y="105" font-size="11" fill="#dc2626" text-anchor="middle" font-weight="700">{ ok: false, error: string }</text>
+        <text x="180" y="123" font-size="9" fill="#991b1b" text-anchor="middle">มี error เท่านั้น</text>
+        <text x="500" y="50" font-size="11" fill="#1f2937" text-anchor="middle">ok = discriminant</text>
+        <text x="500" y="72" font-size="10" fill="#6b7280" text-anchor="middle">เช็ค ok ปุ๊บ</text>
+        <text x="500" y="90" font-size="10" fill="#6b7280" text-anchor="middle">TS รู้ทันทีว่ามี field ไหน</text>
+        <text x="500" y="115" font-size="10" fill="#dc2626" text-anchor="middle">{ok:true, error} = เขียนไม่ได้!</text>
+      </svg>
+      <figcaption>ภาพที่ 1: discriminated union — field "ok" บอกชนิด ทำให้สถานะขัดแย้งเป็นไปไม่ได้</figcaption>
+    </figure>
+    <p><strong>เทียบกับแบบหลวม</strong> <code>{ ok: boolean; data?: T; error?: string }</code> — แบบนั้นเกิด
+    <code>{ ok: true, error: "x" }</code> (ขัดแย้ง) หรือ <code>{ ok: true }</code> (ไม่มี data) ได้ → โค้ดต้องเช็คตลอด
+    discriminated union ตัดปัญหานี้ที่ระดับ type</p>
+  </div>
+
+  <h2>ส่วนที่ 4: ใช้จริง — state ของการโหลดข้อมูล</h2>
+  <div class="card">
+<pre><code>// state ที่ frontend (Week 1) ต้องจัดการ — เป็น discriminated union ได้สวย
+type FetchState&lt;T&gt; =
+  | { status: "loading" }
+  | { status: "success"; data: T }
+  | { status: "error"; message: string };
+
+function render(state: FetchState&lt;Book[]&gt;) {
+  switch (state.status) {
+    case "loading": return showSpinner();
+    case "success": return showList(state.data);    // TS รู้ว่ามี data
+    case "error":   return showError(state.message); // TS รู้ว่ามี message
+  }
+  // ถ้าลืม case ไหน TS เตือน (exhaustiveness)
+}</code></pre>
+    <p class="muted">นี่คือ 4 สถานะ UI (loading/success/error/empty) จาก Week 1 ที่ตอนนี้ออกแบบเป็น type ที่ "ลืม case ไม่ได้" — TS บังคับจัดการครบ</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> ผลการดึง API การตลาดแต่ละแหล่ง — <code>type Result = {ok:true, metrics} | {ok:false, reason}</code>
+    บังคับให้โค้ดสรุป report จัดการทั้งเคสสำเร็จและล้มเหลว ลืมไม่ได้ (ตรงกับ Promise.allSettled ที่เรียน Week 1)</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> discriminated union คือ pattern หลักของ Redux action, state machine, API response ใน codebase TS ทุกที่ ·
+    "make impossible states impossible" เป็นปรัชญาที่ทีมระดับสูงใช้ออกแบบ — เห็นในโค้ด = สัญญาณ senior</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: "make impossible states impossible" หมายความว่าอะไร ยกตัวอย่าง</summary>
+    <p>ออกแบบ type ให้สถานะผิด/ขัดแย้งเขียนไม่ได้ตั้งแต่แรก แทนเช็คใน runtime · เช่น API response แบบ discriminated union:
+    <code>{ok:true, data} | {ok:false, error}</code> — เกิด "ok:true แต่ไม่มี data" หรือ "ok:true และมี error" ไม่ได้เลย</p></details>
+  <details><summary>ข้อ 2: ทำไม type guard ดีกว่า <code>data as Book</code>?</summary>
+    <p>type guard เช็คจริง (runtime) แล้วยืนยัน type · <code>as</code> แค่บอก TS "เชื่อฉัน" โดยไม่เช็ค — ถ้า data ไม่ใช่ Book จริง พังตอนรัน
+    (เสียประโยชน์ TS) · ใช้ guard กับข้อมูลภายนอก (API, JSON.parse) ที่ไม่รู้ type จริง</p></details>
+  <details><summary>ข้อ 3: discriminated union กับ <code>{ ok: boolean; data?; error? }</code> ต่างกันยังไง อันไหนดีกว่า?</summary>
+    <p>แบบ optional เกิดสถานะขัดแย้งได้ (<code>{ok:true, error}</code>) → โค้ดต้องเช็คตลอด · discriminated union ผูก field กับ discriminant
+    (ok:true→data, ok:false→error) สถานะผิดเขียนไม่ได้ + TS narrow ให้อัตโนมัติ → ดีกว่าชัดเจน</p></details>
+  <details><summary>ข้อ 4: switch บน discriminated union แล้วลืม case — TS ช่วยยังไง?</summary>
+    <p>exhaustiveness check — ถ้าจัดการครบทุก case TS โอเค, ถ้าลืม case (เพิ่ม status ใหม่แต่ลืมจัดการ) TS เตือน
+    (โดยเฉพาะถ้าใส่ <code>default: const _: never = state</code>) — กันบั๊ก "ลืมจัดการสถานะใหม่"</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>เข้าใจ narrowing (typeof/in/instanceof/null check)</li>
+    <li>เขียน custom type guard (value is X) ได้</li>
+    <li>ออกแบบ discriminated union (ApiResponse, FetchState)</li>
+    <li>Quiz + โน้ต <code>notes/discriminated-unions.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 7</a>
+    <a class="btn" href="02-advanced-generics.html">บทที่ 2: Generics ขั้นสูง →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 7 บทที่ 1</footer>
+</div>
+</body>
+</html>

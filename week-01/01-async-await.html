@@ -238,6 +238,101 @@ const [a, b] = await Promise.all([fetchA(), fetchB()]);</code></pre>
     ถ้างานต้องใช้ผลของกันและกัน → await เรียงตามลำดับ</p>
   </div>
 
+  <!-- ===================== Event Loop ===================== -->
+  <h2>ส่วนที่ 3.5: Event Loop — เครื่องยนต์ที่อยู่เบื้องหลัง (เฉลย Mission 1.2)</h2>
+  <p>คำถาม interview ระดับลึก: "JS thread เดียว แล้วจัดการ async ยังไง?" คำตอบคือ <strong>Event Loop</strong>
+  มันคือเหตุผลว่าทำไม Mission 1.2 ลำดับถึงไม่เป็น A→B→C→D→E ตรง ๆ</p>
+
+  <figure class="figure">
+    <svg viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+      <rect x="20" y="20" width="200" height="200" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+      <text x="120" y="42" font-size="13" font-weight="700" fill="#1e40af" text-anchor="middle">① Call Stack</text>
+      <text x="120" y="62" font-size="10" fill="#1e3a8a" text-anchor="middle">โค้ด sync รันที่นี่</text>
+      <text x="120" y="80" font-size="10" fill="#6b7280" text-anchor="middle">(ทำทีละอัน บนลงล่าง)</text>
+      <rect x="40" y="95" width="160" height="24" rx="4" fill="#bfdbfe"/><text x="120" y="111" font-size="10" fill="#1e3a8a" text-anchor="middle">console.log</text>
+      <text x="120" y="160" font-size="34" text-anchor="middle">⚙️</text>
+      <text x="120" y="195" font-size="10" fill="#6b7280" text-anchor="middle">ว่างเมื่อไหร่ → หยิบคิว</text>
+
+      <rect x="250" y="20" width="200" height="90" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+      <text x="350" y="42" font-size="12" font-weight="700" fill="#047857" text-anchor="middle">② Microtask Queue</text>
+      <text x="350" y="60" font-size="10" fill="#065f46" text-anchor="middle">Promise / await / .then</text>
+      <text x="350" y="78" font-size="11" fill="#047857" text-anchor="middle" font-weight="700">⭐ ทำก่อนเสมอ!</text>
+      <text x="350" y="96" font-size="10" fill="#065f46" text-anchor="middle">(เคลียร์จนหมดก่อนไปคิวล่าง)</text>
+
+      <rect x="250" y="125" width="200" height="90" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+      <text x="350" y="147" font-size="12" font-weight="700" fill="#92400e" text-anchor="middle">③ Macrotask Queue</text>
+      <text x="350" y="165" font-size="10" fill="#78350f" text-anchor="middle">setTimeout / setInterval</text>
+      <text x="350" y="183" font-size="11" fill="#92400e" text-anchor="middle">ทำทีหลัง microtask</text>
+      <text x="350" y="201" font-size="10" fill="#78350f" text-anchor="middle">(แม้ตั้ง 0ms ก็ตาม)</text>
+
+      <rect x="480" y="60" width="200" height="120" rx="10" fill="#1f2937"/>
+      <text x="580" y="90" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">ลำดับ Mission 1.2</text>
+      <text x="580" y="115" font-size="13" fill="#93c5fd" text-anchor="middle">A → C → E (sync ก่อน)</text>
+      <text x="580" y="140" font-size="13" fill="#6ee7b7" text-anchor="middle">→ D (microtask)</text>
+      <text x="580" y="165" font-size="13" fill="#fcd34d" text-anchor="middle">→ B (macrotask)</text>
+    </svg>
+    <figcaption>ภาพที่ 3: Event Loop — sync ก่อน → microtask (Promise) → macrotask (setTimeout)</figcaption>
+  </figure>
+
+  <div class="card">
+    <p><strong>กลไก 3 ขั้น:</strong></p>
+    <ol>
+      <li><strong>โค้ด sync รันก่อนทั้งหมด</strong> ใน Call Stack — Mission 1.2: A, C (ใน f ก่อนถึง await), E</li>
+      <li><strong>await null</strong> ทำให้ที่เหลือ (console.log D) ถูกส่งเข้า <strong>Microtask Queue</strong></li>
+      <li><strong>setTimeout B</strong> เข้า <strong>Macrotask Queue</strong> — แม้ตั้ง 0ms ก็ต้องรอ microtask หมดก่อน</li>
+    </ol>
+    <p>เมื่อ Call Stack ว่าง Event Loop หยิบ <strong>microtask จนหมดก่อน</strong> (D) แล้วค่อยหยิบ macrotask (B)
+    → ผลคือ <code>A → C → E → D → B</code></p>
+    <div class="warn"><strong>กฎจำง่ายสำหรับ interview:</strong> "sync → Promise → setTimeout" — Promise (microtask) เสมอชนะ setTimeout (macrotask)
+    แม้ setTimeout จะตั้ง 0ms ก็ตาม นี่คือคำถามที่กลุ่ม 100k+ ถามจริง</div>
+  </div>
+
+  <!-- ===================== Promise combinators ===================== -->
+  <h2>ส่วนที่ 3.6: Promise combinators — เครื่องมือจัดการหลายงานพร้อมกัน</h2>
+  <div class="card">
+    <p>นอกจาก <code>Promise.all</code> ยังมีอีก 3 ตัวที่ production ใช้จริง — เลือกตามสถานการณ์:</p>
+    <table>
+      <tr><th>ตัว</th><th>พฤติกรรม</th><th>ใช้เมื่อ</th></tr>
+      <tr><td><code>Promise.all</code></td><td>รอครบทุกตัว · <strong>1 ตัวพัง= พังหมด</strong></td><td>ต้องการครบทุกอันถึงทำงานได้</td></tr>
+      <tr><td><code>Promise.allSettled</code></td><td>รอครบทุกตัว · พังบางตัวได้ คืนผลแยกสำเร็จ/ล้มเหลว</td><td>⭐ report ที่ "บางแหล่งล่มก็ยังทำต่อ"</td></tr>
+      <tr><td><code>Promise.race</code></td><td>ใครเสร็จก่อน (สำเร็จหรือพัง) เอาคนนั้น</td><td>timeout — แข่งกับนาฬิกา</td></tr>
+      <tr><td><code>Promise.any</code></td><td>ใครสำเร็จก่อนเอาคนนั้น (พังข้าม)</td><td>มีหลาย server เอาที่ตอบเร็วสุด</td></tr>
+    </table>
+<pre><code>// 🏢 ปรับ automation report ให้ทนทานขึ้น (production จริง):
+// ถ้าใช้ Promise.all แล้ว LINE API ล่ม → report พังทั้งใบ ❌
+// ใช้ allSettled → แหล่งที่ล่มข้ามไป แหล่งอื่นยังได้ ✅
+const results = await Promise.allSettled([
+  fetchMetaAds(id), fetchLineOA(id), fetchInstagram(id), fetchGA4(id),
+]);
+const ok = results.filter(r => r.status === "fulfilled").map(r => r.value);
+const failed = results.filter(r => r.status === "rejected");
+if (failed.length) notifyTeam(`${failed.length} แหล่งล่ม แต่ report ยังออก`);</code></pre>
+    <div class="tip"><strong>หลักคิด production:</strong> ระบบจริงต้อง "ทนต่อความพังบางส่วน" (partial failure) —
+    report การตลาดที่ขาด LINE ไป 1 แหล่งยังมีค่ากว่า report ที่พังทั้งใบ นี่คือความต่างของโค้ด tutorial (Promise.all) กับโค้ด production (allSettled)</div>
+  </div>
+
+  <!-- ===================== try/catch/finally ===================== -->
+  <h2>ส่วนที่ 3.7: Error Handling เชิงลึก — try / catch / finally</h2>
+  <div class="card">
+<pre><code>const loadData = async () => {
+  showLoading();
+  try {
+    const data = await fetchData();
+    render(data);
+  } catch (err) {
+    showError(err.message);     // จัดการ error ที่ผู้ใช้เข้าใจ
+    logToServer(err);           // ส่ง error จริงให้ทีม (ไม่โชว์ผู้ใช้)
+  } finally {
+    hideLoading();              // ⭐ ทำเสมอ ไม่ว่าสำเร็จหรือพัง
+  }
+};</code></pre>
+    <p><strong>ทำไมต้อง finally:</strong> ถ้าปิด loading ไว้ใน try อย่างเดียว เวลา error จะลืมปิด → ผู้ใช้เห็น "กำลังโหลด..." ค้างตลอดกาล
+    finally รับประกันว่างาน "เก็บกวาด" (ปิด loading, ปิด connection, ปลด lock) ทำทุกกรณี</p>
+    <div class="danger"><strong>กับดักที่ทำระบบล่มเงียบ:</strong> async function ที่ไม่มี try/catch และไม่มีใคร await
+    ถ้าพัง = <strong>Unhandled Promise Rejection</strong> — error หายไปเงียบ ๆ ไม่มี log
+    ใน Node.js (Week 2+) เคสนี้ทำ process crash ได้ → ทุก async ที่อาจพัง ต้องมีคนจัดการ error เสมอ</div>
+  </div>
+
   <!-- ===================== ส่วนที่ 4 ===================== -->
   <h2>ส่วนที่ 4: ตัวอย่างการประยุกต์ในงานจริงของคุณ</h2>
 
@@ -274,6 +369,53 @@ const [a, b] = await Promise.all([fetchA(), fetchB()]);</code></pre>
   return await createTransaction(member, book);   // ขั้น 3
 };</code></pre>
     <p>สังเกต: ตัวอย่างสองกรณีนี้คือคำตอบของ Quiz ข้อ 3 ในชีวิตจริง — รู้ว่าเมื่อไหร่ใช้ท่าไหน</p>
+  </div>
+
+  <!-- ===================== Clean Code ===================== -->
+  <h2>🧹 Clean Code: เขียน async แบบ production</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. async/await แทน .then chain</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ .then ซ้อน</h4>
+<pre><code>function load() {
+  return fetchUser()
+    .then(u =&gt; fetchPosts(u.id))
+    .then(posts =&gt; render(posts))
+    .catch(e =&gt; showError(e));
+}</code></pre></div>
+      <div class="good"><h4>✅ เรียงตรง อ่านเป็นเรื่อง</h4>
+<pre><code>async function load() {
+  try {
+    const u = await fetchUser();
+    const posts = await fetchPosts(u.id);
+    render(posts);
+  } catch (e) { showError(e); }
+}</code></pre></div>
+    </div>
+
+    <h3>2. ขนานเมื่อทำได้ — อย่า await เรียงโดยไม่จำเป็น</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ช้า 2 เท่า (รอทีละตัว)</h4>
+<pre><code>const user = await getUser();
+const config = await getConfig();
+// 2 อันนี้ไม่เกี่ยวกันเลย!</code></pre></div>
+      <div class="good"><h4>✅ ยิงพร้อมกัน</h4>
+<pre><code>const [user, config] = await Promise.all([
+  getUser(), getConfig()
+]);</code></pre></div>
+    </div>
+
+    <h3>3. throw Error object ไม่ใช่ string</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ throw string</h4>
+<pre><code>if (!ok) throw "something failed";
+// catch แล้วไม่มี stack trace, .message</code></pre></div>
+      <div class="good"><h4>✅ throw Error</h4>
+<pre><code>if (!ok) throw new Error("something failed");
+// ได้ err.message, err.stack ครบ</code></pre></div>
+    </div>
+    <div class="warn"><strong>กฎทอง:</strong> async ที่อาจพังต้องมีคนจัดการ error เสมอ · ขนานเมื่องานไม่ขึ้นต่อกัน ·
+    error message ที่โชว์ผู้ใช้ ≠ error จริงที่ log (อย่ารั่วรายละเอียดภายใน — มุม security)</div>
   </div>
 
   <!-- ===================== Mission ===================== -->
@@ -322,6 +464,18 @@ console.log("E");</code></pre>
     <p>ช้าเพราะแต่ละ await <strong>รอตัวก่อนหน้าเสร็จก่อน</strong> ทั้งที่งานไม่เกี่ยวกัน
     (เวลารวม = ผลบวกของทุกงาน) แก้ด้วย <code>Promise.all([a, b, c])</code>
     ให้ทุกงานวิ่งพร้อมกัน (เวลารวม = งานที่ช้าที่สุดงานเดียว)</p></details>
+
+  <details><summary>ข้อ 4 (Event Loop): <code>console.log(1); Promise.resolve().then(()=&gt;console.log(2)); setTimeout(()=&gt;console.log(3),0); console.log(4);</code> — ลำดับ?</summary>
+    <p><code>1 → 4 → 2 → 3</code> · sync ก่อน (1, 4) → microtask/Promise (2) → macrotask/setTimeout (3)
+    แม้ setTimeout ตั้ง 0ms ก็ยังทำหลัง Promise เสมอ เพราะ microtask queue เคลียร์หมดก่อน macrotask</p></details>
+
+  <details><summary>ข้อ 5 (production): report ดึง 4 แหล่ง แต่ LINE API ล่มบ่อย — ใช้ Promise.all ดีไหม? ถ้าไม่ ใช้อะไร?</summary>
+    <p>ไม่ดี — <code>Promise.all</code> ถ้า 1 ตัวพัง = report พังทั้งใบ ใช้ <code>Promise.allSettled</code> แทน
+    มันรอครบทุกตัวแล้วคืนผลแยก fulfilled/rejected → แหล่งที่ล่มข้ามไป แหล่งอื่นยังได้ข้อมูล (ทนต่อ partial failure = หลัก production)</p></details>
+
+  <details><summary>ข้อ 6: ทำไม async function ที่พังโดยไม่มีใคร catch ถึงอันตรายกว่าใน Node.js (Week 2)?</summary>
+    <p>เป็น <strong>Unhandled Promise Rejection</strong> — บน browser แค่ขึ้น warning ใน console
+    แต่ใน Node.js เคสนี้ทำ <strong>process crash</strong> ได้ (server ดับทั้งตัว) → ทุก async ฝั่ง server ต้องมี try/catch หรือ error handler เสมอ</p></details>
 
   <h2>✅ Checkpoint</h2>
   <ul class="check">

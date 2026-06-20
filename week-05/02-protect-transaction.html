@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Protect Routes + Authorization + Transaction</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 5</a> · บทที่ 2</div>
+    <h1>Protect Routes + Authorization + Transaction</h1>
+    <p>ใส่ยามให้ route · แยกสิทธิ์ admin/user · และทำให้ "ยืม-คืน" สำเร็จทั้งคู่หรือล้มทั้งคู่</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">💂 ยามหน้าประตู = auth middleware</span>
+      <span class="kw">🪪 req.user = ตัวตนที่ยามแปะให้</span>
+      <span class="kw">401 = ไม่รู้จักคุณ · 403 = รู้จักแต่ห้ามเข้า</span>
+      <span class="kw">⚛️ ทั้งหมดหรือไม่เลย = transaction (atomic)</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Auth เป็น middleware — ยามชั้นเดียว คุมหลายประตู"</h3>
+    <p>แทนที่จะเช็ค token ในทุก route (ซ้ำ ลืมง่าย) — ทำเป็น middleware ชั้นเดียว (จาก Week 2) วางหน้า route ที่ต้องป้องกัน
+    ยามตรวจ token, ถ้าผ่านแปะ <code>req.user</code> ให้ แล้วส่งต่อ · ถ้าไม่ผ่านปฏิเสธทันที — route ข้างในไม่ต้องห่วงเรื่อง auth เลย</p>
+    <h3>หลักการ 2: "Least privilege — ให้สิทธิ์น้อยที่สุดเท่าที่จำเป็น"</h3>
+    <p>user ทั่วไปไม่ควรลบหนังสือได้ · ทุก action ต้องถามว่า "ใครควรทำได้บ้าง" แล้วกันคนอื่นออก
+    default ควรเป็น "ห้าม" แล้วเปิดสิทธิ์เฉพาะที่จำเป็น — ไม่ใช่ "เปิดหมด" แล้วค่อยปิด (พลาดที่เดียว = รั่ว)</p>
+    <h3>หลักการ 3: "Atomicity — บางงานต้องสำเร็จทั้งหมด หรือไม่เกิดเลย"</h3>
+    <p>ยืมหนังสือ = (1) สร้าง record การยืม + (2) เปลี่ยนสถานะหนังสือเป็น "ถูกยืม" — ถ้าทำข้อ 1 สำเร็จแต่ข้อ 2 พัง (ไฟดับ)
+    = ข้อมูลเพี้ยน (มีบันทึกยืมแต่หนังสือยังว่าง) · transaction บังคับว่า "ทำครบทุกข้อ หรือ rollback ทั้งหมด" — ไม่มีสภาพครึ่ง ๆ กลาง ๆ</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Auth Middleware — ยามตรวจ token</h2>
+  <div class="card">
+<pre><code>// src/middlewares/auth.js
+const jwt = require("jsonwebtoken");
+
+const auth = (req, res, next) => {
+  const header = req.headers.authorization;          // "Bearer xxxxx"
+  if (!header?.startsWith("Bearer ")) {
+    return res.status(401).json({ ok: false, error: "ไม่ได้เข้าสู่ระบบ" });
+  }
+  const token = header.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;        // ⭐ แปะตัวตนให้ route ข้างในใช้ต่อ
+    next();                    // ผ่านยาม → ไป route
+  } catch {
+    return res.status(401).json({ ok: false, error: "token ไม่ถูกต้องหรือหมดอายุ" });
+  }
+};
+module.exports = auth;</code></pre>
+<pre><code>// ใช้: วาง middleware หน้า route ที่ต้องล็อกอิน
+router.get("/me", auth, usersController.me);             // ต้อง login
+router.post("/borrow", auth, borrowController.create);   // ต้อง login
+router.get("/books", booksController.list);              // เปิด public (ไม่ใส่ auth)</code></pre>
+    <div class="tip"><strong>Bearer token คืออะไร:</strong> client ส่ง token มาใน header <code>Authorization: Bearer xxxxx</code> —
+    "Bearer" = "ผู้ถือ" (ใครถือ token นี้ = คนนั้น) มาตรฐาน OAuth · frontend (Week 1) จะแนบ header นี้ทุก request ที่ต้อง auth</div>
+  </div>
+
+  <h2>ส่วนที่ 2: Authorization — แยกสิทธิ์ตาม role</h2>
+  <div class="card">
+<pre><code>// middleware เช็ค role (ใช้ต่อจาก auth)
+const requireRole = (...roles) => (req, res, next) => {
+  if (!roles.includes(req.user.role)) {
+    return res.status(403).json({ ok: false, error: "ไม่มีสิทธิ์ทำรายการนี้" });
+  }
+  next();
+};
+
+// ใช้: ต้อง login (auth) + เป็น admin (requireRole)
+router.delete("/books/:id", auth, requireRole("admin"), booksController.remove);</code></pre>
+    <figure class="figure">
+      <svg viewBox="0 0 700 130" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <text x="30" y="30" font-size="11" fill="#1f2937">DELETE /books/5</text>
+        <path d="M 135 25 L 165 25" stroke="#6b7280" stroke-width="2" marker-end="url(#r2)"/>
+        <rect x="170" y="10" width="110" height="32" rx="6" fill="#93c5fd"/><text x="225" y="30" font-size="10" fill="#1e3a8a" text-anchor="middle">auth (login?)</text>
+        <path d="M 282 26 L 312 26" stroke="#6b7280" stroke-width="2" marker-end="url(#r2)"/>
+        <rect x="317" y="10" width="130" height="32" rx="6" fill="#93c5fd"/><text x="382" y="30" font-size="10" fill="#1e3a8a" text-anchor="middle">requireRole(admin)</text>
+        <path d="M 449 26 L 479 26" stroke="#6b7280" stroke-width="2" marker-end="url(#r2)"/>
+        <rect x="484" y="10" width="110" height="32" rx="6" fill="#059669"/><text x="539" y="30" font-size="10" fill="#fff" text-anchor="middle">ลบหนังสือ</text>
+        <text x="225" y="75" font-size="9" fill="#dc2626" text-anchor="middle">ไม่ login → 401</text>
+        <text x="382" y="75" font-size="9" fill="#dc2626" text-anchor="middle">login แต่ไม่ใช่ admin → 403</text>
+        <text x="350" y="105" font-size="10" fill="#6b7280" text-anchor="middle">ผ่านยาม 2 ชั้นถึงทำงานได้ — least privilege</text>
+        <defs><marker id="r2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#6b7280"/></marker></defs>
+      </svg>
+      <figcaption>ภาพที่ 1: middleware ซ้อนกัน — auth (เป็นใคร) → requireRole (มีสิทธิ์ไหม) → route</figcaption>
+    </figure>
+    <div class="warn"><strong>401 vs 403 (ทบจาก Week 2):</strong> <code>401</code> = ยังไม่ได้ login (ไม่รู้จักคุณ) ·
+    <code>403</code> = login แล้วแต่ไม่มีสิทธิ์ (รู้จักแล้วแต่ห้ามเข้า) — สับสน 2 อันนี้ = สัญญาณว่ายังไม่เข้าใจ auth</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Transaction — ยืม-คืนแบบ atomic</h2>
+  <div class="card">
+    <p>การยืมหนังสือมีหลายขั้นที่ต้อง "สำเร็จพร้อมกัน" — ใช้ transaction บังคับ:</p>
+<pre><code>// borrow ด้วย transaction (pg)
+const client = await pool.connect();
+try {
+  await client.query("BEGIN");                          // เริ่ม transaction
+
+  const book = await client.query(
+    "SELECT * FROM books WHERE id = $1 FOR UPDATE",      // ล็อกแถวกัน race
+    [bookId]
+  );
+  if (!book.rows[0]?.available) throw new Error("หนังสือถูกยืมแล้ว");
+
+  await client.query(
+    "INSERT INTO borrows (user_id, book_id) VALUES ($1, $2)", [userId, bookId]
+  );
+  await client.query(
+    "UPDATE books SET available = false WHERE id = $1", [bookId]
+  );
+
+  await client.query("COMMIT");                          // สำเร็จทั้งหมด → ยืนยัน
+} catch (err) {
+  await client.query("ROLLBACK");                        // พังข้อใดข้อหนึ่ง → ย้อนทั้งหมด
+  throw err;
+} finally {
+  client.release();                                      // คืน connection เข้า pool
+}</code></pre>
+    <div class="tip"><strong>ทำไม transaction สำคัญ:</strong> ถ้าไม่มี — INSERT borrow สำเร็จ แต่ UPDATE available พัง (ไฟดับ/error)
+    = ข้อมูลเพี้ยน (มีบันทึกยืม แต่หนังสือยังโชว์ว่าง คนอื่นยืมซ้ำได้) · COMMIT/ROLLBACK บังคับ "ทั้งหมดหรือไม่เลย"<br>
+    <strong>FOR UPDATE</strong> = ล็อกแถวระหว่าง transaction กัน 2 คนยืมเล่มเดียวพร้อมกัน (race condition)</div>
+  </div>
+
+  <h2>ส่วนที่ 4: ทดสอบ auth (เชื่อม Week 3)</h2>
+  <div class="card">
+<pre><code>// test ที่ต้องมี — ทั้งเคสผ่านและโดนปฏิเสธ
+describe("Protected routes", () => {
+  it("คืน 401 เมื่อไม่ส่ง token", async () => {
+    const res = await request(app).get("/api/me");
+    expect(res.status).toBe(401);
+  });
+  it("คืน 200 + ข้อมูล เมื่อ token ถูกต้อง", async () => {
+    const res = await request(app).get("/api/me")
+      .set("Authorization", `Bearer ${validToken}`);
+    expect(res.status).toBe(200);
+  });
+  it("คืน 403 เมื่อ user ทั่วไปลบหนังสือ", async () => {
+    const res = await request(app).delete("/api/books/1")
+      .set("Authorization", `Bearer ${userToken}`);   // ไม่ใช่ admin
+    expect(res.status).toBe(403);
+  });
+});</code></pre>
+    <p class="muted">test เคส "โดนปฏิเสธ" (401/403) สำคัญพอ ๆ กับเคสผ่าน — พิสูจน์ว่ายามทำงานจริง ไม่ใช่ปล่อยผ่านหมด (มุม pentester: ทดสอบว่ากำแพงกันได้จริง)</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> dashboard ลูกค้าหลายราย — auth middleware เช็ค login + requireRole/ownership เช็คว่า
+    request ขอข้อมูล clientId ตรงกับใน token ไหม กันลูกค้าแอบดูข้อมูลกัน (Broken Access Control = OWASP #1 ปี 2021)</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> transaction คือหัวใจของ fintech — โอนเงิน = หักบัญชี A + เพิ่มบัญชี B ต้อง atomic
+    (หักแล้วเพิ่มพัง = เงินหาย) · middleware-based auth เป็นมาตรฐานทุก API · Broken Access Control คือช่องโหว่ที่ pentester เจอบ่อยสุด — คุณได้เปรียบ</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไมทำ auth เป็น middleware ดีกว่าเช็ค token ในทุก route?</summary>
+    <p>เขียนครั้งเดียว ใช้ได้ทุก route ที่ต้องป้องกัน (DRY) · ลืมยากกว่า (วาง middleware หน้า route ชัดเจน) · route ข้างในไม่ต้องห่วง auth
+    · แก้ logic auth ที่เดียวมีผลทุก route — เป็นหลัก Separation of Concerns เดียวกับทั้งคอร์ส</p></details>
+  <details><summary>ข้อ 2: ผู้ใช้ที่ login แล้วแต่ไม่ใช่ admin พยายามลบหนังสือ — ตอบ status อะไร ทำไมไม่ใช่ 401?</summary>
+    <p><code>403</code> Forbidden — เพราะ "รู้แล้วว่าเป็นใคร (login ผ่าน) แต่ไม่มีสิทธิ์" · 401 ใช้เมื่อ "ไม่รู้ว่าเป็นใคร" (ยังไม่ login)
+    user คนนี้ login แล้ว = ผ่าน authN แต่ไม่ผ่าน authZ → 403</p></details>
+  <details><summary>ข้อ 3: ยืมหนังสือไม่ใช้ transaction แล้ว INSERT สำเร็จ UPDATE พัง — เกิดอะไร?</summary>
+    <p>ข้อมูลเพี้ยน — มีบันทึกการยืม (borrows) แต่หนังสือยังโชว์ available=true → คนอื่นยืมเล่มเดียวกันซ้ำได้ ·
+    transaction (BEGIN/COMMIT/ROLLBACK) บังคับ "ทั้งหมดหรือไม่เลย" พังข้อใด ROLLBACK ย้อนทั้งหมด ไม่เหลือสภาพครึ่ง ๆ</p></details>
+  <details><summary>ข้อ 4 (security): ทำไม test เคส "โดนปฏิเสธ" (401/403) สำคัญพอ ๆ กับเคสผ่าน?</summary>
+    <p>เพราะมันพิสูจน์ว่า "กำแพงกันได้จริง" — ระบบที่ test แค่เคสผ่าน อาจปล่อยทุกคนเข้าได้โดยไม่รู้ตัว (ยามไม่ทำงานแต่ test เขียว)
+    มุม pentester: ต้องทดสอบว่ากันคนที่ "ไม่ควรเข้า" ได้จริง ไม่ใช่แค่ปล่อยคนที่ควรเข้า</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>auth middleware ตรวจ token + แปะ req.user</li>
+    <li>requireRole แยกสิทธิ์ admin/user (401 vs 403 ถูก)</li>
+    <li>borrow/return ใช้ transaction (atomic + FOR UPDATE)</li>
+    <li>test ครอบเคสผ่าน + โดนปฏิเสธ (401/403)</li>
+    <li>Quiz + โน้ต <code>notes/protect-transaction.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-auth-jwt.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-auth.html">Mission ใหญ่: Auth →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 5 บทที่ 2</footer>
+</div>
+</body>
+</html>

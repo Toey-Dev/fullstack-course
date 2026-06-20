@@ -79,18 +79,104 @@
     <br>Inline ใช้เมื่อ: ทดสอบเร็ว ๆ หรือ CSS ที่ JS สร้าง dynamic เท่านั้น</p>
   </div>
 
-  <h2>ส่วนที่ 2: Selectors — ชี้เป้าให้ถูกตัว</h2>
+  <h2>ส่วนที่ 2: Selectors — ชี้เป้าให้ถูกตัว (เจาะลึก)</h2>
+
+  <h3 style="margin-top:8px">2.1 Selector พื้นฐาน 3 แบบ</h3>
   <div class="card">
     <table>
       <tr><th>Selector</th><th>เลือกอะไร</th><th>ใช้เมื่อ</th></tr>
-      <tr><td><code>p { }</code></td><td>ทุก &lt;p&gt; ในหน้า</td><td>ตั้ง default ทั้งหน้า (ระวังกระทบหมด)</td></tr>
+      <tr><td><code>p { }</code></td><td>ทุก &lt;p&gt; ในหน้า (Type/Tag)</td><td>ตั้ง default ทั้งหน้า (ระวังกระทบหมด)</td></tr>
       <tr><td><code>.box { }</code></td><td>ทุก element ที่มี class="box"</td><td>⭐ ใช้บ่อยสุด — ซ้ำได้ ยืดหยุ่น</td></tr>
       <tr><td><code>#logo { }</code></td><td>element เดียวที่ id="logo"</td><td>ของชิ้นเดียวห้ามซ้ำ (เหมือนเลขบัตรประชาชน)</td></tr>
-      <tr><td><code>.card p { }</code></td><td>p ทุกตัว"ข้างใน" .card (ลูกหลานทั้งหมด)</td><td>เว้นวรรค = descendant</td></tr>
-      <tr><td><code>.card > p { }</code></td><td>p ที่เป็นลูกตรง ๆ ของ .card เท่านั้น</td><td>&gt; = child (หลานไม่โดน)</td></tr>
     </table>
-    <p class="muted">หลักปฏิบัติ: ใช้ <code>.class</code> เป็นหลัก เลี่ยง <code>#id</code> ใน CSS (เจาะจงเกินไป แก้ทับยาก) และเลี่ยง tag selector กว้าง ๆ</p>
+    <p><strong>ทำไมยุคนี้ใช้ class เป็นหลัก:</strong> class ออกแบบมาให้ "ใช้ซ้ำ" — ปุ่ม 10 ปุ่มใช้ <code>.btn</code> เดียวกันได้
+    ส่วน id ออกแบบให้ "มีตัวเดียว" ใช้ใน CSS แล้วเจาะจงเกินไป (ดู 2.4) แก้ทับยาก
+    id เหมาะกับ JavaScript (<code>getElementById</code>) และ anchor link (<code>#section</code>) มากกว่า CSS</p>
   </div>
+
+  <h3>2.2 Combinator — เลือกตาม "ความสัมพันธ์" (จุดที่คนงงเยอะสุด)</h3>
+  <div class="card">
+    <table>
+      <tr><th>Selector</th><th>ชื่อ</th><th>เลือกอะไร</th></tr>
+      <tr><td><code>.card p</code></td><td>Descendant (เว้นวรรค)</td><td>p ทุกตัว"ข้างใน" .card — ลูก หลาน เหลน ทั้งหมด</td></tr>
+      <tr><td><code>.card &gt; p</code></td><td>Child (&gt;)</td><td>p ที่เป็น<strong>ลูกตรง</strong>ชั้นเดียวของ .card เท่านั้น (หลานไม่โดน)</td></tr>
+      <tr><td><code>h2 + p</code></td><td>Adjacent sibling (+)</td><td>p ตัวแรกที่อยู่<strong>ติดหลัง</strong> h2 (พี่น้องชิดกัน)</td></tr>
+      <tr><td><code>h2 ~ p</code></td><td>General sibling (~)</td><td>p <strong>ทุกตัว</strong>ที่อยู่หลัง h2 (พี่น้องระดับเดียวกัน)</td></tr>
+    </table>
+    <figure class="figure" style="margin-top:14px">
+      <svg viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="20" y="15" width="660" height="200" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+        <text x="35" y="38" font-size="13" font-weight="700" fill="#1e40af">.card</text>
+        <rect x="50" y="50" width="280" height="40" rx="6" fill="#bfdbfe"/>
+        <text x="190" y="75" font-size="12" fill="#1e3a8a" text-anchor="middle">&lt;p&gt; ลูกตรง ✅ โดนทั้ง .card p และ .card&gt;p</text>
+        <rect x="50" y="100" width="610" height="100" rx="6" fill="#dbeafe"/>
+        <text x="65" y="122" font-size="12" fill="#1e3a8a">&lt;article&gt; ลูกตรง</text>
+        <rect x="80" y="135" width="560" height="50" rx="5" fill="#93c5fd"/>
+        <text x="360" y="165" font-size="12" fill="#1e3a8a" text-anchor="middle">&lt;p&gt; หลาน ✅ โดน .card p / ❌ ไม่โดน .card&gt;p (เพราะอยู่ลึก 2 ชั้น)</text>
+      </svg>
+      <figcaption>ภาพที่ 2: descendant (เว้นวรรค) กวาดทุกชั้น / child (&gt;) แค่ชั้นเดียว</figcaption>
+    </figure>
+    <div class="danger"><strong>⚠️ ภาพลวงตาที่ต้องระวัง (เจอจริงตอน debug):</strong> ถ้าใช้ <code>.box &gt; div</code> ใส่ <code>background:red</code>
+    แล้วเห็น "div หลานก็แดงด้วย" — <strong>อย่าเพิ่งคิดว่า &gt; พัง</strong> ความจริง: div หลานไม่มีสีพื้นหลังของตัวเอง (โปร่งใส)
+    เลยมองทะลุเห็นสีแดงของ div พ่อที่อยู่ข้างหลัง <code>background-color</code> ไม่ inherit แต่ความโปร่งใส "โชว์สีพ่อทะลุ"
+    → เวลา debug สี ให้ถามเสมอ "นี่สีของมันเอง หรือสีพ่อทะลุมา" (เช็คใน DevTools → Computed → background-color)</div>
+  </div>
+
+  <h3>2.3 Pseudo-class & Pseudo-element — เลือกตาม "สถานะ" และ "ส่วนเสมือน"</h3>
+  <div class="card">
+    <p>ของจริงในงาน production ใช้ตัวนี้เยอะมาก — ทำให้ UI โต้ตอบได้โดยไม่ต้องเขียน JS:</p>
+    <table>
+      <tr><th>Selector</th><th>เลือกเมื่อ</th><th>ใช้จริงกับ</th></tr>
+      <tr><td><code>a:hover</code></td><td>เมาส์ชี้</td><td>เปลี่ยนสีลิงก์/ปุ่มตอน hover</td></tr>
+      <tr><td><code>input:focus</code></td><td>ช่องถูกคลิก/พิมพ์อยู่</td><td>ไฮไลต์ช่องฟอร์มที่กำลังกรอก</td></tr>
+      <tr><td><code>button:disabled</code></td><td>ปุ่มถูกปิด</td><td>ทำปุ่มจาง ๆ ตอนกดไม่ได้ (เชื่อม Week 1!)</td></tr>
+      <tr><td><code>li:first-child</code> / <code>:last-child</code></td><td>ลูกตัวแรก/สุดท้าย</td><td>ตัดเส้นขอบล่างของรายการสุดท้าย</td></tr>
+      <tr><td><code>tr:nth-child(even)</code></td><td>แถวคู่</td><td>ทำตารางสลับสี (zebra stripe)</td></tr>
+      <tr><td><code>p::first-line</code> / <code>::before</code></td><td>ส่วนเสมือน (pseudo-element ใช้ ::)</td><td>ใส่ไอคอน/เครื่องหมายหน้าข้อความ</td></tr>
+    </table>
+<pre><code>/* ตัวอย่าง production: ปุ่มที่มี state ครบ */
+.btn { background: #2563eb; color: #fff; transition: 0.2s; }
+.btn:hover { background: #1e40af; }      /* ชี้แล้วเข้มขึ้น */
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }  /* ปิดแล้วจาง */
+
+/* ตารางสลับสี — โค้ดที่ทุก dashboard ใช้ */
+tr:nth-child(even) { background: #f7f8fa; }</code></pre>
+    <p class="muted">เกร็ด: <code>:</code> (โคลอนเดียว) = pseudo-<strong>class</strong> (สถานะ) · <code>::</code> (โคลอนคู่) = pseudo-<strong>element</strong> (ส่วนเสมือน)</p>
+  </div>
+
+  <h3>2.4 Specificity — คำนวณจริงว่ากฎไหนชนะ</h3>
+  <div class="card">
+    <p>เมื่อหลายกฎชี้ element เดียวกัน CSS ตัดสินด้วย "คะแนนความเจาะจง" นับเป็น 3 หลัก <strong>(id, class, tag)</strong>:</p>
+    <table>
+      <tr><th>Selector</th><th>id</th><th>class</th><th>tag</th><th>คะแนน</th></tr>
+      <tr><td><code>p</code></td><td>0</td><td>0</td><td>1</td><td>0,0,1</td></tr>
+      <tr><td><code>.box</code></td><td>0</td><td>1</td><td>0</td><td>0,1,0</td></tr>
+      <tr><td><code>.box p</code></td><td>0</td><td>1</td><td>1</td><td>0,1,1</td></tr>
+      <tr><td><code>#main .box p</code></td><td>1</td><td>1</td><td>1</td><td>1,1,1 (ชนะทุกตัวข้างบน)</td></tr>
+    </table>
+    <p><strong>วิธีอ่าน:</strong> เทียบหลักซ้ายสุดก่อน (id) — มากกว่าชนะทันที / เท่ากันค่อยดูหลักถัดไป
+    เหมือนเทียบเลข 3 หลัก <code>110 &gt; 011</code> เพราะหลักร้อยมากกว่า</p>
+    <div class="warn"><strong>ทำไมเรื่องนี้สำคัญในงานจริง:</strong> "CSS เขียนแล้วไม่ทำงาน" 90% คือมีกฎอื่นเจาะจงกว่าทับอยู่
+    inline style (<code>style="..."</code>) เจาะจงสุด (นับเป็นหลักพิเศษเหนือ id) — นี่คือเหตุผลที่ inline ใน HTML ทับ external CSS เสมอ
+    และ <code>!important</code> อยู่เหนือทุกอย่าง (จึงเป็นหนี้ — ครั้งหน้าต้อง !important ทับ !important ไม่จบ)</div>
+  </div>
+
+  <h3>2.5 🔗 เชื่อมกับ HTML: ทำไม selector บางทีหา element ไม่เจอ</h3>
+  <div class="card">
+    <p>บางครั้ง selector ถูกแต่ไม่ทำงาน เพราะ <strong>DOM ที่ browser สร้าง ≠ HTML ที่เราเขียน</strong>:</p>
+<pre><code>&lt;!-- เราเขียนแบบนี้ --&gt;
+&lt;p&gt;
+  &lt;h1&gt;หัวข้อ&lt;/h1&gt;   &lt;!-- ❌ p ใส่ block element ไม่ได้! --&gt;
+&lt;/p&gt;</code></pre>
+    <p><code>&lt;p&gt;</code> ใส่ได้แค่ inline content — พอ browser เจอ <code>&lt;h1&gt;</code> (block) ข้างใน มันจะ
+    <strong>ปิด p อัตโนมัติ</strong> แล้วดัน h1 ออกมาเป็นพี่น้อง ผลคือ <code>.container &gt; p &gt; h1</code> หา h1 ไม่เจอ
+    (เพราะ h1 ไม่ได้อยู่ใน p อีกต่อไป) → เปิด DevTools → Elements เช็ค DOM จริงก่อนเสมอเวลา selector ไม่ทำงาน</p>
+    <p class="muted">Block ที่ห้ามใส่ใน p: h1-h6, div, section, article, ul/ol, p อีกตัว — ถ้าต้องครอบหลายอย่างใช้ div/section</p>
+  </div>
+
+  <div class="tip"><strong>หลักปฏิบัติรวม (production):</strong> ① ใช้ <code>.class</code> เป็นหลัก ② เลี่ยง <code>#id</code> ใน CSS
+  ③ เลี่ยง selector ลึกเกิน 3 ชั้น (<code>.a .b .c .d</code> = เปราะ แก้ยาก) ④ ตั้งชื่อ class ตามหน้าที่ ไม่ใช่หน้าตา
+  (<code>.btn-primary</code> ดีกว่า <code>.btn-blue</code> — วันหน้าเปลี่ยนสีไม่ต้องแก้ชื่อ)</div>
 
   <h2>ส่วนที่ 3: Box Model — หัวใจของทุก layout (เจาะลึก)</h2>
   <div class="card">
@@ -152,12 +238,57 @@ margin: 10px;                 /* ทุกด้านเท่ากัน */</
     <p><strong>Components ที่ควรใช้เป็น</strong> (อ่าน docs เองต่อได้): Navbar (ย่อเป็น hamburger บนมือถืออัตโนมัติ), Card, Carousel (สไลด์), Accordion (FAQ ยืดหด) — เปิด <a href="https://getbootstrap.com/docs/5.3/" target="_blank">getbootstrap.com</a> copy มาปรับ</p>
   </div>
 
-  <h2>ตัวอย่างประยุกต์</h2>
+  <h2>🧹 Clean Code: เขียน CSS แบบ production</h2>
   <div class="card">
-    <p><strong>🏢 งานวี:</strong> welovefukushima มี CSS bundler ที่รวม partials — หลักการเดียวกับ "External CSS ชนะเพราะ cache + จัดการได้"
-    ที่ scale ใหญ่ขึ้น และ Bootstrap ที่ทบทวนนี้คือตัวเดียวกับใน Project2 ของคุณ — Week 1 Reading List ใช้มันเต็ม ๆ</p>
-    <p><strong>🌏 อุตสาหกรรม:</strong> ระบบ admin/internal tool ของบริษัทไทยจำนวนมากคือ Bootstrap ล้วน —
-    เพราะเร็วและทุกคนอ่านออก ส่วน product หน้าบ้านยุคใหม่เทไป Tailwind (Week 8) ซึ่งคุณจะเรียนได้ไวเพราะหลัก utility เดียวกัน</p>
+    <h3 style="margin-top:0">1. ตั้งชื่อ class ตามหน้าที่ ไม่ใช่หน้าตา</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ผูกกับหน้าตา</h4>
+<pre><code>.red-text { color: red; }
+.big-box { ... }
+.mt-20px { margin-top: 20px; }</code></pre></div>
+      <div class="good"><h4>✅ ผูกกับความหมาย</h4>
+<pre><code>.text-danger { color: red; }
+.product-card { ... }
+.section-spacing { margin-top: 20px; }</code></pre></div>
+    </div>
+    <p class="muted">เหตุผล: วันหน้าเปลี่ยน danger เป็นส้ม แค่แก้ค่าในที่เดียว — ถ้าชื่อ .red-text จะกลายเป็นโกหก (ชื่อแดงแต่สีส้ม)</p>
+
+    <h3>2. ใช้ CSS Variables — แก้ที่เดียว เปลี่ยนทั้งเว็บ (production มาตรฐาน)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ฮาร์ดโค้ดสีซ้ำ 50 ที่</h4>
+<pre><code>.btn { background: #2563eb; }
+.link { color: #2563eb; }
+.badge { background: #2563eb; }
+/* เปลี่ยนสีแบรนด์ = แก้ 50 จุด */</code></pre></div>
+      <div class="good"><h4>✅ ตัวแปรกลาง</h4>
+<pre><code>:root { --brand: #2563eb; }
+.btn { background: var(--brand); }
+.link { color: var(--brand); }
+/* เปลี่ยนสีแบรนด์ = แก้ 1 จุด */</code></pre></div>
+    </div>
+    <p class="muted">นี่คือเทคนิคที่ style.css ของคอร์สนี้ใช้ (ดู <code>:root</code> ด้านบนไฟล์) และเป็นรากของ "design token" ในทีมใหญ่</p>
+
+    <h3>3. จัดกลุ่ม property ตามตรรกะ (อ่านง่าย review ง่าย)</h3>
+<pre><code>.card {
+  /* 1. Layout/ตำแหน่ง */    display: flex;  position: relative;
+  /* 2. Box model */          width: 300px;  padding: 16px;  margin: 8px;
+  /* 3. Typography */         font-size: 14px;  line-height: 1.6;
+  /* 4. Visual */             background: #fff;  border-radius: 8px;
+}</code></pre>
+    <div class="warn"><strong>กฎทอง:</strong> เขียน CSS ให้ "คนอื่นแก้ต่อได้" — หลีกเลี่ยง magic number (เลขลอย ๆ ไม่มีที่มา),
+    เลี่ยง <code>!important</code>, และอย่า nest selector ลึกเกิน 3 ชั้น เพราะยิ่งลึก specificity ยิ่งสูง = แก้ทับยากในอนาคต</div>
+  </div>
+
+  <h2>ตัวอย่างประยุกต์ในโปรเจกต์จริง</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี — welovefukushima:</strong> เว็บคุณมี CSS bundler ที่รวม partials เป็นไฟล์เดียว —
+    หลักการเดียวกับ "External CSS ชนะเพราะ cache + แยกหน้าที่" ที่ scale ใหญ่ขึ้น
+    ถ้าเปิดดูจะเห็นว่าใช้ class ตามหน้าที่ (utility-style) คล้าย Bootstrap — คุณทำถูกอยู่แล้วโดยสัญชาตญาณ บทนี้ทำให้อธิบาย "ทำไม" ได้</p>
+    <p><strong>🏢 งานวี — automation dashboard:</strong> ถ้าทำหน้า dashboard การตลาด ตารางสถิติจะใช้
+    <code>tr:nth-child(even)</code> สลับสี + <code>:hover</code> ไฮไลต์แถว — UX ดีขึ้นโดยไม่เขียน JS เลย (จาก 2.3)</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> ระบบ admin/internal tool ของบริษัทไทยจำนวนมากคือ Bootstrap ล้วน เพราะเร็วและทุกคนอ่านออก —
+    ส่วน product หน้าบ้านยุคใหม่ (LINE MAN, Agoda) เทไป Tailwind (Week 8) ซึ่งคุณจะเรียนไวเพราะหลัก utility-first เดียวกัน
+    และ design token (CSS variables ใน 2 ข้อบน) คือสิ่งที่ทุก design system ระดับองค์กรใช้</p>
   </div>
 
   <h2>🎯 Mission ทบทวน</h2>
@@ -179,8 +310,15 @@ margin: 10px;                 /* ทุกด้านเท่ากัน */</
     — เกือบทุกเคสจริงต้องการแบบหลัง เพราะครึ่งจอบนมือถือ = เนื้อหาบี้จนอ่านไม่ได้</p></details>
   <details><summary>ข้อ 3: CSS ที่เขียนไม่ทำงาน — ลำดับการ debug ที่ถูกคืออะไร (ไม่ใช่ใส่ !important)?</summary>
     <p>① เปิด DevTools เลือก element ดูแท็บ Styles ② ดูว่ากฎเราโดนขีดฆ่าไหม → แพ้ specificity ให้กฎไหน
-    ③ เช็ค selector พิมพ์ถูก/ไฟล์ CSS โหลดจริง (แท็บ Network) ④ แก้ด้วยการเพิ่มความเจาะจงอย่างตั้งใจ
-    — <code>!important</code> คือทางออกสุดท้ายที่สร้างหนี้ เพราะครั้งหน้าต้อง !important ทับ !important</p></details>
+    ③ เช็ค selector พิมพ์ถูก/ไฟล์ CSS โหลดจริง (แท็บ Network) ④ เช็ค DOM จริง (element อยู่ตรงที่คิดไหม — เช่น p ถูกปิดอัตโนมัติ)
+    ⑤ แก้ด้วยการเพิ่มความเจาะจงอย่างตั้งใจ — <code>!important</code> คือทางออกสุดท้ายที่สร้างหนี้</p></details>
+  <details><summary>ข้อ 4: <code>.box &gt; div</code> ใส่ background แดง แต่ div หลานก็ดูแดง — &gt; พังหรือเปล่า? อธิบาย</summary>
+    <p>ไม่พัง — <code>&gt;</code> เลือกแค่ลูกตรง div หลานไม่ได้โดน CSS แต่หลานพื้นหลังโปร่งใส (default) เลยมองทะลุเห็นสีแดงของพ่อ
+    <code>background-color</code> ไม่ inherit แต่ความโปร่งใสโชว์สีพ่อ — พิสูจน์ด้วยการใส่ <code>.box div div { background: yellow }</code> หลานจะเหลือง ไม่แดง</p></details>
+  <details><summary>ข้อ 5: เทียบ specificity — <code>#nav .item</code> กับ <code>.menu .item a</code> อันไหนชนะ?</summary>
+    <p><code>#nav .item</code> = (1id, 1class, 0tag) = 1,1,0 / <code>.menu .item a</code> = (0id, 2class, 1tag) = 0,2,1
+    เทียบหลักซ้ายสุด (id) ก่อน: 1 &gt; 0 → <strong><code>#nav .item</code> ชนะ</strong> แม้อีกฝั่งมี class+tag เยอะกว่า
+    (เพราะ id 1 ตัวมีน้ำหนักเหนือ class กี่ตัวก็ตาม)</p></details>
 
   <div class="nav-bottom">
     <a class="btn ghost" href="01-html-foundation.html">← บทที่ 1</a>

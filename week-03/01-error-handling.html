@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Error Handling + 404 — ทำ API ให้ทนทาน</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 3</a> · บทที่ 1</div>
+    <h1>Error Handling + 404 — ทำ API ให้ทนทาน</h1>
+    <p>เปลี่ยน API จาก "ทำงานได้ตอนทุกอย่างปกติ" เป็น "ทำงานได้แม้เจอเรื่องร้าย"</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🕳 ตกท่อ = error handler 4 args</span>
+      <span class="kw">🗺 หลงทาง = 404 handler</span>
+      <span class="kw">📮 next(err) = ส่งต่อให้คนเก็บ error</span>
+      <span class="kw">🔇 ไม่รั่วข้อมูล = error message ปลอดภัย</span>
+      <span class="kw">🧹 ที่เดียวจบ = centralized</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "DRY error handling" — อย่าซ้ำตัวเอง</h3>
+    <p>ถ้าทุก route เขียน try/catch + ตอบ error เองหมด = โค้ดเดิมซ้ำ 50 จุด วันหน้าอยากเปลี่ยนรูปแบบ error ต้องแก้ 50 ที่
+    Express ออกแบบให้มี "จุดรวมจัดการ error" จุดเดียว (centralized) — error ทุกที่ส่งมารวมที่นี่ จัดการแบบเดียวจบ</p>
+    <h3>หลักการ 2: "Fail loud internally, fail quiet externally"</h3>
+    <p>error จริง (stack trace, ชื่อ DB, query ที่พัง) ต้อง <strong>log ละเอียดให้ทีมเห็น</strong> เพื่อ debug —
+    แต่ที่ตอบกลับผู้ใช้ต้อง <strong>คลุมเครือ</strong> ("เกิดข้อผิดพลาด ลองใหม่") เพราะรายละเอียดภายในคือของขวัญให้ผู้โจมตี
+    (คุณในฐานะ pentester เคยใช้ error message รั่ว ๆ เก็บข้อมูลระบบมาแล้ว — ตอนนี้อยู่ฝั่งปิด)</p>
+    <h3>หลักการ 3: "Errors are part of the contract" — error คือส่วนหนึ่งของ API</h3>
+    <p>API ที่ดีไม่ได้บอกแค่ "สำเร็จหน้าตาแบบไหน" แต่บอกด้วยว่า "พังหน้าตาแบบไหน" (status + รูปแบบ error)
+    frontend (Week 1 ของคุณ) ต้องพึ่ง contract นี้ในการแสดงผล — error ที่ไม่เป็นระบบ = frontend จัดการไม่ได้</p>
+  </div>
+
+  <h2>ส่วนที่ 1: ปัญหา — try/catch ซ้ำทุก route</h2>
+  <div class="card">
+<pre><code>// ❌ ทุก route ทำซ้ำแบบนี้ — เยอะ ซ้ำ แก้ยาก
+app.get("/api/books/:id", (req, res) => {
+  try {
+    const book = findBook(req.params.id);
+    if (!book) return res.status(404).json({ ok: false, error: "not found" });
+    res.json({ ok: true, data: book });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: "server error" });  // ← ซ้ำทุก route
+  }
+});</code></pre>
+    <p>ลองนึกภาพมี 20 endpoint — block catch ข้างล่างนี้ถูก copy 20 รอบ วันหน้าอยากเพิ่ม log แบบใหม่ = แก้ 20 ที่ ลืมที่เดียว = บั๊ก</p>
+  </div>
+
+  <h2>ส่วนที่ 2: ทางแก้ — Centralized Error Handler</h2>
+  <div class="card">
+    <p>Express มี middleware พิเศษที่มี <strong>4 พารามิเตอร์</strong> <code>(err, req, res, next)</code> — Express รู้ว่านี่คือ "คนเก็บ error" โดยอัตโนมัติ:</p>
+    <figure class="figure">
+      <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="20" y="40" width="120" height="40" rx="6" fill="#93c5fd"/><text x="80" y="65" font-size="11" fill="#1e3a8a" text-anchor="middle">route handler</text>
+        <path d="M 143 60 L 200 60" stroke="#dc2626" stroke-width="2.5" marker-end="url(#e1)"/>
+        <text x="172" y="50" font-size="10" fill="#dc2626" text-anchor="middle">throw/</text>
+        <text x="172" y="92" font-size="10" fill="#dc2626" text-anchor="middle">next(err)</text>
+        <rect x="205" y="40" width="120" height="40" rx="6" fill="#93c5fd"/><text x="265" y="65" font-size="11" fill="#1e3a8a" text-anchor="middle">route อื่น ๆ</text>
+        <path d="M 328 60 L 385 60" stroke="#dc2626" stroke-width="2.5" marker-end="url(#e1)"/>
+        <rect x="390" y="30" width="290" height="60" rx="8" fill="#dc2626"/>
+        <text x="535" y="55" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">🕳 Error Handler (err,req,res,next)</text>
+        <text x="535" y="75" font-size="10" fill="#fecaca" text-anchor="middle">log จริง + ตอบ user แบบปลอดภัย — ที่เดียวจบ</text>
+        <text x="350" y="125" font-size="11" fill="#6b7280" text-anchor="middle">error จากทุก route "ตกท่อ" มารวมที่ handler เดียว</text>
+        <defs><marker id="e1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#dc2626"/></marker></defs>
+      </svg>
+      <figcaption>ภาพที่ 1: error ทุกจุด "ตกท่อ" มารวมที่ error handler เดียว — จัดการแบบเดียวทั้งระบบ</figcaption>
+    </figure>
+<pre><code>// 1. route โยน error (ไม่ต้อง catch เอง)
+app.get("/api/books/:id", (req, res, next) => {
+  const book = findBook(req.params.id);
+  if (!book) {
+    const err = new Error("Book not found");
+    err.status = 404;              // แปะ status ที่อยากตอบ
+    return next(err);              // ⭐ ส่งต่อให้ error handler
+  }
+  res.json({ ok: true, data: book });
+});
+
+// 2. Error Handler — วางท้ายสุด หลังทุก route (4 args!)
+app.use((err, req, res, next) => {
+  console.error(err.stack);                          // log จริง (ทีมเห็น)
+  const status = err.status || 500;
+  res.status(status).json({
+    ok: false,
+    error: status === 500 ? "Internal error" : err.message,  // 500 ไม่รั่วรายละเอียด
+  });
+});</code></pre>
+    <div class="warn"><strong>กฎตำแหน่ง:</strong> error handler ต้องวาง <strong>ท้ายสุด</strong> หลังทุก route และต้องมีครบ 4 args
+    — ถ้าเขียน 3 args Express จะนึกว่าเป็น middleware ธรรมดา ไม่ใช่ error handler (บั๊กที่หาเจอยาก)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: async error — กับดักที่ต่างจาก sync</h2>
+  <div class="card">
+    <p>Express 4 ไม่จับ error จาก async function อัตโนมัติ — ถ้า await พังใน route ต้อง catch แล้ว next เอง:</p>
+<pre><code>// ❌ async พัง = Unhandled rejection (Express 4 ไม่ส่งไป error handler)
+app.get("/api/books", async (req, res) => {
+  const books = await db.getBooks();   // ถ้าพังตรงนี้...
+  res.json(books);                     // ...handler ข้างล่างไม่ถูกเรียก
+});
+
+// ✅ จับแล้ว next(err)
+app.get("/api/books", async (req, res, next) => {
+  try {
+    const books = await db.getBooks();
+    res.json({ ok: true, data: books });
+  } catch (err) { next(err); }         // ส่งต่อให้ centralized handler
+});</code></pre>
+    <p class="muted">เกร็ด production: ทีมจริงมักใช้ตัวห่อ (wrapper) <code>asyncHandler</code> หรือ Express 5 (จับ async ให้อัตโนมัติ) เพื่อไม่ต้องเขียน try/catch ทุก route — แต่เข้าใจกลไกพื้นฐานก่อนค่อยใช้ของลัด</p>
+<pre><code>// 🎁 ของลัดที่ทีมใช้: asyncHandler ห่อ route ให้ catch อัตโนมัติ
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+app.get("/api/books", asyncHandler(async (req, res) => {
+  const books = await db.getBooks();   // พังเมื่อไหร่ catch → next เองอัตโนมัติ
+  res.json({ ok: true, data: books });
+}));</code></pre>
+  </div>
+
+  <h2>ส่วนที่ 4: 404 Handler — เมื่อไม่มี route ไหนรับ</h2>
+  <div class="card">
+<pre><code>// วางก่อน error handler — จับทุก request ที่ไม่ตรง route ไหนเลย
+app.use((req, res) => {
+  res.status(404).json({ ok: false, error: `ไม่พบ ${req.method} ${req.url}` });
+});</code></pre>
+    <p>ถ้าไม่มี 404 handler — request ที่หลง (เช่น <code>/api/bookssss</code>) จะได้ HTML error หน้าตาแปลก ๆ ของ Express
+    ซึ่ง frontend parse ไม่ได้ (คาดหวัง JSON) → ใส่ 404 handler ทำให้ API ตอบ JSON สม่ำเสมอแม้ path ผิด</p>
+    <div class="tip"><strong>ลำดับที่ถูกต้องใน server.js:</strong> ① middleware (json, logger) → ② routes → ③ <strong>404 handler</strong> → ④ <strong>error handler</strong> (ท้ายสุด) — ลำดับนี้สำคัญมาก สลับแล้วพัง</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์ในงานจริง</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี — automation report:</strong> เวลา API ดึง GA4 แล้ว token หมดอายุ (พังกลางทาง) —
+    centralized error handler จับได้ที่เดียว ตอบ frontend ว่า "เชื่อมต่อ GA4 ไม่สำเร็จ" (ไม่รั่วว่า token อะไรหมด)
+    พร้อม log error จริงให้คุณ debug — นี่คือความต่างของ tool ภายในที่ใช้ได้จริงกับ script ที่พังเงียบ</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> ทุก API ระดับ production มี error handler กลาง + ระบบ log (Sentry — Week 15) —
+    เพราะเมื่อมี request ล้านครั้ง/วัน คุณต้องรู้ว่าพังกี่ครั้ง พังที่ไหน โดยไม่ให้ผู้ใช้เห็นรายละเอียดภายใน</p>
+  </div>
+
+  <h2>🧹 Clean Code: error handling แบบ production</h2>
+  <div class="card">
+    <div class="clean">
+      <div class="bad"><h4>❌ ตอบ error ดิบ</h4>
+<pre><code>catch (err) {
+  res.status(500).json({ error: err.message });
+  // err.message อาจมี: "ECONNREFUSED 10.0.0.5:5432"
+  // → บอก IP database ให้ผู้โจมตี!
+}</code></pre></div>
+      <div class="good"><h4>✅ log จริง + ตอบปลอดภัย</h4>
+<pre><code>catch (err) {
+  logger.error(err);   // รายละเอียดเต็มให้ทีม
+  res.status(500).json({
+    ok: false,
+    error: "เกิดข้อผิดพลาด กรุณาลองใหม่",  // user เห็นแค่นี้
+  });
+}</code></pre></div>
+    </div>
+    <div class="warn"><strong>กฎทอง:</strong> error handler เดียวทั้งระบบ · log ภายในละเอียด ตอบ user คลุมเครือ ·
+    500 ห้ามรั่วรายละเอียด · ลำดับ middleware ถูกต้อง (404 ก่อน error handler ท้ายสุด)</div>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: error handler ของ Express ต่างจาก middleware ธรรมดายังไง — Express รู้ได้ไง?</summary>
+    <p>นับจาก<strong>จำนวน argument</strong> — middleware ธรรมดา 3 args <code>(req,res,next)</code> / error handler 4 args <code>(err,req,res,next)</code>
+    เขียน 4 args Express จะส่ง error มาที่นี่อัตโนมัติ ถ้าเผลอเขียน 3 args จะกลายเป็น middleware ธรรมดา error ไม่เข้า (บั๊กหายาก)</p></details>
+  <details><summary>ข้อ 2: ทำไม error handler ต้องวางท้ายสุดของ server.js?</summary>
+    <p>เพราะ Express ทำงาน middleware ตามลำดับที่เขียน — error handler ต้องอยู่หลังทุก route เพื่อ "ดักของที่ตกลงมา" จากข้างบนทั้งหมด
+    ถ้าวางบนสุด route ที่อยู่ข้างล่างจะส่ง error มาไม่ถึง</p></details>
+  <details><summary>ข้อ 3 (security): route ดึง DB แล้วพัง ตอบ <code>{ error: err.message }</code> ตรง ๆ อันตรายยังไง?</summary>
+    <p>err.message ของ DB มักมีรายละเอียดภายใน เช่น ชื่อ table/column, IP database, SQL ที่พัง —
+    ผู้โจมตีใช้ข้อมูลนี้ทำ recon วางแผนเจาะต่อ (เช่น รู้ว่ามี table users ก็ลอง SQL injection) ตอบแค่ "Internal error" + log จริงไว้ฝั่ง server</p></details>
+  <details><summary>ข้อ 4: async route ใน Express 4 พังแล้ว error handler ไม่ทำงาน เพราะอะไร แก้ยังไง?</summary>
+    <p>Express 4 ไม่จับ rejection จาก async function อัตโนมัติ → error หลุดเป็น Unhandled rejection ไม่ถึง handler
+    แก้: try/catch แล้ว <code>next(err)</code> เอง หรือใช้ wrapper <code>asyncHandler</code> หรืออัปเป็น Express 5 (จับ async ให้)</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>ใส่ centralized error handler + 404 handler ใน library-system (ลำดับถูก)</li>
+    <li>แปลง route ที่มี try/catch ซ้ำ ให้ใช้ next(err)</li>
+    <li>error 500 ไม่รั่วรายละเอียดภายใน</li>
+    <li>Quiz + โน้ต <code>notes/error-handling.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 3</a>
+    <a class="btn" href="02-testing-fundamentals.html">บทที่ 2: Testing →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 3 บทที่ 1</footer>
+</div>
+</body>
+</html>

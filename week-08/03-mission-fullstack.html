@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: Frontend ให้ library-system</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 8</a> · Mission ใหญ่</div>
+    <h1>🌐 Frontend ให้ library-system (Full-Stack)</h1>
+    <p>ประกอบทุกอย่างที่เรียนมา 8 สัปดาห์เป็น full-stack app จริง — ปิดเฟส 1 อย่างสมบูรณ์</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือมงกุฎของเฟส 1</h3>
+    <p>หลังจบ Mission นี้คุณมี <strong>full-stack app เต็มระบบ</strong>: หน้าบ้าน Next.js (TS+Tailwind) ↔ หลังบ้าน Express API
+    (TS+test+DB+auth) ที่สร้างเอง · login ได้ ดูหนังสือได้ ยืมได้ · นี่คือ portfolio piece ที่เล่า interview ได้ 30 นาที
+    และพิสูจน์คำว่า "Full Stack Developer" ใน resume ด้วยของจริง</p>
+    <div class="warn"><strong>ต้องมี backend รันอยู่:</strong> library-system API จาก Week 1-7 ต้องรัน (docker compose up + npm run dev) เพื่อให้ frontend ต่อได้</div>
+  </div>
+
+  <h2>📋 เป้าหมาย</h2>
+  <div class="card">
+    <table>
+      <tr><th>หน้า</th><th>ทำอะไร</th><th>ใช้ความรู้</th></tr>
+      <tr><td><code>/books</code></td><td>list หนังสือ (fetch API + 4 สถานะ)</td><td>Week 1 fetch + Week 7 union</td></tr>
+      <tr><td><code>/login</code></td><td>login → เก็บ token (HttpOnly)</td><td>Week 5 auth + Week 1 security</td></tr>
+      <tr><td><code>/books/[id]</code></td><td>รายละเอียด + ปุ่มยืม (protected)</td><td>Week 5 protect + Week 8 dynamic route</td></tr>
+      <tr><td>API proxy</td><td>route handler ถือ token</td><td>Week 8 security</td></tr>
+    </table>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 8.1 — Setup + หน้า book list <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>create-next-app (TS + Tailwind + App Router) ชื่อ <code>library-web</code></li>
+      <li><code>/books</code> — fetch จาก API + แสดงการ์ด (Tailwind) responsive</li>
+      <li>จัดการ 4 สถานะ (loading/success/error/empty) ด้วย FetchState union</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> เปิด /books เห็นหนังสือจาก DB จริง · ปิด backend → เห็น error state ไม่ใช่จอขาว</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 8.2 — แยก component + type props <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>แยก <code>BookCard</code> (UI) + <code>useBooks</code> hook (fetch logic)</li>
+      <li>type props ทุก component (Book type จาก backend)</li>
+      <li>page.tsx บาง (แค่ประกอบ)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> component แยกหน้าที่ชัด · type ครบ · build ผ่าน</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 8.3 — Login + Auth proxy <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li><code>/login</code> — form ส่ง credential</li>
+      <li>route handler <code>/api/auth/login</code> — คุย backend, เก็บ token ใน HttpOnly cookie</li>
+      <li><code>/books/[id]</code> — ปุ่มยืม (ต้อง login) → เรียกผ่าน proxy ที่แนบ token</li>
+    </ol>
+    <div class="warn"><strong>security checklist:</strong> token ไม่อยู่ใน localStorage/ไม่โผล่ console · credential ส่งผ่าน POST · login error ตอบกลาง ๆ</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 8.4 — Deploy + ปิดเฟส 1 <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>deploy frontend ขึ้น Vercel (เชื่อม env ชี้ backend)</li>
+      <li>README: screenshot + วิธีรัน (backend + frontend) + Tech Stack เต็ม + AI Usage</li>
+      <li>push + pin repo — portfolio full-stack ชิ้นเอก</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> เปิด URL deploy → ใช้งานได้จริง (ดูหนังสือ, login) จากมือถือ</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Integration</td><td>30%</td><td>frontend ต่อ backend จริง · fetch + 4 สถานะ · login flow ทำงาน</td></tr>
+      <tr><td>Security</td><td>25%</td><td>token HttpOnly/proxy · ไม่รั่ว credential · ไม่เก็บ localStorage</td></tr>
+      <tr><td>Code quality</td><td>25%</td><td>แยก component/hook · type props · server/client เลือกถูก · Tailwind สะอาด</td></tr>
+      <tr><td>Deploy + README</td><td>20%</td><td>deploy ใช้งานได้ · README ครบ + screenshot · responsive</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์ + จบเฟส 1 🎉🎉</h2>
+  <ul class="check">
+    <li>full-stack app: Next.js frontend ↔ library-system API</li>
+    <li>book list (4 สถานะ) + login (token ปลอดภัย) + protected (ยืม)</li>
+    <li>แยก component/hook + type props + server/client ถูก</li>
+    <li>deploy ใช้งานได้จริง + README + pin repo</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #7 ใน chat</li>
+    <li><strong>🎉 จบเฟส 1 (Week 1-8)!</strong> คุณมี full-stack app เต็มระบบ (TS/test/DB/auth/Next.js) ที่โค้ดไล่ทัน resume แล้ว · พร้อมเข้าเฟส 2 (Production: Docker compose/CI-CD/deploy)</li>
+  </ul>
+
+  <div class="card" style="background:#eff6ff;border-color:#2563eb">
+    <h3 style="margin-top:0">🏆 สรุปสิ่งที่คุณมีหลังจบเฟส 1</h3>
+    <p><strong>library-system</strong> — full-stack app ที่มี: Express API (TypeScript strict) · PostgreSQL ใน Docker · Zod validation ·
+    JWT auth + role + transaction · Vitest/Supertest test suite · Next.js + Tailwind frontend · deploy แล้ว ·
+    README ระดับ portfolio · commit history 8 สัปดาห์ที่เล่าการเติบโตได้ · <strong>นี่คือหลักฐานที่ทำให้ "Full Stack Developer" ใน resume เป็นจริง</strong></p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-tailwind-integration.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 8</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 8 Mission ใหญ่ · จบเฟส 1</footer>
+</div>
+</body>
+</html>

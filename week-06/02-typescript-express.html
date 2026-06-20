@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: TS ในงานจริง — Generics + Express + Zod</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 6</a> · บทที่ 2</div>
+    <h1>TS ในงานจริง — Generics + Express + Zod</h1>
+    <p>จาก type พื้นฐาน สู่การใช้ TS กับ Express และ Zod ที่คุณเขียนมาแล้ว</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📦 กล่องที่ใส่ type อะไรก็ได้ = Generic &lt;T&gt;</span>
+      <span class="kw">🔧 แปลง type สำเร็จรูป = Utility types</span>
+      <span class="kw">🎫 Request&lt;params,res,body&gt; = typed Express</span>
+      <span class="kw">🪄 z.infer = type จาก Zod ฟรี</span>
+      <span class="kw">🔒 strict = TS เข้มสุด</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "DRY กับ type ด้วย — อย่าเขียน type ซ้ำ"</h3>
+    <p>ถ้าเขียน type Book ไว้ใน 5 ที่ วันหน้าเพิ่ม field ต้องแก้ 5 ที่ ลืม 1 = ไม่ตรง · สร้าง type ที่เดียว แล้ว import ไปใช้
+    หรือ "แปลง" จาก type เดิม (utility types) — type ก็ต้อง DRY เหมือนโค้ด</p>
+    <h3>หลักการ 2: "Single source of truth — schema กับ type ต้องตรงกันเสมอ"</h3>
+    <p>คุณมี Zod schema (Week 4) ที่บอกว่าข้อมูลถูกต้องหน้าตายังไง · ถ้าเขียน TS type แยกอีกอัน = 2 ที่ต้อง sync กัน (พลาดง่าย)
+    Zod <code>infer</code> ดึง type ออกจาก schema ให้ฟรี — แก้ schema ที่เดียว type ตามอัตโนมัติ · นี่คือพลังของการรวม validation+type</p>
+    <h3>หลักการ 3: "Strict mode คือมาตรฐาน ไม่ใช่ option"</h3>
+    <p>TS แบบหลวม (ไม่ strict) ปล่อย null/undefined ผ่านได้ = เสียประโยชน์ครึ่งหนึ่ง · strict mode บังคับจัดการ null,
+    ห้าม implicit any — เข้มขึ้นแต่ปลอดภัยจริง · ทุกโปรเจกต์ production เปิด strict เป็น default</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Generics — "กล่องที่ใส่ type อะไรก็ได้"</h2>
+  <div class="card">
+<pre><code>// ❌ ไม่มี generic — เขียนซ้ำต่อ type
+function firstString(arr: string[]): string { return arr[0]; }
+function firstNumber(arr: number[]): number { return arr[0]; }
+
+// ✅ generic &lt;T&gt; — T = type อะไรก็ได้ ที่ส่งมาตอนเรียก
+function first&lt;T&gt;(arr: T[]): T {
+  return arr[0];
+}
+first([1, 2, 3]);        // T = number → คืน number
+first(["a", "b"]);       // T = string → คืน string</code></pre>
+    <p>คุณใช้ generic มาแล้วโดยไม่รู้ตัว — <code>Array&lt;Book&gt;</code>, <code>Promise&lt;Book&gt;</code> คือ generic
+    (Array ที่ใส่ Book, Promise ที่ resolve เป็น Book):</p>
+<pre><code>const books: Array&lt;Book&gt; = [];          // = Book[]
+async function getBook(): Promise&lt;Book&gt; { ... }   // async คืน Promise ของ Book</code></pre>
+    <div class="tip"><strong>เมื่อไหร่เขียน generic เอง:</strong> ตอนเขียนฟังก์ชัน/utility ที่ "ทำงานกับ type ไหนก็ได้" (เช่น API response wrapper)
+    — งานทั่วไปใช้ generic ของคนอื่น (Array, Promise) มากกว่าเขียนเอง · เข้าใจไว้พออ่านโค้ดคนอื่นออก</div>
+  </div>
+
+  <h2>ส่วนที่ 2: Utility Types — แปลง type สำเร็จรูป</h2>
+  <div class="card">
+    <p>TS มี "เครื่องมือแปลง type" ที่ใช้บ่อยมากในงานจริง — ไม่ต้องเขียน type ใหม่:</p>
+<pre><code>interface Book { id: number; title: string; author: string; available: boolean; }
+
+Partial&lt;Book&gt;     // ทุก field เป็น optional → ใช้ตอน update (ส่งมาบางอัน)
+Pick&lt;Book, "title" | "author"&gt;   // เอาแค่บาง field
+Omit&lt;Book, "id"&gt;  // เอาทุก field ยกเว้น id → ใช้ตอน create (ยังไม่มี id)
+Required&lt;Book&gt;    // ทุก field บังคับมี
+Readonly&lt;Book&gt;    // แก้ไม่ได้</code></pre>
+    <table>
+      <tr><th>Utility</th><th>ใช้จริงเมื่อ</th></tr>
+      <tr><td><code>Omit&lt;Book, "id"&gt;</code></td><td>type ของ "book ที่จะสร้าง" (ยังไม่มี id, DB gen ให้)</td></tr>
+      <tr><td><code>Partial&lt;Book&gt;</code></td><td>type ของ "update" (ส่งมาแก้แค่บาง field)</td></tr>
+      <tr><td><code>Pick&lt;User, "id"|"email"&gt;</code></td><td>type ของ "user ที่ส่งกลับ client" (ตัด password)</td></tr>
+    </table>
+    <p class="muted">utility types คือเหตุผลที่ "เขียน type ครั้งเดียว ใช้ได้หลายรูป" — Book → BookInput (Omit id) → BookUpdate (Partial) ทั้งหมดมาจาก type เดียว</p>
+  </div>
+
+  <h2>ส่วนที่ 3: z.infer — type จาก Zod ฟรี (เชื่อม Week 4)</h2>
+  <div class="card">
+    <p>จุดที่ TS + Zod เข้าคู่กันสวยที่สุด — เขียน schema ครั้งเดียว ได้ทั้ง validation และ type:</p>
+<pre><code>import { z } from "zod";
+
+// schema เดียว (จาก Week 4) — เป็นทั้ง validation และต้นทางของ type
+const BookSchema = z.object({
+  title: z.string().min(1),
+  author: z.string().optional(),
+  available: z.boolean().default(true),
+});
+
+// ดึง type ออกมาฟรี — แก้ schema ที่เดียว type ตามอัตโนมัติ
+type BookInput = z.infer&lt;typeof BookSchema&gt;;
+// = { title: string; author?: string; available: boolean }
+
+function createBook(data: BookInput) { ... }   // ใช้ type ที่ infer มา</code></pre>
+    <div class="tip"><strong>ทำไมนี่คือ best practice:</strong> ไม่มี type Book แยกที่ต้อง sync กับ schema —
+    schema คือ single source of truth ทั้ง runtime (validate) และ compile-time (type) · นี่คือ pattern ที่ทีม TS ทั่วโลกใช้
+    และเป็นสิ่งที่ทำให้ Week 4 (Zod) + Week 6 (TS) ต่อกันลงตัว</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Type Express req/res</h2>
+  <div class="card">
+<pre><code>import { Request, Response } from "express";
+
+// typed handler — บอก type ของ params/body
+app.get("/api/books/:id", (req: Request, res: Response) => {
+  const id = req.params.id;     // string เสมอ (จาก URL)
+  res.json({ ok: true });
+});
+
+// type req.body ให้ตรงกับ Zod (generic ของ Request)
+import { z } from "zod";
+type BookInput = z.infer&lt;typeof BookSchema&gt;;
+
+app.post("/api/books", (req: Request&lt;{}, {}, BookInput&gt;, res: Response) => {
+  const { title, author } = req.body;   // TS รู้ type แล้ว auto-complete ให้
+});</code></pre>
+    <p class="muted">Request generic: <code>Request&lt;Params, ResBody, ReqBody&gt;</code> — ใส่ type body ให้ req.body มี type ถูกต้อง · ในงานจริงมักทำ typed middleware ห่อให้สวยกว่านี้</p>
+  </div>
+
+  <h2>ส่วนที่ 5: Setup TS + tsconfig strict</h2>
+  <div class="card">
+<pre><code>npm install -D typescript tsx @types/node @types/express
+npx tsc --init                # สร้าง tsconfig.json
+
+// tsconfig.json — ค่าที่สำคัญ
+{
+  "compilerOptions": {
+    "strict": true,            // ⭐ เปิดเข้มสุด (บังคับจัดการ null, ห้าม implicit any)
+    "target": "ES2022",
+    "module": "commonjs",      // หรือ esnext ตาม setup
+    "outDir": "./dist",
+    "rootDir": "./src"
+  }
+}
+
+// package.json scripts
+"dev": "tsx watch src/server.ts",    // tsx = รัน TS ตรง ๆ ตอน dev (เร็ว)
+"build": "tsc",                       // compile เป็น JS ใน dist/
+"start": "node dist/server.js"</code></pre>
+    <div class="warn"><strong>strict ทำให้เจอ error เยอะตอนแรก — นั่นคือเรื่องดี:</strong> error เหล่านั้นคือบั๊กที่ JS ซ่อนไว้
+    เช่น <code>book</code> อาจเป็น undefined (หาไม่เจอ) ที่ JS ปล่อยผ่านจนพังตอนรัน · strict บังคับให้จัดการตั้งแต่ต้น · อย่าปิด strict เพื่อหนี error</div>
+  </div>
+
+  <h2>ส่วนที่ 6: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation report — Zod schema ของ config ลูกค้า → infer type → ใช้ทั้ง validate request และ type ในโค้ดสรุป
+    แก้ schema ที่เดียว ทั้ง runtime และ type ตามหมด · ไม่มีทาง config type ไม่ตรงกับที่ validate</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> Zod + z.infer เป็น pattern มาตรฐานของ API ยุคใหม่ (tRPC, Next.js API ก็ใช้) ·
+    utility types (Omit/Partial/Pick) อยู่ในทุก codebase TS · เข้าใจ 2 อย่างนี้ = อ่านโค้ด production ทีมใหญ่ออก</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: generic <code>&lt;T&gt;</code> แก้ปัญหาอะไร ยกตัวอย่างที่คุณใช้อยู่แล้ว</summary>
+    <p>เขียนฟังก์ชัน/type ที่ทำงานกับ "type ไหนก็ได้" โดยไม่เสีย type safety (ไม่ต้องใช้ any) — เช่น <code>first&lt;T&gt;(arr: T[]): T</code> ·
+    ที่ใช้อยู่แล้ว: <code>Array&lt;Book&gt;</code> (= Book[]), <code>Promise&lt;Book&gt;</code> (async คืน Promise ของ Book)</p></details>
+  <details><summary>ข้อ 2: อยาก type "book ที่จะสร้าง" (ยังไม่มี id) จาก interface Book — ใช้ utility อะไร?</summary>
+    <p><code>Omit&lt;Book, "id"&gt;</code> — เอาทุก field ยกเว้น id (เพราะ DB generate id ให้ตอน insert) · ดีกว่าเขียน interface ใหม่
+    เพราะถ้า Book เพิ่ม field, BookInput ตามอัตโนมัติ</p></details>
+  <details><summary>ข้อ 3: ทำไม z.infer ดีกว่าเขียน type Book แยกจาก Zod schema?</summary>
+    <p>schema เป็น single source of truth — แก้ schema ที่เดียว type ตามอัตโนมัติ · ถ้าเขียน type แยก = 2 ที่ต้อง sync เอง พลาดง่าย
+    (validate กับ type ไม่ตรง = บั๊กที่หายากมาก) · z.infer รวม runtime validation + compile-time type เป็นหนึ่ง</p></details>
+  <details><summary>ข้อ 4: strict mode ทำให้เจอ error เยอะตอนแปลง — ทำไมไม่ควรปิดมันหนี?</summary>
+    <p>error เหล่านั้นคือบั๊กที่ JS ซ่อนอยู่จริง (เช่น ค่าอาจเป็น undefined ที่ไม่ได้จัดการ) · ปิด strict = หนีปัญหา ไม่ได้แก้
+    บั๊กยังอยู่ รอพังตอน production · จัดการให้ครบตอนนี้ = ปลอดภัยจริงและได้ประโยชน์ TS เต็มที่</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>เข้าใจ generic (อ่านโค้ดที่ใช้ &lt;T&gt; ออก)</li>
+    <li>ใช้ utility types (Omit/Partial/Pick) ได้</li>
+    <li>ใช้ z.infer ดึง type จาก Zod schema</li>
+    <li>setup tsconfig strict + tsx/build script</li>
+    <li>Quiz + โน้ต <code>notes/ts-express-zod.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-typescript-basics.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-ts.html">Mission ใหญ่: แปลง TS →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 6 บทที่ 2</footer>
+</div>
+</body>
+</html>

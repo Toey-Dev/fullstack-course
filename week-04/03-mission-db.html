@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: library-system → PostgreSQL + Zod</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 4</a> · Mission ใหญ่</div>
+    <h1>🗄 library-system → PostgreSQL + Zod</h1>
+    <p>ย้ายจากไฟล์ JSON สู่ database จริง — โดยมี test จาก Week 3 เป็นตาข่ายรองรับให้กล้าแก้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือบทพิสูจน์ของ Week 3</h3>
+    <p>คุณกำลังจะ "ผ่าตัดใหญ่" — เปลี่ยนที่เก็บข้อมูลทั้งระบบ ปกติน่ากลัวมาก (กลัวพังที่อื่น)
+    แต่คุณมี <strong>test จาก Week 3</strong> เป็นตาข่าย: แก้เสร็จรัน <code>npm test</code> ถ้ายังเขียว = ผ่าตัดสำเร็จ
+    นี่คือเหตุผลจริงว่าทำไมเราเขียน test ก่อน — <strong>เพื่อให้สัปดาห์นี้กล้าแก้</strong></p>
+    <div class="warn">เรียนคู่ Kcode Day 4 (Connect Express to PostgreSQL) ได้ — <strong>เขียนเองทุกบรรทัด ปิด AI</strong></div>
+  </div>
+
+  <h2>📋 เป้าหมาย</h2>
+  <div class="card">
+    <p>library-system เดิม (เก็บ books ใน array/JSON) → เก็บใน PostgreSQL ที่รันใน Docker · validate ด้วย Zod · test เดิมยังเขียว</p>
+    <p><strong>โครงที่จะมีหลังจบ:</strong></p>
+<pre><code>library-system/
+├── docker-compose.yml          # PostgreSQL container
+├── .env / .env.example         # DATABASE_URL (ไม่ commit .env)
+├── src/
+│   ├── db.js                   # connection pool
+│   ├── schemas/book.schema.js  # Zod
+│   ├── repositories/books.repo.js  # คุย DB (SQL)
+│   ├── controllers/ routes/ middlewares/
+│   └── app.js / server.js
+└── tests/</code></pre>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 4.1 — Docker + ตาราง <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>เขียน <code>docker-compose.yml</code> รัน PostgreSQL + <code>docker compose up -d</code></li>
+      <li>ต่อ DBeaver + รัน <code>CREATE TABLE books</code> (id, title, author, available, created_at)</li>
+      <li>ตั้ง <code>.env</code> (DATABASE_URL) + ใส่ <code>.env</code>, <code>node_modules</code> ใน <code>.gitignore</code></li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> DBeaver เห็นตาราง books · <code>git status</code> ไม่มี .env หลุด</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 4.2 — Repository layer + Zod <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li><code>src/db.js</code> — connection Pool</li>
+      <li><code>src/repositories/books.repo.js</code> — findAll, findById (ใช้ <code>$1</code> parameterized)</li>
+      <li><code>src/schemas/book.schema.js</code> — Zod BookSchema + validate middleware</li>
+    </ol>
+    <div class="warn"><strong>คิดแบบ pentester:</strong> ทุก query ที่มี input ต้องใช้ <code>$1</code> — ไม่มีที่ไหนต่อ string เด็ดขาด</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 4.3 — CRUD เชื่อม DB จริง <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>controller เรียก repository (ไม่แตะ SQL ตรง ๆ ใน controller)</li>
+      <li><code>GET /api/books</code> + <code>GET /api/books/:id</code> (404 ถ้าไม่เจอ) — อ่านจาก DB จริง</li>
+      <li><code>POST /api/books</code> ผ่าน Zod validate → INSERT → คืน 201 + book ที่สร้าง</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์มือ:</strong> POST เล่มใหม่ → เห็นใน DBeaver จริง · restart server → ข้อมูลยังอยู่ (ต่างจาก JSON เดิม)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 4.4 — test ยังเขียว + push <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>ปรับ test (Week 3) ให้รันกับ DB — ตั้ง test data ก่อนเทสต์, เคลียร์หลังเทสต์ (หรือใช้ test DB แยก)</li>
+      <li><code>npm test</code> ต้องเขียว — พิสูจน์ว่าผ่าตัดสำเร็จ ระบบยังทำงานถูกหลังเปลี่ยน DB</li>
+      <li>push — README เพิ่มหัวข้อ "Setup" (docker compose up + .env.example) + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> clone repo ใหม่ → ตาม README → ระบบรันได้ (นี่คือบททดสอบจริงว่า README ดีพอ)</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>DB integration</td><td>30%</td><td>เชื่อม PostgreSQL ผ่าน Pool · CRUD ทำงานจริง · ข้อมูลรอด restart</td></tr>
+      <tr><td>Security</td><td>25%</td><td>parameterized query ทุกที่ · .env ไม่หลุด git · error ไม่รั่ว</td></tr>
+      <tr><td>Validation + โครง</td><td>25%</td><td>Zod schema + middleware · แยก repository layer ชัด</td></tr>
+      <tr><td>Test + Git</td><td>20%</td><td>test ยังเขียวหลังเปลี่ยน DB · README setup ครบ clone แล้วรันได้</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>library-system ใช้ PostgreSQL จริง (ข้อมูลรอด restart)</li>
+    <li>parameterized query ทุกที่ + .env ไม่หลุด git</li>
+    <li>Zod validate + repository layer แยกชัด</li>
+    <li><code>npm test</code> ยังเขียวหลังเปลี่ยน DB</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #3 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 5</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-postgres-zod.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 4</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 4 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

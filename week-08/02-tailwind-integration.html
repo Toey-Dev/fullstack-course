@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Tailwind + เชื่อม API + Auth</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 8</a> · บทที่ 2</div>
+    <h1>Tailwind + เชื่อม API + Auth</h1>
+    <p>ประกอบ frontend กับ library-system API — เชื่อมทุกอย่างที่เรียนมา 8 สัปดาห์</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🎨 class = style (Tailwind utility)</span>
+      <span class="kw">🔄 4 สถานะ = loading/success/error/empty</span>
+      <span class="kw">🚇 route handler = ตัวกลาง (proxy) กัน token รั่ว</span>
+      <span class="kw">🎫 token แนบ header = Authorization Bearer</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Utility-first — style ด้วย class เล็ก ๆ ประกอบกัน"</h3>
+    <p>Tailwind คือ Bootstrap เวอร์ชัน utility ล้วน (ที่คุณรู้หลักแล้วจาก Week 0) — แทน <code>.card</code> สำเร็จรูป
+    ใช้ class เล็ก ๆ ประกอบ (<code>p-4 rounded-lg shadow bg-white</code>) · ยืดหยุ่นกว่า ปรับแต่งได้ละเอียด ไม่ต้องเขียน CSS แยก
+    หลักคิดเดียวกับ Bootstrap utility (mt-3, d-flex) แค่ครอบคลุมกว่า</p>
+    <h3>หลักการ 2: "Frontend ไม่ควรถือความลับ — token ผ่าน server"</h3>
+    <p>จาก Week 1+5: token ใน browser เสี่ยง XSS · Next.js มี "route handler" (API ฝั่ง Next) เป็นตัวกลาง —
+    frontend คุยกับ route handler, route handler ถือ token คุยกับ backend · token ไม่โผล่ใน browser (ปลอดภัยกว่า)
+    นี่คือ "API Proxy" pattern ที่เชื่อมความรู้ security ทั้งหมด</p>
+    <h3>หลักการ 3: "4 สถานะเสมอ — frontend จริงไม่ใช่แค่ happy path"</h3>
+    <p>ทบจาก Week 1: ทุกการ fetch ต้องจัดการ loading (กำลังโหลด), success (มีข้อมูล), error (พัง), empty (สำเร็จแต่ว่าง) ·
+    discriminated union (Week 7) ทำให้ออกแบบ state นี้แบบ "ลืม case ไม่ได้" · นี่คือจุดที่ทุกอย่างที่เรียนมาบรรจบกัน</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Tailwind — ต่อยอดจาก Bootstrap</h2>
+  <div class="card">
+<pre><code>{/* การ์ดหนังสือด้วย Tailwind */}
+&lt;div className="p-4 rounded-lg shadow bg-white hover:shadow-lg transition"&gt;
+  &lt;h3 className="text-lg font-semibold text-gray-800"&gt;{book.title}&lt;/h3&gt;
+  &lt;p className="text-sm text-gray-500 mt-1"&gt;{book.author}&lt;/p&gt;
+  &lt;button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded
+                     hover:bg-blue-700 disabled:opacity-50"&gt;
+    ยืม
+  &lt;/button&gt;
+&lt;/div&gt;</code></pre>
+    <table>
+      <tr><th>Tailwind</th><th>เทียบ Bootstrap (Week 0)</th></tr>
+      <tr><td><code>p-4</code> (padding)</td><td><code>p-4</code> คล้ายกัน</td></tr>
+      <tr><td><code>flex gap-3</code></td><td><code>d-flex gap-3</code></td></tr>
+      <tr><td><code>text-gray-500</code></td><td><code>text-secondary</code></td></tr>
+      <tr><td><code>md:grid-cols-3</code></td><td><code>col-md-4</code> (responsive)</td></tr>
+    </table>
+    <p class="muted">หลัก utility-first เดียวกับ Bootstrap ที่รู้แล้ว — Tailwind แค่ครอบคลุมกว่าและ responsive ด้วย prefix (<code>md:</code>, <code>hover:</code>)</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Fetch จาก API + 4 สถานะ</h2>
+  <div class="card">
+<pre><code>"use client";
+import { useState, useEffect } from "react";
+
+function BookList() {
+  const [state, setState] = useState&lt;FetchState&lt;Book[]&gt;&gt;({ status: "loading" });
+
+  useEffect(() =&gt; {
+    fetch("/api/books")
+      .then(r =&gt; r.ok ? r.json() : Promise.reject(r.status))
+      .then(d =&gt; setState({ status: "success", data: d.data }))
+      .catch(e =&gt; setState({ status: "error", message: String(e) }));
+  }, []);
+
+  // 4 สถานะ (discriminated union จาก Week 7)
+  if (state.status === "loading") return &lt;Spinner /&gt;;
+  if (state.status === "error")   return &lt;ErrorMsg msg={state.message} /&gt;;
+  if (state.data.length === 0)    return &lt;Empty /&gt;;        // empty
+  return &lt;Grid books={state.data} /&gt;;                      // success
+}</code></pre>
+    <p class="muted">สังเกต: นี่คือ fetch pattern (Week 1) + discriminated union (Week 7) + Next.js (Week 8) บรรจบกัน — ความรู้ทุกสัปดาห์ทำงานร่วม</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Login + Token + Protected (เชื่อม Week 5)</h2>
+  <div class="card">
+<pre><code>// หน้า login — ส่ง credential, รับ token
+"use client";
+async function handleLogin(email: string, password: string) {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) return showError("login ไม่สำเร็จ");
+  // token จัดการฝั่ง server (route handler) — ดู API Proxy ด้านล่าง
+  router.push("/books");
+}</code></pre>
+    <p><strong>API Proxy (route handler) — กัน token รั่ว:</strong></p>
+<pre><code>// app/api/auth/login/route.ts — ตัวกลางฝั่ง Next (server)
+export async function POST(req: Request) {
+  const body = await req.json();
+  const res = await fetch("http://backend/api/login", {  // คุยกับ backend
+    method: "POST", headers: {...}, body: JSON.stringify(body),
+  });
+  const { token } = await res.json();
+  // เก็บ token ใน HttpOnly cookie (JS อ่านไม่ได้ — กัน XSS, จาก Week 5)
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set("token", token, { httpOnly: true, secure: true });
+  return response;
+}</code></pre>
+    <div class="danger"><strong>🔐 จุดที่ความรู้ security ทั้งหมดบรรจบ:</strong> token เก็บใน HttpOnly cookie (Week 1+5) ·
+    frontend ไม่เคยเห็น token (route handler ถือแทน) · ทุก request ที่ต้อง auth ผ่าน route handler ที่แนบ cookie ให้
+    — นี่คือเหตุผลที่ Week 1 เราคุยเรื่อง localStorage vs cookie ไว้ ตอนนี้ทำจริง</div>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> dashboard ลูกค้า — Next.js route handler ถือ API key ของ GA4/Meta (ไม่ให้โผล่ browser),
+    frontend เรียกผ่าน proxy · นี่คือ pattern ที่ทำให้ credential ปลอดภัยใน full-stack app (Kcode Day 7 ก็สอนเรื่องนี้)</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> API proxy + HttpOnly cookie เป็น pattern มาตรฐานของ Next.js production · Tailwind เป็น CSS framework
+    อันดับต้นในตลาด · full-stack ที่เชื่อม frontend↔backend ของตัวเอง = portfolio ที่ interviewer ชอบเพราะเห็น "ทำได้ทั้งระบบ"</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: Tailwind ต่างจาก Bootstrap ยังไง หลักการเหมือนกันไหม?</summary>
+    <p>หลัก utility-first เหมือนกัน (style ด้วย class เล็ก ๆ ประกอบ) — Tailwind ครอบคลุมกว่า, ปรับแต่งละเอียดกว่า, ไม่มี component สำเร็จรูป
+    (ประกอบเอง) · คนที่รู้ Bootstrap utility (Week 0) เรียน Tailwind ได้เร็วเพราะหลักคิดเดียวกัน</p></details>
+  <details><summary>ข้อ 2: ทำไมต้องจัดการ 4 สถานะ ไม่ใช่แค่ success?</summary>
+    <p>เพราะโลกจริงไม่เป็นใจ — loading (กำลังโหลด, ไม่ให้จอว่าง), error (พัง, บอกผู้ใช้), empty (สำเร็จแต่ไม่มีข้อมูล, ต่างจาก error) ·
+    จัดการแค่ success = จอค้าง/ขาวเมื่อเจอเรื่องร้าย · discriminated union (Week 7) ทำให้ลืม case ไม่ได้</p></details>
+  <details><summary>ข้อ 3 (security): ทำไมเก็บ token ใน HttpOnly cookie ผ่าน route handler ดีกว่าเก็บใน localStorage ฝั่ง client?</summary>
+    <p>HttpOnly cookie JS อ่านไม่ได้ → โดน XSS ก็ขโมย token ไม่ได้ (Week 1+5) · route handler (server) ถือ token แทน frontend
+    → token ไม่เคยอยู่ใน browser ที่ script เข้าถึงได้ · ปลอดภัยกว่า localStorage ที่ทุก script อ่านได้</p></details>
+  <details><summary>ข้อ 4: API Proxy (route handler) ช่วยอะไรนอกจากเก็บ token?</summary>
+    <p>ซ่อน credential/API key ที่ไม่ควรอยู่ฝั่ง browser (เช่น API key ของ third-party), เลี่ยง CORS, รวมจุดเรียก backend ไว้ที่เดียว
+    (เปลี่ยน backend URL ที่เดียว) · เป็น pattern มาตรฐานของ Next.js full-stack</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>style ด้วย Tailwind (ต่อยอด Bootstrap) responsive</li>
+    <li>fetch API + จัดการ 4 สถานะ (ใช้ discriminated union)</li>
+    <li>login flow + เก็บ token ปลอดภัย (HttpOnly cookie/route handler)</li>
+    <li>เข้าใจ API proxy pattern</li>
+    <li>Quiz + โน้ต <code>notes/tailwind-integration.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-nextjs.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-fullstack.html">Mission ใหญ่: Full-stack →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 8 บทที่ 2</footer>
+</div>
+</body>
+</html>

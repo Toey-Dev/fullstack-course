@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 5 — JWT Authentication + Protect Routes</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 1</div>
+    <h1>Week 5 — JWT Authentication + Protect Routes</h1>
+    <p>สัปดาห์ที่จุดแข็ง pentester ของคุณเปล่งประกาย — สร้างระบบ login ที่ปลอดภัยจริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>จนถึงตอนนี้ใคร ๆ ก็เรียก API ของคุณได้ — Week 5 ใส่ "ยาม" ให้ระบบ: ต้อง login ก่อนถึงทำบางอย่างได้
+    คุณจะสร้าง register/login ที่ <strong>เก็บรหัสผ่านอย่างปลอดภัย</strong> (hash ไม่ใช่ plaintext), ออก <strong>JWT token</strong>,
+    และทำ <strong>middleware ป้องกัน route</strong> — พร้อมตอบคำถาม "token เก็บที่ไหน" ที่ค้างจาก Week 1</p>
+    <ul class="check">
+      <li>เข้าใจความต่าง Authentication (คุณเป็นใคร) vs Authorization (คุณทำอะไรได้)</li>
+      <li>hash password ด้วย bcrypt — ไม่เก็บ plaintext เด็ดขาด</li>
+      <li>เข้าใจ JWT ถึงแก่น: 3 ส่วน, signed ≠ encrypted, เก็บที่ไหนปลอดภัย</li>
+      <li>ทำ auth middleware ป้องกัน route + role-based (admin vs user)</li>
+      <li>ยืม-คืนหนังสือด้วย transaction (สำเร็จทั้งคู่ หรือล้มทั้งคู่)</li>
+      <li>เขียน test ครอบ auth flow (register/login/protected/403)</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้คือจุดขายของคุณ:</strong> auth คือจุดที่ระบบส่วนใหญ่ถูกเจาะ —
+    ความรู้ pentester ทำให้คุณเห็นช่องโหว่ที่ dev ทั่วไปมองข้าม (timing attack, token leak, weak hash)
+    Week 5 คือ portfolio piece ที่เล่าใน interview สาย security ได้ทรงพลังที่สุด</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-auth-jwt.html">Authentication + JWT — login ที่ปลอดภัยจริง</a></strong>
+    <p style="margin:6px 0 0">Authentication vs Authorization · hash password (bcrypt) · JWT ถึงแก่น (3 ส่วน, signed≠encrypted) · register/login flow · token เก็บที่ไหน</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-protect-transaction.html">Protect Routes + Authorization + Transaction</a></strong>
+    <p style="margin:6px 0 0">auth middleware · req.user · role-based (admin/user) · 401 vs 403 · transaction ยืม-คืน (atomic)</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-auth.html">ใส่ Auth ให้ library-system + test</a></strong>
+    <p style="margin:6px 0 0">register/login/me · protect routes · borrow/return transaction · test auth flow (รวมเคสโดนปฏิเสธ) · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (auth concept + bcrypt + JWT)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>register/login ใน library-system</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (auth middleware + role + transaction)</td><td>2 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 5.1-5.2 (protect routes)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild B4 (auth middleware จากความจำ) + 🤖 AI Review Drill #4</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 5.3-5.4 (transaction + test auth) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 5</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. ไม่เก็บ password เป็น plaintext เด็ดขาด</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ หายนะ (รั่วแล้วจบ)</h4>
+<pre><code>INSERT INTO users (email, password)
+VALUES ($1, $2)  // password ดิบ!
+// DB รั่ว = รหัสทุกคนหลุด</code></pre></div>
+      <div class="good"><h4>✅ hash ก่อนเก็บเสมอ</h4>
+<pre><code>const hash = await bcrypt.hash(password, 10);
+INSERT INTO users (email, password)
+VALUES ($1, $2)  // เก็บ hash
+// DB รั่ว = ได้แค่ hash ถอดกลับไม่ได้</code></pre></div>
+    </div>
+
+    <h3>2. ไม่ส่ง password (แม้ hash) กลับใน response</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ส่ง user ทั้ง object</h4>
+<pre><code>res.json({ ok: true, data: user });
+// มี password hash ติดไปด้วย</code></pre></div>
+      <div class="good"><h4>✅ ตัด field ลับออก</h4>
+<pre><code>const { password, ...safe } = user;
+res.json({ ok: true, data: safe });</code></pre></div>
+    </div>
+    <div class="warn"><strong>กฎทอง:</strong> hash password เสมอ (bcrypt) · ไม่ส่ง password/hash กลับ client · JWT secret อยู่ใน .env ·
+    error login ตอบกลาง ๆ ("email หรือรหัสผ่านไม่ถูกต้อง") ไม่บอกว่าผิดตรงไหน (กัน enumeration)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #4 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน login endpoint แล้ว<strong>หาช่องโหว่ด้าน security ≥ 3 จุด</strong>
+  (ใบ้: เก็บ plaintext? ส่ง hash กลับ? error บอกว่า "ไม่พบ email" vs "รหัสผิด" แยกกัน = user enumeration? JWT secret hardcode? ไม่มี expiry?)
+  — นี่คือ drill ที่จุดแข็ง pentester ของคุณเหนือ AI ชัดเจน จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 5</footer>
+</div>
+</body>
+</html>

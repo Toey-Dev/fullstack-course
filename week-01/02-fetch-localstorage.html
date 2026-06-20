@@ -208,6 +208,43 @@ const cart = JSON.parse(localStorage.getItem("cart")) ?? [];</code></pre>
     ตอนนั้นผมจะถามคุณว่าคอร์สสอนเก็บไว้ที่ไหน และคุณเห็นด้วยไหมในมุม security</p>
   </div></div>
 
+  <!-- ===================== HTTP methods ===================== -->
+  <h2>ส่วนที่ 2.5: fetch มากกว่าแค่ GET — POST/PUT/DELETE (ปูทาง Week 2)</h2>
+  <div class="card">
+    <p>ที่ผ่านมาเราใช้ fetch แค่ "ขอข้อมูล" (GET) — แต่ของจริงต้อง "ส่งข้อมูล" ด้วย ซึ่งคือสิ่งที่คุณจะสร้างฝั่ง server ใน Week 2:</p>
+    <table>
+      <tr><th>Method</th><th>ความหมาย</th><th>มี body ไหม</th></tr>
+      <tr><td><code>GET</code></td><td>ขอดูข้อมูล (default)</td><td>ไม่มี</td></tr>
+      <tr><td><code>POST</code></td><td>สร้างใหม่</td><td>มี (ข้อมูลที่จะสร้าง)</td></tr>
+      <tr><td><code>PUT</code> / <code>PATCH</code></td><td>แก้ไข (ทั้งชิ้น / บางส่วน)</td><td>มี</td></tr>
+      <tr><td><code>DELETE</code></td><td>ลบ</td><td>ปกติไม่มี</td></tr>
+    </table>
+<pre><code>// ส่งข้อมูลด้วย POST — 3 ส่วนที่ต้องครบ
+const res = await fetch("/api/books", {
+  method: "POST",                              // 1. บอก method
+  headers: { "Content-Type": "application/json" }, // 2. บอกว่า body เป็น JSON
+  body: JSON.stringify({ title, author }),     // 3. แปลง object → string ก่อนส่ง
+});
+if (!res.ok) throw new Error(`HTTP ${res.status}`);
+const created = await res.json();</code></pre>
+    <div class="warn"><strong>3 จุดที่มือใหม่ลืมบ่อย:</strong> ① ลืม <code>headers Content-Type</code> → server แกะ body ไม่ออก
+    ② ลืม <code>JSON.stringify</code> → ส่ง "[object Object]" ③ ลืมว่า body ต้องเป็น string เสมอ (เหมือน localStorage)
+    — สังเกตว่า GET/POST/status code ทั้งหมดนี้คือสิ่งที่คุณจะเป็นคน "รับ" ฝั่ง server ใน Week 2 (อีกด้านของเหรียญเดียวกัน)</div>
+  </div>
+
+  <h2>ส่วนที่ 2.6: localStorage vs sessionStorage vs Cookie — เลือกให้ถูก</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>localStorage</th><th>sessionStorage</th><th>Cookie</th></tr>
+      <tr><td>อยู่นานแค่ไหน</td><td>ถาวร (จนลบเอง)</td><td>ปิดแท็บ = หาย</td><td>ตั้งวันหมดอายุได้</td></tr>
+      <tr><td>ขนาด</td><td>~5-10 MB</td><td>~5 MB</td><td>~4 KB (เล็ก!)</td></tr>
+      <tr><td>ส่งไป server อัตโนมัติ</td><td>❌ ไม่</td><td>❌ ไม่</td><td>✅ ทุก request</td></tr>
+      <tr><td>JS อ่านได้</td><td>✅</td><td>✅</td><td>✅ (ยกเว้น HttpOnly)</td></tr>
+      <tr><td>เหมาะกับ</td><td>theme, cache ไม่ลับ</td><td>ข้อมูลชั่วคราวต่อ session</td><td>auth token (HttpOnly)</td></tr>
+    </table>
+    <p class="muted">หลักเลือก: ข้อมูลต้องอยู่ข้ามวัน + ไม่ลับ → localStorage · ชั่วคราวแท็บเดียว → sessionStorage · auth/ต้องส่ง server ทุกครั้ง → Cookie (HttpOnly)</p>
+  </div>
+
   <!-- ===================== ส่วนที่ 3 ===================== -->
   <h2>ส่วนที่ 3: ตัวอย่างการประยุกต์ในงานจริง</h2>
 
@@ -225,6 +262,43 @@ const cart = JSON.parse(localStorage.getItem("cart")) ?? [];</code></pre>
     ควรเก็บใน localStorage → ลูกค้าเปิดมาใหม่พรุ่งนี้ filter เดิมยังอยู่ = UX ดีขึ้นแบบฟรี ๆ
     ส่วน token สำหรับเรียก GA4 API <strong>ห้าม</strong>อยู่ฝั่ง browser เด็ดขาด — ต้องอยู่ฝั่ง server เท่านั้น
     (หลักการนี้คือเหตุผลที่ Kcode Day 7 สอนทำ "API Proxy")</p>
+  </div>
+
+  <!-- ===================== Clean Code ===================== -->
+  <h2>🧹 Clean Code: เขียน fetch แบบ production</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. แยกฟังก์ชัน API ออกจาก UI (ไม่ปน fetch กับ DOM)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ fetch + DOM ปนกัน</h4>
+<pre><code>btn.onclick = async () => {
+  const res = await fetch("/api/books");
+  const data = await res.json();
+  list.innerHTML = data.map(...);  // ปน!
+};</code></pre></div>
+      <div class="good"><h4>✅ แยกชั้น (เหมือน backend)</h4>
+<pre><code>// ชั้น API
+async function getBooks() {
+  const res = await fetch("/api/books");
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+// ชั้น UI
+btn.onclick = async () => {
+  const books = await getBooks();
+  renderBooks(books);
+};</code></pre></div>
+    </div>
+    <p class="muted">ประโยชน์: เปลี่ยน API ไม่ต้องแตะ UI · test ง่าย · เอา getBooks ไปใช้ซ้ำที่อื่นได้ — นี่คือ "Separation of Concerns" ที่จะเจอเต็มฝั่ง server Week 2</p>
+
+    <h3>2. จัดการ 4 สถานะ UI เสมอ (ไม่ใช่แค่ success)</h3>
+<pre><code>// ทุกการ fetch ต้องคิดถึง 4 สถานะ:
+// Loading (กำลังโหลด) · Success (มีข้อมูล) · Error (พัง) · Empty (สำเร็จแต่ว่าง)
+if (loading) return showSpinner();
+if (error)   return showError();
+if (items.length === 0) return showEmpty();  // ⭐ มือใหม่ลืมเคสนี้
+renderList(items);</code></pre>
+    <div class="warn"><strong>กฎทอง:</strong> เช็ค <code>res.ok</code> เสมอ · ปิด loading ใน finally · แยก API จาก UI ·
+    คิดครบ 4 สถานะ — โค้ดที่จัดการแค่ success คือโค้ด demo ไม่ใช่ production</div>
   </div>
 
   <!-- ===================== Mission ===================== -->
@@ -276,6 +350,19 @@ const cart = JSON.parse(localStorage.getItem("cart")) ?? [];</code></pre>
     ส่วน <code>||</code> คืนค่าขวาเมื่อซ้ายเป็น falsy <strong>ทุกชนิด</strong> (รวม <code>0</code>, <code>""</code>, <code>false</code>)
     เคสนี้ใช้ <code>??</code> ปลอดภัยกว่า เช่น ถ้าเก็บค่า <code>0</code> ไว้จริง ๆ
     <code>|| []</code> จะเหมาเอาว่าไม่มีข้อมูลแล้วทับด้วย array เปล่า — บั๊กเงียบที่หายากมาก</p></details>
+
+  <details><summary>ข้อ 4: ส่ง POST แล้ว server บอกว่า body ว่าง ทั้งที่เราใส่ข้อมูล — ลืมอะไร 2 อย่าง?</summary>
+    <p>① ลืม <code>headers: { "Content-Type": "application/json" }</code> → server ไม่รู้ว่า body เป็น JSON เลยแกะไม่ออก
+    ② ลืม <code>JSON.stringify(data)</code> → ส่ง object ตรง ๆ กลายเป็น "[object Object]" — body ต้องเป็น string เสมอ</p></details>
+
+  <details><summary>ข้อ 5: เก็บ auth token — เลือก localStorage หรือ Cookie? เพราะอะไร (มุม security)?</summary>
+    <p>Cookie แบบ <strong>HttpOnly</strong> — เพราะ JS อ่านไม่ได้ ต่อให้โดน XSS ก็ขโมย token ไม่ได้
+    ส่วน localStorage เปิดให้ JS ทุกบรรทัดอ่าน (รวม script ของคนร้าย) = XSS เดียวจบ
+    ข้อแลกเปลี่ยน: Cookie ต้องระวัง CSRF (จะเรียนป้องกันใน Week 17-18) — ไม่มีที่เก็บไหนสมบูรณ์แบบ ต้องเลือกตามภัยที่กลัว</p></details>
+
+  <details><summary>ข้อ 6 (clean code): ทำไมควรแยกฟังก์ชัน <code>getBooks()</code> ออกจากปุ่ม onclick?</summary>
+    <p>Separation of Concerns — ชั้น API (fetch) แยกจากชั้น UI (DOM) → เปลี่ยน endpoint ไม่ต้องแตะ UI, test ฟังก์ชัน API แยกได้,
+    เอา getBooks ไปใช้ซ้ำหน้าอื่นได้ · เป็นหลักเดียวกับการแยก routes/controllers/services ฝั่ง server (Week 2)</p></details>
 
   <h2>✅ Checkpoint</h2>
   <ul class="check">

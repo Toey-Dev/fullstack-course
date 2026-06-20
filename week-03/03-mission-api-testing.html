@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: ใส่ Test ให้ library-system</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 3</a> · Mission ใหญ่</div>
+    <h1>🧪 ใส่ Test ให้ library-system (Supertest)</h1>
+    <p>เปลี่ยน library-system จาก "เทสต์มือใน Postman" เป็น "เทสต์อัตโนมัติ 1 คำสั่ง" — ก้าวที่ทำให้โค้ดไล่ทัน resume</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้เปลี่ยนเกม</h3>
+    <p>หลังจบ Mission นี้ พิมพ์ <code>npm test</code> ครั้งเดียว = เช็คทุก endpoint อัตโนมัติว่ายังทำงานถูก —
+    นี่คือสิ่งที่ทำให้ตอน Week 4 (เพิ่ม DB), Week 6 (แปลง TypeScript) คุณ <strong>กล้าแก้</strong> เพราะ test เป็นตาข่ายรองรับ
+    และเป็นหลักฐานจริงของคำว่า "API testing" ใน resume</p>
+    <div class="warn">เรียนคู่ Kcode Day 3 (API testing drills) ได้ — แต่ <strong>เขียนเองทุกบรรทัด ปิด AI</strong></div>
+  </div>
+
+  <h2>📋 Supertest คืออะไร</h2>
+  <div class="card">
+    <p><strong>Supertest</strong> = เครื่องมือยิง request เข้า Express app โดยไม่ต้องเปิด server จริง (เร็วและไม่ชนกัน)
+    — เหมือน Postman อัตโนมัติที่เขียนเป็นโค้ด:</p>
+<pre><code>npm install -D supertest
+
+// books.test.js
+import request from "supertest";
+import app from "../src/app.js";   // ⚠️ ต้อง export app แยกจาก listen
+
+describe("GET /api/books", () => {
+  it("คืน 200 + array ของหนังสือ", async () => {
+    const res = await request(app).get("/api/books");
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+});</code></pre>
+    <div class="tip"><strong>เตรียมโครงก่อน:</strong> แยก <code>app.js</code> (สร้าง+config app, export) ออกจาก <code>server.js</code> (<code>app.listen</code>)
+    — เพราะ test ต้อง import app มายิง request โดยไม่ start server จริง นี่คือ refactor แรกของ Mission</p></div>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 3.1 — Refactor + Error Middleware <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>แยก <code>src/app.js</code> (export app) ออกจาก <code>src/server.js</code> (listen)</li>
+      <li>ใส่ centralized error handler + 404 handler จากบทที่ 1 (ลำดับถูก)</li>
+      <li>แปลง route ที่มี try/catch ซ้ำ → ใช้ next(err)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์มือ:</strong> เรียก path มั่ว → ได้ JSON 404 / ทำให้ route พัง → ได้ JSON 500 ไม่ใช่ HTML</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.2 — Setup Vitest + test GET <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>ติดตั้ง vitest + supertest, ตั้ง script <code>"test": "vitest"</code></li>
+      <li>เขียน <code>tests/books.test.js</code> — test <code>GET /api/books</code> (200 + array) และ <code>GET /api/books/:id</code> เคสเจอ (200)</li>
+      <li>รัน <code>npm test</code> → เขียวผ่าน</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> <code>npm test</code> ขึ้นเขียวอย่างน้อย 2 เคส</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.3 — test เคส error (404/400) <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li><code>GET /api/books/99999</code> (ไม่มี) → คาดหวัง <strong>404</strong> + <code>ok: false</code></li>
+      <li><code>POST /api/books</code> body ว่าง → คาดหวัง <strong>400</strong></li>
+      <li><code>POST /api/books</code> ข้อมูลถูก → คาดหวัง <strong>201</strong> + book ที่สร้าง</li>
+    </ol>
+    <div class="warn"><strong>คิดแบบ pentester:</strong> เพิ่ม test ส่ง field แปลก ๆ (title เป็นตัวเลข, ส่ง field เกิน, body ใหญ่มาก) — เคส "ป่วน" ที่ระบบจริงต้องทน</div>
+    <div class="tip"><strong>✅ เทสต์:</strong> test เคส error ทั้งหมดเขียว — พิสูจน์ว่า error handling ทำงานจริง</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 3.4 — Coverage + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>เพิ่ม script <code>"test:cov": "vitest run --coverage"</code> (อาจต้อง <code>npm i -D @vitest/coverage-v8</code>)</li>
+      <li>รันดู coverage — เป้า endpoint หลัก ≥ 70%</li>
+      <li>เขียน unit test ฟังก์ชัน helper อย่างน้อย 1 ตัว (เช่น validate) ครบ 3 กลุ่ม (happy/edge/error)</li>
+      <li>push library-system — README เพิ่ม badge/หัวข้อ "Testing" + section AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> <code>npm test</code> เขียวทั้งหมด · coverage ≥ 70% · repo มี test จริงบน GitHub</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Error handling</td><td>30%</td><td>centralized handler + 404 ลำดับถูก · 500 ไม่รั่วข้อมูล · async error จัดการครบ</td></tr>
+      <tr><td>Test ครอบคลุม</td><td>35%</td><td>ทุก endpoint มี test · ครบ happy/error · coverage ≥ 70%</td></tr>
+      <tr><td>คุณภาพ test</td><td>20%</td><td>ชื่อ test สื่อพฤติกรรม · AAA · test อิสระ · มีเคส edge/ป่วน</td></tr>
+      <tr><td>Git + README</td><td>15%</td><td>commit แบบ test:/feat: · README มี Testing + AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li><code>npm test</code> เขียวทั้งหมด ครอบทุก endpoint (รวมเคส error)</li>
+    <li>coverage ≥ 70% + unit test helper ครบ 3 กลุ่ม</li>
+    <li>error handling เป็นระบบ (centralized + 404 + ไม่รั่วข้อมูล)</li>
+    <li>push library-system + ส่งลิงก์ + AI Review Drill #2 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 4</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-testing-fundamentals.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 3</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 3 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

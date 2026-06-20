@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: ใส่ Auth ให้ library-system</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 5</a> · Mission ใหญ่</div>
+    <h1>🔐 ใส่ Auth ให้ library-system + test</h1>
+    <p>เปลี่ยน library-system เป็นระบบที่มี "ผู้ใช้จริง" — portfolio piece สาย security ที่ทรงพลังที่สุด</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือดาวเด่นใน portfolio</h3>
+    <p>หลังจบ Mission นี้ library-system จะมี: สมัครสมาชิก, login, ป้องกัน route, แยกสิทธิ์ admin/user, ยืม-คืนแบบ transaction —
+    ครบทุกอย่างที่ระบบจริงมี · และเพราะคุณเป็นอดีต pentester คุณจะทำ "ถูกหลัก security" ตั้งแต่แรก (hash, ไม่รั่ว, atomic)
+    ซึ่งเป็นเรื่องเล่า interview ที่ dev ทั่วไปทำไม่ได้</p>
+    <div class="warn">เรียนคู่ Kcode Day 5 (JWT + Borrow/Return) ได้ — <strong>เขียนเองทุกบรรทัด ปิด AI</strong></div>
+  </div>
+
+  <h2>📋 เป้าหมาย</h2>
+  <div class="card">
+    <table>
+      <tr><th>Endpoint</th><th>auth</th><th>หน้าที่</th></tr>
+      <tr><td><code>POST /api/register</code></td><td>public</td><td>สมัคร (hash password)</td></tr>
+      <tr><td><code>POST /api/login</code></td><td>public</td><td>login → คืน JWT</td></tr>
+      <tr><td><code>GET /api/me</code></td><td>🔒 login</td><td>ดูข้อมูลตัวเอง (จาก token)</td></tr>
+      <tr><td><code>POST /api/borrow</code></td><td>🔒 login</td><td>ยืมหนังสือ (transaction)</td></tr>
+      <tr><td><code>POST /api/return</code></td><td>🔒 login</td><td>คืนหนังสือ (transaction)</td></tr>
+      <tr><td><code>DELETE /api/books/:id</code></td><td>🔒 admin</td><td>ลบหนังสือ (role)</td></tr>
+    </table>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 5.1 — Register + Login <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>ตาราง <code>users</code> (id, email unique, password, role default 'user')</li>
+      <li><code>POST /register</code> — Zod validate → bcrypt.hash → INSERT (เช็ค email ซ้ำ → 409)</li>
+      <li><code>POST /login</code> — หา user → bcrypt.compare → sign JWT → คืน token (error ตอบกลาง ๆ)</li>
+    </ol>
+    <div class="warn"><strong>security checklist:</strong> ไม่เก็บ plaintext · ไม่ส่ง password กลับ · login error ไม่บอกว่าผิดตรงไหน · JWT_SECRET ใน .env</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 5.2 — Auth middleware + protect <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li><code>middlewares/auth.js</code> — ตรวจ Bearer token → แปะ req.user (401 ถ้าไม่ผ่าน)</li>
+      <li><code>requireRole("admin")</code> — เช็ค role (403 ถ้าไม่มีสิทธิ์)</li>
+      <li><code>GET /me</code> (login), <code>DELETE /books/:id</code> (admin) — ใส่ middleware</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์มือ:</strong> เรียก /me ไม่มี token → 401 · user ลบหนังสือ → 403 · admin ลบ → 200</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 5.3 — Borrow / Return (transaction) <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>ตาราง <code>borrows</code> (id, user_id, book_id, borrowed_at, returned_at)</li>
+      <li><code>POST /borrow</code> — transaction: เช็คว่าง (FOR UPDATE) → INSERT borrow → UPDATE available=false</li>
+      <li><code>POST /return</code> — transaction: UPDATE returned_at → UPDATE available=true</li>
+    </ol>
+    <div class="warn"><strong>คิดแบบ pentester:</strong> ลองยืมเล่มเดียวกัน 2 ครั้งติด → ครั้งที่สองต้องโดนปฏิเสธ (ไม่ใช่ยืมซ้ำได้)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 5.4 — test auth flow + push <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>test: register → login ได้ token → เรียก protected ผ่าน</li>
+      <li>test เคสปฏิเสธ: ไม่มี token → 401 · user ลบ → 403 · ยืมซ้ำ → error</li>
+      <li><code>npm test</code> เขียวทั้งหมด · push — README + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> test ครอบทั้งเคสผ่านและโดนปฏิเสธ — พิสูจน์ว่ายามกันได้จริง</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Security</td><td>35%</td><td>hash password · ไม่ส่ง/เก็บ plaintext · login ไม่รั่ว (enumeration) · JWT secret ใน .env · payload ไม่มีของลับ</td></tr>
+      <tr><td>Auth/AuthZ</td><td>25%</td><td>middleware ตรวจ token · role-based · 401 vs 403 ถูก</td></tr>
+      <tr><td>Transaction</td><td>20%</td><td>borrow/return atomic · กันยืมซ้ำ (FOR UPDATE)</td></tr>
+      <tr><td>Test + Git</td><td>20%</td><td>test เคสผ่าน+ปฏิเสธ · README + AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>register/login ปลอดภัย (hash, ไม่รั่ว) + ออก JWT</li>
+    <li>protect routes + role (401/403 ถูก)</li>
+    <li>borrow/return ด้วย transaction (กันยืมซ้ำ)</li>
+    <li>test ครอบเคสผ่าน + โดนปฏิเสธ · <code>npm test</code> เขียว</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #4 ใน chat</li>
+    <li>🎉 จบ Phase 1 (Week 1-8 ครึ่งทาง) — library-system เป็น API เต็มระบบแล้ว!</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-protect-transaction.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 5</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 5 Mission ใหญ่</footer>
+</div>
+</body>
+</html>
