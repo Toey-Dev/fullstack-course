@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: App Shell — Layout Separation + Navigation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 9</a> · บทที่ 2</div>
+    <h1>App Shell — Layout Separation + Navigation</h1>
+    <p>โครงแอปจริง: หน้า login ไม่มี sidebar / หน้าในระบบมี shell — และ navigation ที่ใช้งานได้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📁 (folder) = route group (ไม่เป็น path)</span>
+      <span class="kw">🖼 2 layout = auth shell vs app shell</span>
+      <span class="kw">🧭 sidebar + topbar = app shell</span>
+      <span class="kw">📍 active link = รู้ว่าอยู่หน้าไหน</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Layout แยกตามบริบท — ไม่ยัดทุกหน้าในกรอบเดียว"</h3>
+    <p>หน้า login/register ควรเต็มจอ ไม่มี sidebar (ผู้ใช้ยังไม่ login จะมีเมนูไปไหน?) · หน้าในระบบควรมี shell (sidebar+topbar) ·
+    Next.js route groups <code>(auth)</code> และ <code>(app)</code> ให้แต่ละกลุ่มมี layout ของตัวเอง — โดยไม่กระทบ URL</p>
+    <h3>หลักการ 2: "Shell คือ DRY ของ UI — เขียนครั้งเดียวใช้ทุกหน้าในระบบ"</h3>
+    <p>sidebar, topbar, user menu เขียนใน layout ของกลุ่ม app ครั้งเดียว — ทุกหน้าในระบบได้ shell เหมือนกัน
+    ไม่ต้อง copy nav ลงทุกหน้า · เพิ่มเมนูใหม่แก้ที่เดียว · หลักเดียวกับ layout (Week 8) แต่ scope เป็นกลุ่ม</p>
+    <h3>หลักการ 3: "Navigation ต้องบอกผู้ใช้ว่าอยู่ที่ไหน"</h3>
+    <p>active link (เมนูที่กำลังอยู่ไฮไลต์) ไม่ใช่ของสวยงาม — เป็น UX พื้นฐานที่ผู้ใช้ต้องรู้ตำแหน่งตัวเองในแอป ·
+    แอปที่ทุกเมนูดูเหมือนกันหมด = ผู้ใช้หลง · ใช้ <code>usePathname()</code> เช็คว่า path ปัจจุบันตรงเมนูไหน</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Route Groups — แยก layout โดยไม่กระทบ URL</h2>
+  <div class="card">
+<pre><code>src/app/
+├── (auth)/                  # route group — () ไม่เป็นส่วนของ URL
+│   ├── layout.tsx           # layout เต็มจอ ไม่มี sidebar
+│   ├── login/page.tsx       # /login (ไม่ใช่ /auth/login)
+│   └── register/page.tsx    # /register
+├── (app)/                   # อีกกลุ่ม
+│   ├── layout.tsx           # layout มี sidebar + topbar
+│   ├── dashboard/page.tsx   # /dashboard
+│   └── books/page.tsx       # /books
+└── layout.tsx               # root (html, body, font)</code></pre>
+    <figure class="figure">
+      <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="30" y="20" width="300" height="120" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+        <text x="180" y="42" font-size="12" font-weight="700" fill="#1e40af" text-anchor="middle">(auth) layout</text>
+        <rect x="60" y="55" width="240" height="70" rx="6" fill="#dbeafe"/>
+        <text x="180" y="95" font-size="11" fill="#1e3a8a" text-anchor="middle">form login เต็มจอ (ไม่มี sidebar)</text>
+        <rect x="370" y="20" width="300" height="120" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+        <text x="520" y="42" font-size="12" font-weight="700" fill="#047857" text-anchor="middle">(app) layout</text>
+        <rect x="385" y="55" width="60" height="70" rx="4" fill="#6ee7b7"/><text x="415" y="93" font-size="9" fill="#064e3b" text-anchor="middle">sidebar</text>
+        <rect x="455" y="55" width="200" height="20" rx="3" fill="#a7f3d0"/><text x="555" y="69" font-size="9" fill="#064e3b" text-anchor="middle">topbar</text>
+        <rect x="455" y="80" width="200" height="45" rx="4" fill="#d1fae5"/><text x="555" y="106" font-size="9" fill="#065f46" text-anchor="middle">เนื้อหา (page)</text>
+      </svg>
+      <figcaption>ภาพที่ 1: route groups ให้ auth pages กับ app pages มี layout ต่างกัน โดย URL ไม่มี (auth)/(app)</figcaption>
+    </figure>
+    <p class="muted"><code>(ชื่อ)</code> = route group — จัดกลุ่มไฟล์ + ให้ layout ร่วม แต่ไม่เป็นส่วนของ URL · ต่างจากโฟลเดอร์ปกติที่เป็น path</p>
+  </div>
+
+  <h2>ส่วนที่ 2: App Shell Layout (sidebar + topbar)</h2>
+  <div class="card">
+<pre><code>// app/(app)/layout.tsx
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    &lt;div className="flex h-screen"&gt;
+      &lt;aside className="w-60 bg-gray-900 text-white"&gt;
+        &lt;Sidebar /&gt;            {/* เมนู — เขียนครั้งเดียว ทุกหน้าใช้ */}
+      &lt;/aside&gt;
+      &lt;div className="flex-1 flex flex-col"&gt;
+        &lt;Topbar /&gt;             {/* user info + logout */}
+        &lt;main className="flex-1 overflow-auto p-6"&gt;{children}&lt;/main&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+    <p class="muted">layout นี้ครอบทุกหน้าใน (app) — sidebar/topbar เขียนครั้งเดียว · {children} = เนื้อหาแต่ละหน้ามาแทรก · นี่คือ DRY ระดับ shell</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Active Link — บอกว่าอยู่หน้าไหน</h2>
+  <div class="card">
+<pre><code>"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+  return (
+    &lt;Link href={href}
+      className={active ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-800"}&gt;
+      {children}
+    &lt;/Link&gt;
+  );
+}</code></pre>
+    <p class="muted"><code>usePathname()</code> = path ปัจจุบัน → เทียบกับ href → ไฮไลต์เมนูที่ตรง · ผู้ใช้รู้ตำแหน่งตัวเองในแอป (UX พื้นฐาน)</p>
+  </div>
+
+  <h2>ส่วนที่ 4: แสดง User Info — ไม่ค้าง mock data</h2>
+  <div class="card">
+<pre><code>// ดึงข้อมูล user จริงจาก /api/me (token แนบให้โดย proxy)
+// Topbar component
+async function getUser() {
+  const res = await fetch("/api/me");
+  return res.ok ? (await res.json()).data : null;
+}
+// แสดง: ชื่อ + avatar (อักษรแรกของชื่อ) + ปุ่ม logout</code></pre>
+    <div class="tip"><strong>เกร็ด production:</strong> อย่าค้าง mock data ("John Doe") ในโค้ด — ดึงจริงจาก /api/me ·
+    avatar ง่าย ๆ ใช้อักษรแรกของชื่อในวงกลม (ไม่ต้องมีรูปจริง) · นี่คือรายละเอียดที่ทำให้แอปดู "เสร็จจริง" ไม่ใช่ prototype</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> dashboard การตลาด — sidebar เมนู (ภาพรวม, แต่ละแพลตฟอร์ม, รายงาน), topbar แสดงชื่อลูกค้า + logout ·
+    route groups แยกหน้า login (เต็มจอ) จากหน้า dashboard (มี shell) · นี่คือโครงมาตรฐานของทุก admin/dashboard app</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> app shell (sidebar+topbar+content) เป็น layout มาตรฐานของ B2B/internal tool ทุกตัว ·
+    route groups เป็นฟีเจอร์ Next.js ที่ทีมใช้แยก layout จริง · active link + user menu = รายละเอียดที่แยกแอป production จาก demo</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: route group <code>(auth)</code> ต่างจากโฟลเดอร์ <code>auth</code> ปกติยังไง?</summary>
+    <p><code>(auth)</code> = จัดกลุ่ม + ให้ layout ร่วม แต่ <strong>ไม่เป็นส่วนของ URL</strong> (login อยู่ที่ /login ไม่ใช่ /auth/login) ·
+    โฟลเดอร์ <code>auth</code> ปกติเป็น path (/auth/login) · route group ใช้แยก layout โดยไม่เปลี่ยน URL</p></details>
+  <details><summary>ข้อ 2: ทำไมหน้า login กับหน้า dashboard ควรมี layout ต่างกัน?</summary>
+    <p>หน้า login: ผู้ใช้ยังไม่ login → ไม่ควรมี sidebar/เมนู (จะไปไหนได้?) เต็มจอเรียบ · หน้า dashboard: ต้องมี shell (sidebar+topbar) นำทาง ·
+    route groups ให้แต่ละกลุ่ม layout ของตัวเอง — แยกบริบทชัด</p></details>
+  <details><summary>ข้อ 3: app shell layout ช่วยเรื่อง DRY ยังไง?</summary>
+    <p>sidebar/topbar เขียนใน (app)/layout.tsx ครั้งเดียว — ทุกหน้าในกลุ่ม app ได้ shell เหมือนกันอัตโนมัติ ·
+    เพิ่มเมนูใหม่/แก้ topbar ที่เดียวมีผลทุกหน้า · ไม่ต้อง copy nav ลงทุก page</p></details>
+  <details><summary>ข้อ 4: ทำไม active link สำคัญ ใช้อะไรทำใน Next.js?</summary>
+    <p>บอกผู้ใช้ว่าอยู่หน้าไหน (UX พื้นฐาน — แอปที่ทุกเมนูเหมือนกันหมด ผู้ใช้หลง) · ใช้ <code>usePathname()</code> เทียบ path ปัจจุบันกับ href
+    แล้วใส่ class ไฮไลต์เมนูที่ตรง</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>route groups แยก (auth) vs (app) layout</li>
+    <li>app shell: sidebar + topbar + content (DRY)</li>
+    <li>active link ด้วย usePathname</li>
+    <li>แสดง user info จริงจาก /api/me (ไม่ค้าง mock)</li>
+    <li>Quiz + โน้ต <code>notes/app-shell.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-auth-pages.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-app-shell.html">Mission ใหญ่: App Shell →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 9 บทที่ 2</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: สร้าง App Shell + Auth ให้ library-web</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 9</a> · Mission ใหญ่</div>
+    <h1>🏗 สร้าง App Shell + Auth ให้ library-web</h1>
+    <p>ยกระดับ library-web จาก "หน้าเดียว" สู่ "แอปเต็มระบบ" ที่มีโครงและ auth จริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้ทำให้แอปดู "เสร็จจริง"</h3>
+    <p>หลังจบ Mission นี้ library-web จะมี: หน้า login/register, ป้องกันหน้า, sidebar/topbar, แสดงข้อมูลผู้ใช้ —
+    โครงเดียวกับแอป production ทุกตัว · ความรู้ pentester ทำให้คุณกัน access control ครบ 3 ชั้น (ที่ dev ทั่วไปมักลืมชั้น backend)</p>
+    <div class="warn"><strong>ต่อยอด library-web จาก Week 8</strong> + ต้องมี backend (library-system) รันอยู่</div>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 9.1 — Auth pages <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>route group <code>(auth)</code> + layout เต็มจอ</li>
+      <li>หน้า <code>/login</code> + <code>/register</code> — form (Tailwind), validate, error กลาง ๆ, loading</li>
+      <li>เชื่อม route handler proxy (token → HttpOnly cookie จาก Week 8)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> login สำเร็จ → เด้ง /dashboard · รหัสผิด → error กลาง ๆ · ปุ่ม disabled ตอน loading</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 9.2 — Protect routes (3 ชั้น) <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li><code>middleware.ts</code> — กัน /dashboard, /books → ไม่มี token เด้ง /login (matcher ครบทุก path)</li>
+      <li>login แล้วเข้า /login → เด้ง /dashboard</li>
+      <li>ดัก 401 จาก API → เด้ง /login (token หมด)</li>
+    </ol>
+    <div class="warn"><strong>security:</strong> ตรวจว่า backend ยัง requireRole อยู่ (ชั้น 3) — frontend กันแค่ UX</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 9.3 — App Shell <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>route group <code>(app)</code> + layout (sidebar + topbar + content)</li>
+      <li>Sidebar เมนู (Dashboard, Books, + เตรียม Users/Borrows) + active link</li>
+      <li>Topbar — ดึง user จริงจาก /api/me + avatar (อักษรแรก) + ปุ่ม logout</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> หน้าในระบบมี shell เหมือนกัน · เมนูปัจจุบันไฮไลต์ · topbar แสดงชื่อจริง · responsive (sidebar ยุบบนมือถือ)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 9.4 — Logout + polish + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>logout (ลบ cookie ที่ server) → เด้ง /login</li>
+      <li>responsive: sidebar เป็น hamburger/drawer บนมือถือ</li>
+      <li>push — README screenshot โครงแอป + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> logout แล้วเข้า /dashboard ตรง → เด้ง /login · ใช้งานบนมือถือได้</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Security (access control)</td><td>30%</td><td>กัน 3 ชั้น · matcher ครบ · backend role ยังตรวจ · ดัก 401</td></tr>
+      <tr><td>Layout/structure</td><td>25%</td><td>route groups แยก auth/app · shell DRY · active link</td></tr>
+      <tr><td>Auth UX</td><td>25%</td><td>error กลาง ๆ · loading · redirect flow ครบ · user info จริง</td></tr>
+      <tr><td>Responsive + Git</td><td>20%</td><td>มือถือใช้ได้ · README + AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>auth pages (login/register) + redirect flow ครบ</li>
+    <li>protected routes กัน 3 ชั้น (middleware + UI + backend)</li>
+    <li>app shell (route groups + sidebar/topbar + active link + user info)</li>
+    <li>logout + responsive</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #8 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 10 (CRUD pages + dashboard)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-app-shell.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 9</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 9 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 9 — Next.js App เต็มระบบ: Auth Pages + Protected Routes</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 2 (Production)</div>
+    <h1>Week 9 — Auth Pages + Protected Routes + App Shell</h1>
+    <p>ยกระดับ frontend จาก "หน้าเดียว" สู่ "แอปเต็มระบบ" ที่มี login, ป้องกันหน้า, และโครงแอปจริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้ (เริ่มเฟส 2)</h3>
+    <p>เฟส 1 จบด้วย full-stack app ที่ทำงานได้ — เฟส 2 ทำให้มัน "เหมือนแอปจริงที่ใช้งานได้ทั้งระบบ" ·
+    Week 9 สร้างโครงแอป: หน้า register/login แยกจากแอปหลัก, ป้องกันหน้าที่ต้อง login, sidebar/topbar navigation, แสดงข้อมูลผู้ใช้ ·
+    นี่คือการต่อยอด library-web (Week 8) ให้เป็นระบบที่เล่าใน interview ได้ว่า "ทำแอปจริงทั้งระบบ"</p>
+    <ul class="check">
+      <li>หน้า register + login (form validation, จัดการ error, redirect)</li>
+      <li>ป้องกัน route ที่ต้อง login (middleware.ts + ProtectedRoute pattern)</li>
+      <li>แยก layout: auth pages (ไม่มี sidebar) vs app pages (มี shell)</li>
+      <li>App shell: sidebar + topbar + แสดงข้อมูล user จาก token</li>
+      <li>จัดการ auth state ทั่วแอป (logout, redirect เมื่อ token หมด)</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้สำคัญ:</strong> "การจัดการ auth ทั้งแอป" (ป้องกันหน้า, แสดง/ซ่อนตาม role, redirect) คือสิ่งที่ทุกแอปจริงมี
+    และเป็นจุดที่ Broken Access Control (OWASP) เกิดบ่อย — ความรู้ pentester ทำให้คุณทำถูกตั้งแต่แรก</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-auth-pages.html">Auth Pages + Protected Routes</a></strong>
+    <p style="margin:6px 0 0">หน้า register/login · form + validation + error · ป้องกัน route (middleware.ts + client guard) · redirect flow · logout</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-app-shell.html">App Shell — Layout Separation + Navigation</a></strong>
+    <p style="margin:6px 0 0">route groups (auth vs app layout) · sidebar + topbar · แสดง user info/avatar · active link · responsive shell</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-app-shell.html">สร้าง App Shell + Auth ให้ library-web</a></strong>
+    <p style="margin:6px 0 0">register/login pages · protected routes · auth layout vs app layout · sidebar + user info · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (auth pages + protect routes)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>ทำหน้า register/login ใน library-web</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (layout separation + sidebar)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 9.1-9.2 (auth pages + protect)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (protected route จากความจำ) + 🤖 AI Drill #8</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 9.3-9.4 (app shell + user info) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 9</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. ป้องกัน route ที่ server ก่อน ไม่ใช่แค่ซ่อน UI</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ซ่อนแค่ปุ่ม (ไม่ปลอดภัย)</h4>
+<pre><code>{isAdmin &amp;&amp; &lt;DeleteButton /&gt;}
+// ซ่อนปุ่ม แต่ API ยังเรียกตรงได้
+// = Broken Access Control</code></pre></div>
+      <div class="good"><h4>✅ กันที่ทุกชั้น</h4>
+<pre><code>// 1. middleware.ts กัน route
+// 2. ซ่อน UI (UX)
+// 3. backend ตรวจ role อีกชั้น (Week 5)
+// ป้องกัน 3 ชั้น</code></pre></div>
+    </div>
+
+    <h3>2. auth state ที่เดียว ไม่กระจาย</h3>
+    <p class="muted">เก็บ/เช็คสถานะ login ที่เดียว (context/hook) แล้วใช้ทั้งแอป — ไม่ใช่แต่ละหน้าเช็ค cookie เอง (ซ้ำ ลืมง่าย)</p>
+    <div class="warn"><strong>กฎทอง:</strong> ป้องกัน route ที่ server (middleware) เป็นหลัก · UI แค่ช่วย UX · backend ตรวจซ้ำเสมอ ·
+    auth state รวมที่เดียว · redirect ชัดเจน (ไม่ login → /login, login แล้วเข้า /login → /dashboard)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #8 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI ทำ "protected page" ใน Next.js แล้ว<strong>หาช่องโหว่ Broken Access Control</strong>
+  (กันแค่ที่ UI ไหม? middleware ครอบครบ path ไหม? backend ตรวจซ้ำไหม? token หมดอายุจัดการยังไง?) — สาย security ของคุณโดยตรง</div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 9 (เฟส 2)</footer>
+</div>
+</body>
+</html>

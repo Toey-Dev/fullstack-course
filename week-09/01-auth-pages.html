@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Auth Pages + Protected Routes</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 9</a> · บทที่ 1</div>
+    <h1>Auth Pages + Protected Routes</h1>
+    <p>หน้า login/register ที่ใช้งานจริง และการป้องกันหน้าที่ทำถูกหลัก security</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🚧 ยามที่ขอบเว็บ = middleware.ts</span>
+      <span class="kw">🔀 ไม่มีสิทธิ์ → เด้งไป login = redirect</span>
+      <span class="kw">🙈 ซ่อน UI = UX ไม่ใช่ security</span>
+      <span class="kw">🔐 กัน 3 ชั้น = middleware + UI + backend</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Defense in depth — กันหลายชั้น ไม่พึ่งชั้นเดียว"</h3>
+    <p>การป้องกันหน้าใน frontend ไม่ใช่ security จริง — เป็นแค่ UX (ไม่ให้ผู้ใช้เห็นหน้าที่ใช้ไม่ได้) ·
+    คนร้ายเรียก backend API ตรง ๆ ข้าม frontend ได้ · ดังนั้นต้องกัน 3 ชั้น: ① middleware (route) ② ซ่อน UI ③ backend ตรวจ role (Week 5)
+    — ขาดชั้น 3 = Broken Access Control (OWASP #1) ที่คุณเคยเจาะมาแล้ว</p>
+    <h3>หลักการ 2: "Auth state เป็น single source of truth"</h3>
+    <p>สถานะ "login อยู่ไหม / เป็นใคร / role อะไร" ควรมีที่เก็บเดียว (context/hook) แล้วทั้งแอปอ่านจากที่นั้น —
+    ไม่ใช่แต่ละหน้าเช็ค cookie/token เอง (ซ้ำ, ลืมที่ใดที่หนึ่ง = บั๊ก) · หลักเดียวกับ Single Source of Truth ทั้งคอร์ส</p>
+    <h3>หลักการ 3: "Redirect flow ต้องชัดและไม่วน"</h3>
+    <p>ไม่ login เข้าหน้า protected → เด้งไป /login · login แล้วเข้า /login → เด้งไป /dashboard ·
+    token หมดอายุกลางทาง → เด้ง /login พร้อมบอกเหตุผล · ออกแบบ flow ให้ครบทุกเคส ไม่งั้นเกิด redirect วนหรือค้าง</p>
+  </div>
+
+  <h2>ส่วนที่ 1: หน้า Login / Register</h2>
+  <div class="card">
+<pre><code>"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();                          // กัน reload (Week 0)
+    setLoading(true); setError("");
+    const form = new FormData(e.currentTarget as HTMLFormElement);
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: form.get("email"), password: form.get("password"),
+      }),
+    });
+    setLoading(false);
+    if (!res.ok) return setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");  // กลาง ๆ (Week 5)
+    router.push("/dashboard");                   // สำเร็จ → ไปแอป
+  }
+  // ...form + แสดง error + ปุ่ม disabled ตอน loading
+}</code></pre>
+    <div class="warn"><strong>checklist หน้า login:</strong> preventDefault (Week 0) · ปุ่ม disabled ตอน loading (Week 1) ·
+    error ตอบกลาง ๆ (Week 5) · validate ฝั่ง client เป็น UX แต่ backend validate จริง (Week 4) — ทุกอย่างที่เรียนมาบรรจบ</div>
+  </div>
+
+  <h2>ส่วนที่ 2: Protected Routes — middleware.ts (ชั้นที่ 1)</h2>
+  <div class="card">
+    <p>Next.js มี <code>middleware.ts</code> ที่รันก่อนทุก request — ใช้กัน route ที่ต้อง login:</p>
+<pre><code>// middleware.ts (root ของโปรเจกต์)
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get("token")?.value;     // HttpOnly cookie (Week 8)
+  const isAuthPage = req.nextUrl.pathname.startsWith("/login");
+
+  // ไม่มี token + เข้าหน้า protected → เด้ง login
+  if (!token &amp;&amp; !isAuthPage) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+  // มี token + เข้าหน้า login → เด้งเข้าแอป
+  if (token &amp;&amp; isAuthPage) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+  return NextResponse.next();
+}
+
+// กำหนดว่า middleware ครอบ path ไหน
+export const config = {
+  matcher: ["/dashboard/:path*", "/books/:path*", "/login"],
+};</code></pre>
+    <div class="danger"><strong>🔐 จุดที่ pentester ต้องระวัง:</strong> <code>matcher</code> ต้องครอบ <strong>ทุก</strong> path ที่ต้องป้องกัน —
+    ลืม path ไหน = หน้านั้นเข้าได้โดยไม่ต้อง login · และ middleware เช็คแค่ "มี token ไหม" ไม่ได้ตรวจ role/ความถูกต้องลึก
+    → role ต้องตรวจที่ backend อีกชั้น (ชั้น 3) เสมอ</div>
+  </div>
+
+  <h2>ส่วนที่ 3: ซ่อน UI ตาม role (ชั้นที่ 2 — UX)</h2>
+  <div class="card">
+<pre><code>// แสดงปุ่มลบเฉพาะ admin (UX — ไม่ใช่ security จริง)
+{user?.role === "admin" &amp;&amp; (
+  &lt;button onClick={handleDelete}&gt;ลบหนังสือ&lt;/button&gt;
+)}</code></pre>
+    <div class="warn"><strong>ย้ำหลักการ:</strong> นี่ซ่อนปุ่มเพื่อ UX (user ทั่วไปไม่เห็นปุ่มที่กดไม่ได้) — <strong>ไม่ใช่ security</strong>
+    เพราะคนร้ายเรียก <code>DELETE /api/books/:id</code> ตรงได้ · ความปลอดภัยจริงอยู่ที่ backend <code>requireRole("admin")</code> (Week 5) · ทั้งสองอย่างต้องมีคู่กัน</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Logout + Token หมดอายุ</h2>
+  <div class="card">
+<pre><code>// logout — ลบ cookie ที่ server (route handler)
+// app/api/auth/logout/route.ts
+export async function POST() {
+  const res = NextResponse.json({ ok: true });
+  res.cookies.delete("token");      // ลบ HttpOnly cookie
+  return res;
+}
+
+// token หมดอายุกลางทาง — backend ตอบ 401 → frontend เด้ง login
+async function apiCall(url: string) {
+  const res = await fetch(url);
+  if (res.status === 401) {
+    window.location.href = "/login";   // token หมด → กลับไป login
+    return;
+  }
+  return res.json();
+}</code></pre>
+    <p class="muted">เคสที่มือใหม่ลืม: token หมดอายุระหว่างใช้งาน → ถ้าไม่จัดการ ผู้ใช้เจอ error งง ๆ · ดัก 401 แล้วเด้ง login พร้อมข้อความ = UX ดี</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> dashboard ลูกค้าหลายราย — middleware กันคนไม่ login, backend ตรวจว่า request ขอข้อมูล clientId ตรงกับ token ไหม
+    (ownership check) · กันลูกค้า A แอบดูข้อมูล B = Broken Access Control ที่เกิดบ่อยใน multi-tenant app</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> Broken Access Control คือ OWASP #1 (2021) — เจอบ่อยสุดใน pentest · การกัน 3 ชั้น
+    (middleware + UI + backend) เป็นมาตรฐานที่ทีม security ตรวจใน code review · คุณทำถูกตั้งแต่แรก = จุดแข็ง</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ซ่อนปุ่มลบด้วย <code>{isAdmin &amp;&amp; ...}</code> = ปลอดภัยพอไหม? เพราะอะไร?</summary>
+    <p>ไม่พอ — เป็นแค่ UX (ซ่อนจากตา) · คนร้ายเรียก <code>DELETE /api/books/:id</code> ตรงผ่าน curl/Postman ข้าม UI ได้ ·
+    security จริงต้องอยู่ที่ backend (requireRole) · UI ซ่อน + backend ตรวจ = คู่กันเสมอ</p></details>
+  <details><summary>ข้อ 2: middleware.ts ใน Next.js ทำหน้าที่อะไร ข้อควรระวังคืออะไร?</summary>
+    <p>รันก่อนทุก request — ใช้กัน route (เช็ค token, redirect) · ข้อควรระวัง: <code>matcher</code> ต้องครอบทุก path ที่ต้องป้องกัน
+    ลืม path = หน้านั้นเข้าได้ฟรี · และ middleware เช็คแค่ "มี token" ไม่ลึก → role ตรวจที่ backend</p></details>
+  <details><summary>ข้อ 3 (security): การกัน 3 ชั้นคืออะไร ทำไมต้องครบ?</summary>
+    <p>① middleware (กัน route ที่ frontend) ② ซ่อน UI (UX) ③ backend ตรวจ role (security จริง) · ขาดชั้น 3 = คนร้ายเรียก API ตรงได้
+    = Broken Access Control (OWASP #1) · frontend ป้องกันได้แค่ UX จริง ๆ ต้องที่ backend</p></details>
+  <details><summary>ข้อ 4: token หมดอายุระหว่างใช้งาน ถ้าไม่จัดการเกิดอะไร แก้ยังไง?</summary>
+    <p>ผู้ใช้เจอ error งง ๆ (request ล้มเหลวเงียบ ๆ) · แก้: ดัก response 401 ทุก API call → เด้งไป /login พร้อมข้อความ "เซสชันหมดอายุ"
+    · UX ดีกว่าปล่อยให้ค้าง</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>หน้า login/register (preventDefault, loading, error กลาง ๆ)</li>
+    <li>middleware.ts กัน protected routes + redirect flow</li>
+    <li>เข้าใจการกัน 3 ชั้น (middleware + UI + backend)</li>
+    <li>logout + จัดการ token 401</li>
+    <li>Quiz + โน้ต <code>notes/protected-routes.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 9</a>
+    <a class="btn" href="02-app-shell.html">บทที่ 2: App Shell →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 9 บทที่ 1</footer>
+</div>
+</body>
+</html>
