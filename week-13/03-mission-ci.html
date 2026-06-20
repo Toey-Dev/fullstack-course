@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: CI Pipeline ให้ library-system</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 13</a> · Mission ใหญ่</div>
+    <h1>⚙️ CI Pipeline ให้ library-system</h1>
+    <p>ให้ GitHub Actions ตรวจโค้ดทุก PR — push แล้วเห็น check เขียว/แดงจริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้ทำให้ repo ดูมืออาชีพทันที</h3>
+    <p>หลังจบ library-system จะมี CI ที่รัน lint→test→build ทุก PR + badge เขียวใน README + branch protection ·
+    นี่คือสิ่งที่ recruiter เห็นแล้วรู้ทันทีว่า "ทำงานในทีมเป็น" · และเป็นรากของ CD (deploy อัตโนมัติ) ใน Week 14</p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 13.1 — Workflow lint/test/build <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>สร้าง <code>.github/workflows/ci.yml</code> — on push main + PR</li>
+      <li>steps: checkout → setup-node (cache) → npm ci → lint → test → build</li>
+      <li>เรียง fail fast (lint เร็วก่อน build ช้า) · pin action @v4</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> push → ไป Actions tab → workflow รัน → เขียว</li></div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 13.2 — PostgreSQL service สำหรับ test <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>เพิ่ม <code>services.postgres</code> + health options</li>
+      <li>ตั้ง DATABASE_URL ชี้ postgres service ใน test step</li>
+      <li>test ที่ต้อง DB (integration จาก Week 3-5) ต้องเขียวใน CI</li>
+    </ol>
+    <div class="warn"><strong>เทสต์จริง:</strong> integration test ที่คุย DB ต้องผ่านบน CI (ไม่ใช่แค่ในเครื่อง) — พิสูจน์ว่า setup ครบ</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 13.3 — Secrets + branch protection <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>ย้าย secret (JWT_SECRET ฯลฯ) ไป GitHub Secrets → ใช้ <code>${{ secrets.X }}</code></li>
+      <li>ตั้ง branch protection: require CI pass + PR review ก่อน merge main</li>
+      <li>ทดสอบ: push ตรง main → ถูกบล็อก (ต้องผ่าน PR)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> สร้าง PR ที่ test พัง → merge ไม่ได้ (check แดง) · แก้ให้ผ่าน → merge ได้</li></div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 13.4 — Badge + PR ทดสอบจริง <span class="badge orange">40 นาที</span></h3>
+    <ol>
+      <li>เพิ่ม CI badge ใน README (<code>![CI](.../badge.svg)</code>)</li>
+      <li>สร้าง PR จริง 1 อัน (แก้เล็ก ๆ) → ดู CI รัน → merge เมื่อเขียว</li>
+      <li>push + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> README มี badge เขียว · workflow history มี run ที่ผ่าน PR จริง</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Pipeline ทำงาน</td><td>35%</td><td>lint→test→build เขียว · fail fast · test กับ DB (service) ผ่าน</td></tr>
+      <tr><td>Security</td><td>25%</td><td>secret ใน GitHub Secrets · pin action version · ไม่ log secret</td></tr>
+      <tr><td>Branch protection</td><td>20%</td><td>main บังคับ CI เขียว + review · push ตรง main ถูกบล็อก</td></tr>
+      <tr><td>Polish + Git</td><td>20%</td><td>badge · PR จริงในประวัติ · README + AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>CI workflow lint→test→build (fail fast, cache, pin version)</li>
+    <li>PostgreSQL service — integration test ผ่านบน CI</li>
+    <li>secrets + branch protection (main สะอาด)</li>
+    <li>badge + PR ทดสอบจริง</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #12 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 14 (CD: deploy)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-ci-pipeline.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 13</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 13 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

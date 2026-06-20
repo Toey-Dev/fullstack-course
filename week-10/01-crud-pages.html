@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: CRUD Pages — List, Add, Edit, Delete</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 10</a> · บทที่ 1</div>
+    <h1>CRUD Pages — List, Add, Edit, Delete</h1>
+    <p>4 หน้าจัดการข้อมูลที่เป็นหัวใจของ business app ทุกตัว</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🎛 input ผูก state = controlled component</span>
+      <span class="kw">📝 form เดียว = add + edit (รับ initial)</span>
+      <span class="kw">🔄 หลัง mutate ต้องอัปเดต UI</span>
+      <span class="kw">⚡ เปลี่ยน UI ก่อนรอ server = optimistic</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Controlled component — state เป็นเจ้าของค่า input"</h3>
+    <p>ใน React ค่าของ input ควรอยู่ใน state (single source of truth) ไม่ใช่ใน DOM · input แสดงค่าจาก state, พิมพ์แล้วอัปเดต state ·
+    ทำให้ควบคุม validate, reset, prefill ได้ง่าย · นี่คือหลัก Single Source of Truth (Week 1) ในบริบท form</p>
+    <h3>หลักการ 2: "UI ต้องตรงกับ server เสมอ — mutate แล้วต้อง sync"</h3>
+    <p>เพิ่ม/แก้/ลบ ข้อมูลแล้ว UI ต้องอัปเดตให้ตรงกับ server · 2 ทาง: refetch (ดึงใหม่ — ง่าย ชัวร์) หรือ optimistic
+    (เปลี่ยน UI ทันที แล้ว rollback ถ้าพัง — เร็วแต่ซับซ้อน) · ลืม sync = ผู้ใช้เห็นข้อมูลเก่า งง</p>
+    <h3>หลักการ 3: "Form add/edit คือของเดียวกัน — ต่างแค่ค่าเริ่มต้น"</h3>
+    <p>add = form ว่าง · edit = form ที่ prefill ค่าเดิม · logic เหมือนกัน 90% → ใช้ component เดียวรับ prop initial ·
+    เขียน 2 form แยก = ซ้ำ แก้ field ต้องแก้ 2 ที่ · DRY</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Controlled Form</h2>
+  <div class="card">
+<pre><code>"use client";
+function BookForm({ initial, onSubmit }: {
+  initial?: Book; onSubmit: (data: BookInput) =&gt; Promise&lt;void&gt;;
+}) {
+  const [title, setTitle] = useState(initial?.title ?? "");   // prefill ถ้า edit
+  const [author, setAuthor] = useState(initial?.author ?? "");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return setError("กรุณากรอกชื่อหนังสือ");   // validate (UX)
+    setSaving(true); setError("");
+    try {
+      await onSubmit({ title, author });          // ส่งให้ parent จัดการ
+    } catch {
+      setError("บันทึกไม่สำเร็จ ลองใหม่");          // จัดการ error ตอน save
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    &lt;form onSubmit={handleSubmit}&gt;
+      &lt;input value={title} onChange={e =&gt; setTitle(e.target.value)} /&gt;
+      &lt;input value={author} onChange={e =&gt; setAuthor(e.target.value)} /&gt;
+      {error &amp;&amp; &lt;p className="text-red-600"&gt;{error}&lt;/p&gt;}
+      &lt;button disabled={saving}&gt;{saving ? "กำลังบันทึก..." : "บันทึก"}&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+    <div class="tip"><strong>ใช้ทั้ง add และ edit:</strong> <code>&lt;BookForm onSubmit={create} /&gt;</code> (ว่าง) ·
+    <code>&lt;BookForm initial={book} onSubmit={update} /&gt;</code> (prefill) — form เดียว ต่างแค่ initial + handler</div>
+  </div>
+
+  <h2>ส่วนที่ 2: อัปเดต UI หลัง Mutate — 2 วิธี</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>Refetch</th><th>Optimistic</th></tr>
+      <tr><td>ทำยังไง</td><td>mutate เสร็จ → ดึงข้อมูลใหม่</td><td>เปลี่ยน UI ทันที → mutate → rollback ถ้าพัง</td></tr>
+      <tr><td>ข้อดี</td><td>ง่าย ชัวร์ตรง server</td><td>เร็ว (ผู้ใช้ไม่รอ)</td></tr>
+      <tr><td>ข้อเสีย</td><td>รอ network (ช้านิด)</td><td>ซับซ้อน ต้องจัดการ rollback</td></tr>
+      <tr><td>ใช้เมื่อ</td><td>⭐ default — เริ่มจากนี่</td><td>action ที่ต้องรู้สึกเร็ว (like, toggle)</td></tr>
+    </table>
+<pre><code>// Refetch (เริ่มจากนี่ — ง่ายและถูกต้อง)
+async function handleDelete(id: number) {
+  if (!confirm("ลบหนังสือเล่มนี้?")) return;        // confirm ก่อนลบ
+  await fetch(`/api/books/${id}`, { method: "DELETE" });
+  await refetchBooks();                            // ดึงใหม่ → UI ตรง server
+}</code></pre>
+    <p class="muted">เริ่มจาก refetch เสมอ (ถูกต้องชัวร์) · optimistic เป็น optimization ทำทีหลังเมื่อจำเป็น — อย่า over-engineer ตั้งแต่แรก</p>
+  </div>
+
+  <h2>ส่วนที่ 3: 4 สถานะทุกหน้า (ทบจาก Week 1+7)</h2>
+  <div class="card">
+<pre><code>// ทุกหน้า list ต้องครบ 4 สถานะ
+if (state.status === "loading") return &lt;Skeleton /&gt;;
+if (state.status === "error")   return &lt;ErrorBox onRetry={refetch} /&gt;;
+if (state.data.length === 0)    return &lt;EmptyState message="ยังไม่มีหนังสือ" /&gt;;
+return &lt;BookTable books={state.data} onEdit={...} onDelete={...} /&gt;;</code></pre>
+    <p class="muted">empty state ที่ดีบอกผู้ใช้ "ทำอะไรต่อ" (เช่น ปุ่ม "เพิ่มหนังสือเล่มแรก") ไม่ใช่แค่ "ไม่มีข้อมูล" เปล่า ๆ</p>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> ระบบจัดการ content/ลูกค้าใน dashboard — CRUD pattern เดียวกันเป๊ะ (list ลูกค้า, เพิ่ม, แก้ config, ลบ) ·
+    form เดียวสำหรับ add/edit config + refetch หลังบันทึก · นี่คือ 80% ของ admin tool ทุกตัว</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> CRUD + form handling เป็นงานหลักของ frontend dev ในทุกบริษัท · controlled component + การ sync หลัง mutate
+    เป็นพื้นฐานที่ interviewer ดูว่า "ทำแอปจริงเป็นไหม" · ทำเป็นแล้วต่อยอด React Query/SWR (จัดการ refetch อัตโนมัติ) ได้ง่าย</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: controlled component คืออะไร ดียังไง?</summary>
+    <p>ค่า input อยู่ใน state (ไม่ใช่ DOM) — input แสดงค่าจาก state, พิมพ์อัปเดต state · ดี: ควบคุม validate/reset/prefill ง่าย,
+    เป็น single source of truth · ต่างจาก uncontrolled (ค่าอยู่ใน DOM อ่านตอน submit)</p></details>
+  <details><summary>ข้อ 2: ทำไม add form กับ edit form ควรเป็น component เดียว?</summary>
+    <p>logic เหมือนกัน 90% (field, validate, submit) ต่างแค่ค่าเริ่มต้น (add=ว่าง, edit=prefill) · component เดียวรับ prop initial
+    → DRY, แก้ field ที่เดียว · เขียน 2 form = ซ้ำ ลืม sync</p></details>
+  <details><summary>ข้อ 3: ลบข้อมูลแล้วไม่อัปเดต UI เกิดอะไร แก้ยังไง 2 วิธี?</summary>
+    <p>ผู้ใช้ยังเห็นข้อมูลที่ลบไปแล้ว (UI ไม่ตรง server) งง · แก้: ① refetch (ดึงใหม่หลังลบ — ง่าย ชัวร์)
+    ② optimistic (ลบจาก UI ทันที rollback ถ้าพัง — เร็วแต่ซับซ้อน) · เริ่มจาก refetch</p></details>
+  <details><summary>ข้อ 4: empty state ที่ดีต่างจากแย่ยังไง?</summary>
+    <p>แย่: "ไม่มีข้อมูล" เปล่า ๆ (ผู้ใช้งง ทำไงต่อ) · ดี: บอกบริบท + ทางออก เช่น "ยังไม่มีหนังสือ — [+ เพิ่มเล่มแรก]" ·
+    empty state คือโอกาส guide ผู้ใช้ ไม่ใช่หน้าตาย</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>controlled form (add + edit ด้วย component เดียว)</li>
+    <li>delete + confirm + refetch (UI ตรง server)</li>
+    <li>4 สถานะทุกหน้า list (loading/error/empty/success)</li>
+    <li>validate client (UX) + เข้าใจว่า backend validate จริง</li>
+    <li>Quiz + โน้ต <code>notes/crud-forms.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 10</a>
+    <a class="btn" href="02-dashboard.html">บทที่ 2: Dashboard →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 10 บทที่ 1</footer>
+</div>
+</body>
+</html>

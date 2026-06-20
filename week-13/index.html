@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 13 — CI: GitHub Actions (lint → test → build)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 2 (Production)</div>
+    <h1>Week 13 — CI: GitHub Actions</h1>
+    <p>ให้หุ่นยนต์ตรวจโค้ดทุกครั้งที่ push — lint, test, build อัตโนมัติก่อน merge</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>จนถึงตอนนี้คุณรัน test/build เองในเครื่อง — Week 13 ให้ <strong>GitHub Actions</strong> ทำให้อัตโนมัติทุกครั้งที่ push/PR ·
+    lint → test → build รันบน server ของ GitHub ถ้าผ่านถึง merge ได้ ถ้าแดงห้าม merge · นี่คือ <strong>CI (Continuous Integration)</strong>
+    ที่ทำให้โค้ดในทีมไม่พังเงียบ ๆ และเป็นทักษะที่ทุกบริษัท 100k+ บังคับ</p>
+    <ul class="check">
+      <li>เข้าใจ CI: ทำไม, merge hell, fail fast</li>
+      <li>GitHub Actions: workflow, job, step, trigger, runner</li>
+      <li>สร้าง pipeline: lint → test → build (พร้อม PostgreSQL service สำหรับ test)</li>
+      <li>caching (เร็วขึ้น) · matrix (ทดสอบหลาย Node version)</li>
+      <li>branch protection — บังคับ CI ผ่านก่อน merge · secrets ใน Actions</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้เปลี่ยนระดับคุณ:</strong> CI/CD คือเส้นแบ่งระหว่าง "เขียนโค้ดเป็น" กับ "ทำงานในทีมจริงเป็น" ·
+    PR ที่มี CI เขียวคือมาตรฐานของทุกทีมจริงจัง — และเป็น badge ที่ทำให้ repo คุณดูมืออาชีพทันที</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-ci-actions.html">CI + GitHub Actions พื้นฐาน</a></strong>
+    <p style="margin:6px 0 0">ทำไม CI (merge hell, fail fast) · workflow/job/step/trigger/runner · workflow แรก · อ่าน log</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-ci-pipeline.html">CI Pipeline จริง — lint/test/build + service</a></strong>
+    <p style="margin:6px 0 0">pipeline หลาย step · PostgreSQL service สำหรับ test · caching · matrix · secrets · branch protection</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-ci.html">CI Pipeline ให้ library-system</a></strong>
+    <p style="margin:6px 0 0">workflow lint→test→build · postgres service · caching · branch protection · badge · push PR ทดสอบจริง</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (CI concept + Actions basics)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>workflow แรก (run test ตอน push)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (pipeline + postgres service + cache)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 13.1-13.2 (pipeline lint/test/build)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (workflow yaml จากความจำ) + 🤖 AI Drill #12</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 13.3-13.4 (branch protection + PR test) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 13</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. CI ต้อง fail fast — เรียง step ให้เร็วก่อน</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ build ก่อน lint (ช้า)</h4>
+<pre><code>- run: npm run build   # ช้า รันก่อน
+- run: npm run lint    # ถ้า lint พัง รู้ทีหลัง = เสียเวลา build</code></pre></div>
+      <div class="good"><h4>✅ เร็ว/ถูกก่อน</h4>
+<pre><code>- run: npm run lint    # เร็ว — พังก่อนไม่ต้องรอ
+- run: npm test        # กลาง
+- run: npm run build   # ช้าสุด ทำท้าย</code></pre></div>
+    </div>
+
+    <h3>2. ไม่ commit secret — ใช้ GitHub Secrets</h3>
+    <p class="muted">JWT_SECRET, DB password ใน workflow → ใช้ <code>${{ secrets.X }}</code> (เก็บใน repo settings) ไม่เขียนค่าตรงใน yaml</p>
+    <div class="warn"><strong>กฎทอง:</strong> fail fast (เรียง step เร็ว→ช้า) · CI ต้องผ่านก่อน merge (branch protection) · secret ใน GitHub Secrets ·
+    cache deps (เร็วขึ้น) · workflow อ่านง่าย (ตั้งชื่อ step ชัด)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #12 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน GitHub Actions workflow แล้ว<strong>หาจุดที่ผิด/ไม่ปลอดภัย</strong>
+  (secret hardcode ใน yaml? ไม่ pin action version (@v4 vs @main)? ไม่มี branch protection? รัน test โดยไม่มี DB?
+  permission กว้างเกิน?) จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 13 (เฟส 2)</footer>
+</div>
+</body>
+</html>

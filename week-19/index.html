@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 19 — Security ใน CI (DevSecOps)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 3 (Security-First)</div>
+    <h1>Week 19 — Security ใน CI (DevSecOps)</h1>
+    <p>ให้ pipeline ตรวจ security ทุก PR อัตโนมัติ — เปลี่ยน security จาก "งานปลายทาง" เป็น "ตรวจตั้งแต่ต้น"</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>Week 17-18 ป้องกันด้วยมือ — Week 19 ให้ <strong>CI ตรวจ security อัตโนมัติ</strong>: dependency มีช่องโหว่ไหม (npm audit),
+    โค้ดมี pattern อันตรายไหม (SAST/Semgrep), เผลอ commit secret ไหม (secret scanning) · ฝัง security เข้า pipeline (Week 13) →
+    PR ที่มีช่องโหว่ถูกจับก่อน merge · นี่คือหัวใจของ <strong>DevSecOps</strong> — ตำแหน่งสาย B ของคุณโดยตรง</p>
+    <ul class="check">
+      <li>Shift Left — ตรวจ security ตั้งแต่ต้น (ถูกกว่าเจอตอน production)</li>
+      <li>Dependency scanning (npm audit, Dependabot) — A06 OWASP</li>
+      <li>SAST (Semgrep) — หา pattern อันตรายในโค้ด (SQLi, XSS, secret)</li>
+      <li>Secret scanning (gitleaks) — กัน secret หลุดเข้า repo</li>
+      <li>รวมเข้า GitHub Actions — security gate ก่อน merge</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้คือ DevSecOps แท้:</strong> "ฝัง security เข้า CI/CD" คือนิยามของ DevSecOps —
+    ทักษะที่ JD ตำแหน่งนี้ขอตรง ๆ · คุณที่เข้าใจทั้ง CI (W13) + security (W17-18) = ทำ DevSecOps ได้จริง ซึ่งหายากมาก</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-shift-left-deps.html">Shift Left + Dependency &amp; Secret Scanning</a></strong>
+    <p style="margin:6px 0 0">shift left concept · npm audit + Dependabot · secret scanning (gitleaks) · pre-commit hooks · supply chain</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-sast-pipeline.html">SAST (Semgrep) + Security Pipeline</a></strong>
+    <p style="margin:6px 0 0">SAST vs DAST · Semgrep (หา pattern อันตราย) · รวมเข้า GitHub Actions · จัดการ false positive · security gate</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-devsecops.html">Security Pipeline ให้ library-system</a></strong>
+    <p style="margin:6px 0 0">npm audit + Semgrep + gitleaks ใน CI · แก้ที่เจอ · security gate · เขียน report · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (shift left + dep/secret scan)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>รัน npm audit + gitleaks กับ library-system</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (Semgrep + security pipeline)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 19.1-19.2 (scanning ใน CI)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (security CI step จากความจำ) + 🤖 AI Drill #18</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 19.3-19.4 (แก้ที่เจอ + report) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 19</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Security scan เป็น step ใน CI ไม่ใช่ทำมือ</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ ตรวจ security ตอนนึกได้</h4>
+<pre><code># รัน npm audit เองบางครั้ง
+# ลืม → ช่องโหว่หลุดเข้า production</code></pre></div>
+      <div class="good"><h4>✅ step ใน CI ทุก PR</h4>
+<pre><code>- run: npm audit --audit-level=high
+- uses: gitleaks/gitleaks-action
+- uses: semgrep/semgrep-action
+# ทุก PR ถูกสแกน ลืมไม่ได้</code></pre></div>
+    </div>
+
+    <h3>2. จัดการ false positive อย่างมีหลักการ</h3>
+    <p class="muted">scanner เตือนผิดได้ (false positive) — ไม่ใช่ปิด scan ทั้งหมด แต่ ignore เฉพาะจุด + comment เหตุผล (audit trail) · มุม pentester: ประเมินว่าจริงไหม</p>
+    <div class="warn"><strong>กฎทอง:</strong> security scan ทุก PR (gate) · fail บน High/Critical · จัดการ false positive รายจุด (ไม่ปิดทั้งหมด) · secret scan รวม git history ·
+    update dependency สม่ำเสมอ (Dependabot)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #18 (ศุกร์ 30 นาที):</strong>
+  ให้ AI สแกน (หรือเขียน) โค้ดที่มีช่องโหว่ แล้ว<strong>คุณประเมินผล scanner</strong>: อันไหน true positive (ต้องแก้), อันไหน false positive (ปลอม) ·
+  ทักษะ "อ่านผล scanner แล้วตัดสินถูก" คือสิ่งที่ AppSec engineer มีค่ากว่า scanner เปล่า ๆ — จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 19 (เฟส 3)</footer>
+</div>
+</body>
+</html>

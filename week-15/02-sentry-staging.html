@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Error Tracking (Sentry) + Staging</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 15</a> · บทที่ 2</div>
+    <h1>Error Tracking (Sentry) + Staging Environment</h1>
+    <p>รู้ทันทีเมื่อ production พัง — และมีที่ทดสอบก่อนของจริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🚨 พังแล้วเด้งเตือน = Sentry</span>
+      <span class="kw">🔬 stack trace + context = รู้ว่าพังตรงไหน</span>
+      <span class="kw">🎭 ที่ซ้อมก่อนจริง = staging</span>
+      <span class="kw">🏷 รู้ว่า version ไหนพัง = release tracking</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "อย่ารอผู้ใช้บอกว่าพัง — ระบบต้องบอกคุณก่อน"</h3>
+    <p>ถ้ารู้ว่าพังตอนผู้ใช้ร้องเรียน = สายไป (ผู้ใช้เจอ error ไปแล้วหลายคน) · error tracking (Sentry) เด้งแจ้งทันทีที่มี error
+    พร้อม stack trace + ผู้ใช้ที่เจอ + เกิดบ่อยแค่ไหน · คุณแก้ก่อนผู้ใช้ส่วนใหญ่จะเจอ · proactive ไม่ใช่ reactive</p>
+    <h3>หลักการ 2: "Error ต้องมี context — ไม่ใช่แค่ 'something failed'"</h3>
+    <p>error ที่มีประโยชน์บอก: เกิดที่ไหน (stack trace), ใครเจอ (user), ตอนทำอะไร (request), version ไหน (release) ·
+    Sentry รวมทั้งหมด → debug ได้โดยไม่ต้องเดา · ต่างจาก log "error" เปล่า ๆ ที่ต้องไล่หาเอง</p>
+    <h3>หลักการ 3: "Staging — ซ้อมใหญ่ก่อนแสดงจริง"</h3>
+    <p>staging = สำเนาของ production (เหมือนกันทุกอย่าง แต่ไม่ใช่ของจริง) · deploy ขึ้น staging ก่อน → ทดสอบ → ค่อยขึ้น production ·
+    จับบั๊กที่ test ไม่เจอ (integration กับของจริง, config) ก่อนผู้ใช้เจอ · "ไม่ทดสอบบน staging = ผู้ใช้เป็น tester"</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Sentry Setup</h2>
+  <div class="card">
+<pre><code>npm install @sentry/node
+
+// src/instrument.ts (โหลดก่อนสุด)
+import * as Sentry from "@sentry/node";
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,            // จาก Sentry project (ใน .env)
+  environment: process.env.NODE_ENV,      // แยก staging/production
+  release: process.env.GIT_SHA,           // ⭐ รู้ว่า version ไหนพัง
+  tracesSampleRate: 0.1,                  // sample performance (ไม่เก็บทุก request)
+});
+
+// Express — error handler ส่ง error ไป Sentry (ต่อจาก Week 3)
+Sentry.setupExpressErrorHandler(app);    // หลัง routes ก่อน error handler เรา</code></pre>
+    <p class="muted">Sentry จับ unhandled error อัตโนมัติ + ส่ง stack trace, request, user, release ไป dashboard · เด้ง email/Slack เมื่อมี error ใหม่</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Capture แบบมี Context</h2>
+  <div class="card">
+<pre><code>// จับ error เองพร้อม context (เมื่อต้องการรายละเอียดเพิ่ม)
+try {
+  await borrowBook(userId, bookId);
+} catch (err) {
+  Sentry.captureException(err, {
+    tags: { feature: "borrow" },
+    extra: { bookId },              // context ช่วย debug
+    user: { id: userId },           // ใครเจอ (ไม่ใส่ PII เกินจำเป็น)
+  });
+  throw err;   // โยนต่อให้ error handler ตอบ user
+}</code></pre>
+    <div class="danger"><strong>🔐 มุม pentester:</strong> Sentry ก็คือ log system — <strong>ไม่ส่ง secret/PII เข้า Sentry</strong> ·
+    ระวัง: Sentry เก็บ request body/headers อัตโนมัติ อาจมี token/password → ตั้ง <code>beforeSend</code> ลบ field อ่อนไหวก่อนส่ง ·
+    user context ใส่แค่ id (ไม่ใส่ email/ชื่อเต็มถ้าไม่จำเป็น) · PDPA/GDPR ครอบคลุม Sentry ด้วย</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Staging vs Production Environment</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>Staging</th><th>Production</th></tr>
+      <tr><td>คือ</td><td>สำเนา prod (ทดสอบ)</td><td>ของจริง ผู้ใช้ใช้</td></tr>
+      <tr><td>ข้อมูล</td><td>ปลอม/copy (ไม่ใช่ของลูกค้าจริง)</td><td>จริง</td></tr>
+      <tr><td>deploy เมื่อ</td><td>ทุก merge main</td><td>หลัง staging ผ่าน (อาจ manual approve)</td></tr>
+      <tr><td>ใช้ทำ</td><td>ทดสอบก่อนของจริง</td><td>—</td></tr>
+    </table>
+<pre><code># แยกด้วย environment variable + compose/branch ต่างกัน
+# staging: NODE_ENV=staging, DB แยก, domain staging.app.com
+# production: NODE_ENV=production, DB จริง, domain app.com
+# CI/CD: merge main → deploy staging → (approve) → deploy production</code></pre>
+    <div class="tip"><strong>เริ่มเล็ก:</strong> ไม่ต้องมี staging แยกเครื่องตั้งแต่แรก — เริ่มจาก compose staging บนเครื่องเดียว/branch แยก ·
+    สิ่งสำคัญคือ "มีที่ทดสอบก่อน production" ไม่ใช่ infrastructure หรู</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Monitoring + Uptime (เบื้องต้น)</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Uptime monitor</strong> (UptimeRobot ฟรี) — ping /api/health (Week 2) ทุกนาที เด้งเตือนถ้าล่ม</li>
+      <li><strong>Sentry alerts</strong> — error ใหม่/error เกิน threshold → Slack/email</li>
+      <li><strong>Docker healthcheck</strong> (Week 12) — restart container ที่ป่วยอัตโนมัติ</li>
+    </ul>
+    <p class="muted">3 ชั้นนี้ทำให้รู้ปัญหาเร็ว: healthcheck (restart เอง) → uptime (รู้ว่าล่ม) → Sentry (รู้ว่าพังตรงไหน) · เริ่มจากฟรี tier พอ</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation service — Sentry เด้งเตือนทันทีถ้า report job พัง (พร้อม clientId, แพลตฟอร์มที่ล่ม) ·
+    staging ทดสอบ logic สรุปใหม่กับข้อมูลจริงก่อนขึ้น production · uptime monitor ping /health · ลูกค้าไม่ต้องเป็นคนบอกว่าระบบล่ม</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> Sentry/error tracking + staging + monitoring เป็นมาตรฐานของทุก production · release tracking
+    ทำให้รู้ว่า "deploy ไหนทำให้ error พุ่ง" (rollback ได้ทันด้วย Week 14) · log/Sentry security (ไม่รั่ว PII) เป็นข้อบังคับ compliance</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไม error tracking (Sentry) ดีกว่ารอผู้ใช้บอกว่าพัง?</summary>
+    <p>เด้งเตือนทันทีที่มี error (proactive) พร้อม stack trace + user + ความถี่ → แก้ก่อนผู้ใช้ส่วนใหญ่เจอ ·
+    รอผู้ใช้บอก = สายไป (เจอ error หลายคนแล้ว) + ไม่มีรายละเอียดพอ debug</p></details>
+  <details><summary>ข้อ 2: release tracking ใน Sentry ช่วยอะไร เชื่อมกับ Week 14 ยังไง?</summary>
+    <p>รู้ว่า error เกิดใน version (release/SHA) ไหน → "deploy นี้ทำให้ error พุ่ง" → rollback version นั้น (Week 14 tag SHA) ·
+    เชื่อม deploy กับ error: เห็นว่า commit ไหนทำพัง แก้/กลับได้ตรงจุด</p></details>
+  <details><summary>ข้อ 3 (security): ส่ง error เข้า Sentry มีความเสี่ยงอะไร แก้ยังไง?</summary>
+    <p>Sentry เก็บ request body/headers อัตโนมัติ → อาจมี token/password/PII รั่วเข้า Sentry (ระบบภายนอก) ·
+    แก้: <code>beforeSend</code> ลบ field อ่อนไหวก่อนส่ง, user context ใส่แค่ id, ไม่ส่ง secret · PDPA/GDPR ครอบ Sentry ด้วย</p></details>
+  <details><summary>ข้อ 4: ทำไมต้องมี staging ไม่ deploy ขึ้น production ตรง ๆ?</summary>
+    <p>staging = สำเนา prod ทดสอบก่อน — จับบั๊กที่ test ไม่เจอ (integration จริง, config, env) ก่อนผู้ใช้เจอ ·
+    deploy prod ตรง = ผู้ใช้เป็น tester (เจอบั๊กแทนเรา) · เริ่มเล็กได้ (compose staging) สำคัญคือ "มีที่ทดสอบก่อน"</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>Sentry setup + capture error + context (release tracking)</li>
+    <li>beforeSend กรอง secret/PII (ไม่รั่วเข้า Sentry)</li>
+    <li>staging vs production environment</li>
+    <li>monitoring 3 ชั้น (healthcheck/uptime/Sentry)</li>
+    <li>Quiz + โน้ต <code>notes/sentry-staging.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-logging.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-observability.html">Mission ใหญ่: Observability →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 15 บทที่ 2</footer>
+</div>
+</body>
+</html>

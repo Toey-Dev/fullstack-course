@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: เขียน Pentest Report ระดับมืออาชีพ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 20</a> · บทที่ 2</div>
+    <h1>เขียน Pentest Report ระดับมืออาชีพ</h1>
+    <p>report คือ deliverable จริงของ pentester — เขียนให้ทั้ง dev และผู้บริหารใช้ได้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📋 finding = ช่องโหว่ 1 รายการ</span>
+      <span class="kw">🔬 PoC = พิสูจน์ว่าเจาะได้จริง</span>
+      <span class="kw">🛠 remediation = วิธีแก้</span>
+      <span class="kw">👔 executive summary = สรุปให้ผู้บริหาร</span>
+      <span class="kw">🔁 attack→fix→verify</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Report คือผลงานจริง — เจาะเก่งแต่เขียนไม่เป็น = ครึ่งเดียว"</h3>
+    <p>pentester มืออาชีพถูกตัดสินที่ report ไม่ใช่แค่ "เจาะได้" · report ที่ดีทำให้ dev แก้ได้จริง + ผู้บริหารเข้าใจความเสี่ยง ·
+    คุณเขียน report เป็น = ขายตัวเองได้ในสาย security · และเป็น artifact ที่ใส่ portfolio/แนบใบสมัครได้ทันที</p>
+    <h3>หลักการ 2: "เขียนให้ 2 กลุ่มอ่าน — technical + business"</h3>
+    <p>dev ต้องการรายละเอียด (PoC, payload, โค้ดที่แก้) · ผู้บริหารต้องการภาพรวม (เสี่ยงแค่ไหน กระทบธุรกิจยังไง ควรลงทุนแก้ไหม) ·
+    report ที่ดีมีทั้ง executive summary (ภาพรวม) + technical findings (รายละเอียด) · เขียนภาษาให้แต่ละกลุ่มเข้าใจ</p>
+    <h3>หลักการ 3: "Attack → Fix → Verify — วงจรครบถึงจะจบ"</h3>
+    <p>เจอช่องโหว่ (attack) → แก้ (fix) → ลองเจาะซ้ำ (verify ว่าปิดจริง) · ขาด verify = ไม่รู้ว่าแก้ได้จริงไหม (อาจแก้ผิดจุด) ·
+    report ที่ดีแสดงทั้งวงจร — นี่คือสิ่งที่ทำให้ portfolio ของคุณโดดเด่น: ไม่ใช่แค่ "เจอช่องโหว่" แต่ "แก้แล้วพิสูจน์ว่าปิด"</p>
+  </div>
+
+  <h2>ส่วนที่ 1: โครง Pentest Report</h2>
+  <div class="card">
+<pre><code># Pentest Report: library-system
+## 1. Executive Summary (ผู้บริหารอ่าน)
+   - ขอบเขต, ช่วงเวลา, สรุปผล (เจอ X ช่องโหว่: Y Critical, Z High)
+   - ความเสี่ยงโดยรวม + คำแนะนำหลัก
+
+## 2. Scope &amp; Methodology
+   - ระบบที่ทดสอบ, วิธี (OWASP), เครื่องมือ
+
+## 3. Findings (แต่ละช่องโหว่ — dev อ่าน)
+   ### F-01: SQL Injection ใน /api/books/search [Critical]
+   - Description: ...
+   - Severity: Critical (CVSS 9.1)
+   - Proof of Concept: payload + screenshot/request
+   - Impact: ดูดข้อมูลทั้ง DB ได้
+   - Remediation: ใช้ parameterized query
+   - Status: ✅ Fixed &amp; Verified
+
+## 4. Summary Table (ตารางรวมทุก finding + severity + status)</code></pre>
+    <p class="muted">โครงนี้คือมาตรฐานสากล (OWASP/PTES) — recruiter/ทีม security เห็นแล้วรู้ว่าคุณทำเป็นมืออาชีพ</p>
+  </div>
+
+  <h2>ส่วนที่ 2: เขียน Finding ที่ดี</h2>
+  <div class="card">
+    <div class="clean">
+      <div class="bad"><h4>❌ finding ที่ใช้ไม่ได้</h4>
+<pre><code>"พบ SQL injection ใน search
+ควรแก้ไข"
+- ไม่มี severity
+- ไม่มี PoC (พิสูจน์ไม่ได้)
+- ไม่บอกวิธีแก้ชัด</code></pre></div>
+      <div class="good"><h4>✅ finding ที่ actionable</h4>
+<pre><code>F-01 SQLi /api/books/search [Critical CVSS 9.1]
+PoC: ?q=' OR '1'='1 → คืนทุก record
+     ?q='; DROP TABLE-- → (ทดสอบบน staging)
+Impact: ดูด/ลบข้อมูลทั้ง DB
+Fix: parameterized query ($1)
+     [code diff before/after]
+Verified: re-test payload → ไม่ได้ผลแล้ว ✅</code></pre></div>
+    </div>
+    <p class="muted">finding ที่ดี dev อ่านแล้วเข้าใจทันทีว่า "อะไร รุนแรงแค่ไหน พิสูจน์ยังไง แก้ยังไง แก้แล้วยัง" — actionable ทุกข้อ</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Executive Summary</h2>
+  <div class="card">
+<pre><code>## Executive Summary
+ทำการทดสอบเจาะระบบ library-system (localhost, [วันที่]) ตาม OWASP Testing Guide
+พบช่องโหว่ทั้งหมด 6 รายการ: 1 Critical, 2 High, 2 Medium, 1 Low
+
+ความเสี่ยงหลัก: SQL Injection (Critical) สามารถเข้าถึงข้อมูลผู้ใช้ทั้งหมด
+ได้รับการแก้ไขและทดสอบยืนยันแล้วทั้ง 6 รายการ
+
+คำแนะนำ: ใช้ parameterized query ทุกจุด, เพิ่ม rate limiting,
+ทำ security review ก่อน deploy ทุกครั้ง</code></pre>
+    <div class="tip"><strong>executive summary เขียนให้คนไม่เทคนิคเข้าใจ:</strong> ไม่มี jargon — บอก "เสี่ยงแค่ไหน กระทบอะไร แก้แล้วหรือยัง ควรทำอะไรต่อ" ·
+    ผู้บริหาร/ลูกค้าตัดสินใจจากส่วนนี้ (จะลงทุนแก้ไหม) · 1 ย่อหน้าที่ทรงพลังกว่า technical 10 หน้าสำหรับคนกลุ่มนี้</div>
+  </div>
+
+  <h2>ส่วนที่ 4: ทำให้เป็น Portfolio</h2>
+  <div class="card">
+    <p>report นี้ใส่ portfolio ได้ทันที (ของจริงที่แสดงทักษะ security):</p>
+    <ul>
+      <li>เก็บใน repo (PENTEST-REPORT.md) — แสดงว่าเจาะ+แก้ระบบตัวเองได้</li>
+      <li>เขียน blog เล่า (sanitize) — "ผม pentest โปรเจกต์ตัวเอง เจอ 6 ช่องโหว่ แก้ยังไง" = content ที่ recruiter ชอบ</li>
+      <li>แนบใบสมัครสาย security — proof ว่าเข้าใจทั้ง attack และ defense</li>
+    </ul>
+    <div class="warn"><strong>sanitize ก่อน public:</strong> ถ้าโพสต์สาธารณะ — ลบ secret/path จริง, ใช้ข้อมูล mock · report ของระบบ portfolio (ตัวเอง) โพสต์ได้ ·
+    report ของระบบงานจริง (media-presto) ห้ามโพสต์</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> ทักษะเขียน report นี้คือสิ่งที่คุณทำในกองทัพ — ตอนนี้ทำกับระบบตัวเอง + เป็นทักษะที่ media-presto อาจขายได้
+    (pentest service ให้ลูกค้า + report มืออาชีพ) · report ที่เขียนเป็นทำให้ขึ้นราคา service ได้</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> report writing เป็นทักษะที่แยก senior pentester จาก junior · bug bounty จ่ายตาม "คุณภาพของ report" (PoC ชัด = ได้เงินเร็ว) ·
+    AppSec engineer ต้องเขียน finding ให้ dev แก้ได้ · "เจาะเป็น + เขียน report เป็น" = โปรไฟล์ครบที่ตลาดจ่ายแพง</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: finding ที่ actionable ต้องมีอะไรบ้าง?</summary>
+    <p>severity (รุนแรงแค่ไหน) + PoC (พิสูจน์ว่าเจาะได้จริง — payload/screenshot) + impact (กระทบอะไร) + remediation (แก้ยังไง ชัดเจน) + status (แก้แล้ว/verify) ·
+    ขาดอย่างใด = dev แก้ไม่ได้/ไม่รู้ priority · "พบช่องโหว่ ควรแก้" = report ที่ใช้ไม่ได้</p></details>
+  <details><summary>ข้อ 2: ทำไม report ต้องมีทั้ง executive summary และ technical findings?</summary>
+    <p>เขียนให้ 2 กลุ่ม: ผู้บริหารอ่าน executive summary (ภาพรวม ความเสี่ยง ตัดสินใจลงทุน — ไม่มี jargon) ·
+    dev อ่าน technical findings (PoC, payload, วิธีแก้) · report ที่มีแต่ technical = ผู้บริหารไม่เข้าใจ, มีแต่ summary = dev แก้ไม่ได้</p></details>
+  <details><summary>ข้อ 3: "attack → fix → verify" — ทำไม verify สำคัญ?</summary>
+    <p>เจอ (attack) + แก้ (fix) ยังไม่พอ — ต้องลองเจาะซ้ำ (verify) ว่าปิดจริง · อาจแก้ผิดจุด/ไม่ครบ → ช่องยังเปิด ·
+    verify พิสูจน์ว่าแก้ได้จริง · report ที่แสดงทั้งวงจร (เจอ→แก้→ยืนยัน) = portfolio ที่โดดเด่น (ไม่ใช่แค่ "เจอ")</p></details>
+  <details><summary>ข้อ 4: report นี้ใช้ทำ portfolio ยังไง ต้องระวังอะไร?</summary>
+    <p>เก็บ PENTEST-REPORT.md ใน repo / เขียน blog เล่า / แนบใบสมัครสาย security — proof ว่าเข้าใจ attack+defense ·
+    ระวัง: sanitize ก่อน public (ลบ secret/path จริง, ใช้ mock) · report ระบบตัวเอง (portfolio) โพสต์ได้ · ระบบงานจริง (media-presto) ห้าม</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>เข้าใจโครง report (exec summary + findings + summary table)</li>
+    <li>เขียน finding actionable (severity/PoC/impact/remediation/status)</li>
+    <li>executive summary สำหรับผู้บริหาร (ไม่มี jargon)</li>
+    <li>attack→fix→verify ครบวงจร</li>
+    <li>Quiz + โน้ต <code>notes/report-writing.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-pentest-methodology.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-pentest.html">Mission ใหญ่: Pentest →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 20 บทที่ 2</footer>
+</div>
+</body>
+</html>

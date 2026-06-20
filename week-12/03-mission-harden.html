@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: Harden + Production-ize Docker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 12</a> · Mission ใหญ่</div>
+    <h1>🛡 Harden + Production-ize Docker</h1>
+    <p>ทำให้ container ปลอดภัยและพร้อม production — พร้อมเขียน hardening report (ซ้อมงาน AppSec)</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือ portfolio สาย security</h3>
+    <p>หลังจบ คุณจะมี container ที่ non-root, scan ผ่าน, prod-ready (healthcheck/limit/restart) + <strong>hardening report</strong>
+    ที่เขียนเองว่า "ทำให้ปลอดภัยขึ้นยังไง แก้ CVE อะไร" — นี่คือเอกสารที่ตำแหน่ง DevSecOps/AppSec อยากเห็น
+    และเป็นการซ้อมเขียนรายงานแบบ pentest ที่คุณถนัด แต่อยู่ฝั่ง "สร้างกำแพง"</p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 12.1 — Harden Dockerfile <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>เพิ่ม <code>USER node</code> (non-root) ใน stage run · ตรวจว่าไฟล์ permission ถูก</li>
+      <li>ใช้ minimal image (slim หรือ distroless ถ้าทำได้)</li>
+      <li>ตรวจว่าไม่มี secret ใน Dockerfile (ENV/ARG) — secret runtime เท่านั้น</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> <code>docker run</code> แล้ว <code>whoami</code> ใน container = node (ไม่ใช่ root)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 12.2 — Scan + แก้ CVE <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>scan image (docker scout cves หรือ trivy)</li>
+      <li>แก้ Critical/High: อัปเดต base image + <code>npm audit fix</code></li>
+      <li>scan ซ้ำ — บันทึก "ก่อน/หลัง" (จำนวน CVE ลดลง)</li>
+    </ol>
+    <div class="warn"><strong>มุม pentester:</strong> CVE ที่แก้ไม่ได้ทันที — ประเมิน exploitable จริงไหม + บันทึกเหตุผลในรายงาน</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 12.3 — Production compose + frontend <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>compose.prod: healthcheck (/api/health) + restart + resource limits ทุก service</li>
+      <li>prod ไม่ expose port db/redis ออกนอก (เฉพาะ network ภายใน)</li>
+      <li>dockerize Next.js frontend (standalone) + เพิ่มเป็น service ที่ 4</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> prod compose up → healthcheck เขียว · db port ไม่เปิดออกนอก · frontend + backend คุยกันได้</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 12.4 — Hardening Report + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>เขียน <code>SECURITY.md</code>: สิ่งที่ทำเพื่อ harden (non-root, minimal, scan, secret, no expose) + CVE ก่อน/หลัง + เหตุผล</li>
+      <li>push — README + SECURITY.md + AI Usage</li>
+      <li>นี่คือเอกสารที่ใส่ portfolio สาย security ได้</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> SECURITY.md อ่านแล้วเข้าใจว่า "ทำไมระบบนี้ปลอดภัย" — เหมือนรายงานที่ลูกค้า/ทีม security อ่าน</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Container security</td><td>35%</td><td>non-root · minimal image · secret runtime · no expose internal · scan ก่อน/หลัง</td></tr>
+      <tr><td>Production readiness</td><td>30%</td><td>healthcheck · restart · resource limit · แยก dev/prod</td></tr>
+      <tr><td>Frontend dockerize</td><td>15%</td><td>standalone · multi-stage · non-root</td></tr>
+      <tr><td>Report + Git</td><td>20%</td><td>SECURITY.md ชัด (ทำอะไร ทำไม) · README + AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>Dockerfile non-root + minimal + ไม่มี secret</li>
+    <li>scan + แก้ CVE (บันทึกก่อน/หลัง)</li>
+    <li>prod compose (healthcheck/restart/limit) + ไม่ expose internal</li>
+    <li>dockerize frontend (standalone)</li>
+    <li>SECURITY.md (hardening report) — portfolio สาย security</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #11 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 13 (CI/CD)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-production-compose.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 12</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 12 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: CI Pipeline จริง — lint/test/build + service</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 13</a> · บทที่ 2</div>
+    <h1>CI Pipeline จริง — lint/test/build + Service</h1>
+    <p>pipeline ที่ test ต้องมี database จริง — และเทคนิคที่ทำให้ CI เร็วและน่าเชื่อถือ</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🗄 DB ชั่วคราวตอน test = services</span>
+      <span class="kw">💾 จำ deps = cache</span>
+      <span class="kw">🔢 หลาย Node = matrix</span>
+      <span class="kw">🔒 ค่าลับ = secrets</span>
+      <span class="kw">🚧 เขียวค่อย merge = branch protection</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Test ต้องรันในสภาพใกล้ production"</h3>
+    <p>library-system test ต้องมี PostgreSQL (Week 4) — runner ไม่มี DB ติดมา · GitHub Actions <code>services</code>
+    ให้รัน container DB ชั่วคราวระหว่าง test (เหมือน compose ย่อ ๆ) · test รันกับ DB จริง → มั่นใจว่า integration ทำงานจริง
+    ไม่ใช่ mock ทุกอย่างจนไม่เจอบั๊กจริง</p>
+    <h3>หลักการ 2: "CI ต้องเร็วพอที่คนจะรอ — cache คือเพื่อน"</h3>
+    <p>ถ้า CI ใช้ 10 นาที คนจะข้าม (ไม่รอ) · cache node_modules ทำให้ install เร็วขึ้นมาก (ไม่ download ใหม่ทุกครั้ง) ·
+    pipeline ที่เร็ว = คนใช้จริง = คุณภาพดีขึ้น · ความเร็วคือ feature ของ CI</p>
+    <h3>หลักการ 3: "CI ไร้ค่าถ้าไม่บังคับ — branch protection"</h3>
+    <p>มี CI แต่ merge ได้แม้แดง = ไม่มีประโยชน์ · branch protection บังคับ "CI เขียว + review ผ่าน" ก่อน merge เข้า main ·
+    นี่คือสิ่งที่เปลี่ยน CI จาก "ของประดับ" เป็น "ประตูคุณภาพจริง"</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Pipeline เต็ม + PostgreSQL Service</h2>
+  <div class="card">
+<pre><code>name: CI
+on:
+  pull_request:
+  push: { branches: [main] }
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:                            # ⭐ DB ชั่วคราวระหว่าง test
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: library_test
+        ports: ["5432:5432"]
+        options: &gt;-                       # รอ DB พร้อมก่อน test
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run lint                 # fail fast — เร็วก่อน
+      - run: npm test                     # test กับ postgres service
+        env:
+          DATABASE_URL: postgres://postgres:testpass@localhost:5432/library_test
+      - run: npm run build</code></pre>
+    <p class="muted"><code>services.postgres</code> = container DB ที่ GitHub รันให้ระหว่าง job · test เชื่อมผ่าน localhost:5432 (ใน runner) · pg_isready รอจน DB พร้อม (เหมือน healthcheck Week 11)</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Caching + Matrix</h2>
+  <div class="card">
+<pre><code># cache — setup-node มี cache: npm ในตัว (cache ~/.npm)
+- uses: actions/setup-node@v4
+  with: { node-version: 20, cache: npm }   # install เร็วขึ้นมาก
+
+# matrix — test หลาย Node version พร้อมกัน
+strategy:
+  matrix:
+    node: [18, 20, 22]
+steps:
+  - uses: actions/setup-node@v4
+    with: { node-version: ${{ matrix.node }} }
+# → รัน job 3 ครั้ง (Node 18, 20, 22) ขนานกัน</code></pre>
+    <p class="muted">cache: เก็บ deps ไม่ download ใหม่ → CI เร็วขึ้นหลายเท่า · matrix: ทดสอบหลาย version พร้อมกัน (library ที่ support หลาย Node) — งานทั่วไปใช้ version เดียวพอ</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Secrets ใน Actions</h2>
+  <div class="card">
+<pre><code># เก็บ secret ที่ GitHub repo: Settings → Secrets and variables → Actions
+# ใช้ใน workflow:
+- run: npm test
+  env:
+    JWT_SECRET: ${{ secrets.JWT_SECRET }}     # ดึงจาก secrets (ไม่โผล่ใน log)</code></pre>
+    <div class="danger"><strong>🔐 มุม pentester:</strong> GitHub Secrets ถูก mask ใน log อัตโนมัติ (ถ้า echo ออกมาจะเป็น ***) ·
+    แต่ระวัง: PR จาก fork ภายนอกไม่ได้ secret (กัน PR ปลอมขโมย secret) · และอย่า log secret หรือส่งไป third-party action ที่ไม่ trust ·
+    ความรู้ supply chain security ของคุณสำคัญตรงนี้ — CI มี secret = เป้าหมายการโจมตี</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Branch Protection</h2>
+  <div class="card">
+    <p>ตั้งที่ GitHub: <strong>Settings → Branches → Add rule</strong> สำหรับ <code>main</code>:</p>
+    <ul>
+      <li>✅ Require status checks to pass before merging (เลือก job ci)</li>
+      <li>✅ Require pull request reviews (อย่างน้อย 1 approve)</li>
+      <li>✅ Require branches to be up to date</li>
+    </ul>
+    <div class="tip"><strong>ผล:</strong> push ตรงเข้า main ไม่ได้ → ต้องทำผ่าน PR → CI ต้องเขียว + มีคน review → ค่อย merge ·
+    main branch สะอาดเสมอ · นี่คือ workflow มาตรฐานของทีมจริง (และทำให้ portfolio คุณดูเป็นมืออาชีพ)</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> CI สำหรับ automation service — test กับ DB จริง (services), secret API key ใน GitHub Secrets,
+    branch protection กันโค้ดพังเข้า main · ทีมแก้ logic แล้ว CI ยืนยันตัวเลขยังถูกก่อน deploy</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> services (DB ใน CI), caching, secrets, branch protection เป็นองค์ประกอบมาตรฐานของ CI ทุกที่ ·
+    การ "test กับ DB จริงใน CI" คือความต่างของ integration test ที่เชื่อถือได้ · pentester ที่เข้าใจ CI security (secret, supply chain)
+    เป็นที่ต้องการในสาย DevSecOps</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไม test ใน CI ต้องมี PostgreSQL service ไม่ mock หมด?</summary>
+    <p>library-system มี integration test ที่ต้องคุย DB จริง (Week 4) — mock หมดจะไม่เจอบั๊กจริง (SQL ผิด, migration พัง) ·
+    services รัน container DB ชั่วคราว → test ในสภาพใกล้ production · เชื่อถือได้กว่า mock ทุกอย่าง</p></details>
+  <details><summary>ข้อ 2: cache node_modules ช่วยอะไร ทำไมสำคัญ?</summary>
+    <p>ไม่ download deps ใหม่ทุกครั้ง → install เร็วขึ้นหลายเท่า → CI เร็ว · CI ที่เร็วคนใช้จริง (ไม่ข้าม) → คุณภาพดีขึ้น ·
+    ความเร็วคือ feature ของ CI</p></details>
+  <details><summary>ข้อ 3 (security): PR จาก fork ภายนอกได้ secret ไหม ทำไม?</summary>
+    <p>ไม่ได้ — GitHub กันไว้ เพราะถ้าได้ คนส่ง PR ปลอมที่ <code>echo ${{ secrets.X }}</code> จะขโมย secret ได้ ·
+    PR fork รันแบบจำกัดสิทธิ์ · นี่คือเหตุผลที่ workflow ต้องระวังเรื่อง trust ของ PR ภายนอก (supply chain)</p></details>
+  <details><summary>ข้อ 4: branch protection ทำให้ CI "มีความหมาย" ยังไง?</summary>
+    <p>มี CI แต่ merge ได้แม้แดง = ไร้ค่า · branch protection บังคับ CI เขียว + review ผ่าน ก่อน merge เข้า main →
+    main สะอาดเสมอ · เปลี่ยน CI จากของประดับเป็นประตูคุณภาพจริง</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>pipeline lint→test→build + PostgreSQL service</li>
+    <li>caching (CI เร็วขึ้น) · เข้าใจ matrix</li>
+    <li>secrets ใน Actions (ไม่ hardcode)</li>
+    <li>branch protection (CI เขียว + review ก่อน merge)</li>
+    <li>Quiz + โน้ต <code>notes/ci-pipeline.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-ci-actions.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-ci.html">Mission ใหญ่: CI Pipeline →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 13 บทที่ 2</footer>
+</div>
+</body>
+</html>

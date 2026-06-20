@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: OWASP Top 10 — มุมมองผู้สร้างกำแพง</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 17</a> · บทที่ 1</div>
+    <h1>OWASP Top 10 — มุมมองผู้สร้างกำแพง</h1>
+    <p>คุณรู้จัก OWASP จากฝั่งโจมตี — บทนี้พลิกเป็นฝั่งป้องกัน ทีละข้อ</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🚪 A01 ไม่มีสิทธิ์แต่เข้าได้ = Broken Access Control</span>
+      <span class="kw">🔐 A02 crypto/secret พลาด</span>
+      <span class="kw">💉 A03 injection (SQL/XSS)</span>
+      <span class="kw">⚙️ A05 misconfig</span>
+      <span class="kw">🌐 A10 SSRF</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "คิดแบบผู้โจมตี เพื่อป้องกันแบบผู้สร้าง"</h3>
+    <p>OWASP Top 10 = 10 ช่องโหว่ที่พบบ่อยสุดในเว็บ · คุณเคยใช้มันเจาะ — ตอนนี้ใช้มันเป็น "checklist ป้องกัน" ·
+    ข้อได้เปรียบ: dev ที่ไม่เคย pentest ป้องกันแบบท่องจำ (ใส่ helmet เพราะเขาบอก) · คุณป้องกันเพราะ "รู้ว่าถ้าไม่ทำจะโดนยังไง" → ตรงจุดกว่า</p>
+    <h3>หลักการ 2: "Security ไม่ใช่ feature เพิ่มทีหลัง — เป็นส่วนหนึ่งของทุกบรรทัด"</h3>
+    <p>ช่องโหว่ส่วนใหญ่เกิดจากการ "ลืมคิด" ตอนเขียน (ลืม validate, ลืมเช็คสิทธิ์, ลืม escape) · secure coding = คิดเรื่อง security
+    ขณะเขียนทุก feature ไม่ใช่ "เขียนเสร็จค่อยมา patch" · นี่คือ mindset ที่แยก secure dev จาก dev ทั่วไป</p>
+    <h3>หลักการ 3: "ส่วนใหญ่ของ OWASP คือสิ่งที่เรียนมาแล้ว — แค่รวมเป็นระบบ"</h3>
+    <p>access control (W5/9), injection (W4), crypto (W5), auth (W5), logging (W15) — เราทำมาทั้งคอร์ส ·
+    Week 17 แค่ "รวมเป็น checklist เดียว" + เติมที่ขาด (SSRF, misconfig) · เห็นภาพรวมว่าทุกอย่างที่เรียนคือ defense in depth</p>
+  </div>
+
+  <h2>ส่วนที่ 1: OWASP Top 10 (2021) — ป้องกันทีละข้อ</h2>
+  <div class="card">
+    <table>
+      <tr><th>OWASP</th><th>คือ</th><th>ป้องกัน (เรียนที่ไหน)</th></tr>
+      <tr><td><strong>A01 Broken Access Control</strong></td><td>เข้าถึงของที่ไม่มีสิทธิ์</td><td>กัน 3 ชั้น + ownership check (W5/9)</td></tr>
+      <tr><td><strong>A02 Cryptographic Failures</strong></td><td>เก็บ/ส่งข้อมูลลับไม่ปลอดภัย</td><td>bcrypt hash, HTTPS, secret ใน env (W5/4)</td></tr>
+      <tr><td><strong>A03 Injection</strong></td><td>SQL/XSS/command injection</td><td>parameterized query, Zod, escape output (W4)</td></tr>
+      <tr><td><strong>A04 Insecure Design</strong></td><td>ออกแบบไม่คิด security</td><td>threat model, secure by default</td></tr>
+      <tr><td><strong>A05 Security Misconfig</strong></td><td>ตั้งค่าหละหลวม (error รั่ว, header ขาด)</td><td>helmet, error handler (W3), ลบ default</td></tr>
+      <tr><td><strong>A06 Vulnerable Components</strong></td><td>lib มีช่องโหว่</td><td>npm audit, image scan (W12)</td></tr>
+      <tr><td><strong>A07 Auth Failures</strong></td><td>brute force, weak session</td><td>rate limit, JWT expiry (W5)</td></tr>
+      <tr><td><strong>A08 Data Integrity</strong></td><td>CI/CD, dependency ไม่ verify</td><td>pin version, supply chain (W13-14)</td></tr>
+      <tr><td><strong>A09 Logging Failures</strong></td><td>ไม่ log / log secret</td><td>structured log + Sentry, ไม่รั่ว PII (W15)</td></tr>
+      <tr><td><strong>A10 SSRF</strong></td><td>server ถูกหลอกยิง request ภายใน</td><td>validate/allowlist URL (บทนี้)</td></tr>
+    </table>
+    <p class="muted">สังเกต: 8 ใน 10 ข้อ เราทำมาแล้วทั้งคอร์ส! Week 17 คือ "รวมเป็นระบบ + เติม A04/A05/A10"</p>
+  </div>
+
+  <h2>ส่วนที่ 2: A03 Injection — เจาะลึก XSS (เพิ่มจาก SQLi)</h2>
+  <div class="card">
+    <p>SQLi เรียนแล้ว (W4 parameterized) — เพิ่ม XSS (เจาะ frontend):</p>
+<pre><code>// ❌ Stored XSS — เก็บ input แล้ว render เป็น HTML
+el.innerHTML = comment;   // comment = "&lt;img src=x onerror=alert(document.cookie)&gt;"
+// → script รันในหน้าทุกคนที่เปิด
+
+// ✅ Output encoding — render เป็นข้อความ ไม่ใช่ HTML
+el.textContent = comment;            // browser escape ให้ (W0)
+// React/Next.js escape อัตโนมัติเมื่อใส่ {comment} (ปลอดภัยโดย default)
+// อันตราย: dangerouslySetInnerHTML — ใช้กับข้อมูลผู้ใช้ = เปิดประตู XSS</code></pre>
+    <table>
+      <tr><th>ชนิด injection</th><th>ป้องกัน</th></tr>
+      <tr><td>SQL injection</td><td>parameterized query ($1) — ไม่ต่อ string (W4)</td></tr>
+      <tr><td>XSS</td><td>output encoding (textContent / React escape) + CSP (บทที่ 2)</td></tr>
+      <tr><td>Command injection</td><td>ไม่ส่ง input เข้า shell / ใช้ execFile ไม่ใช่ exec</td></tr>
+    </table>
+    <div class="danger"><strong>มุม pentester ของคุณ:</strong> หลัก injection ทุกชนิดเหมือนกัน — "อย่าให้ input ผู้ใช้กลายเป็น 'คำสั่ง/โค้ด'" ·
+    SQL: แยกคำสั่งจากข้อมูล · XSS: แยกข้อความจาก HTML · คุณเข้าใจ root cause จากการเจาะ → ป้องกันได้ทุกรูปแบบ</div>
+  </div>
+
+  <h2>ส่วนที่ 3: A10 SSRF — ของใหม่ที่สำคัญกับ Week 16</h2>
+  <div class="card">
+    <p>SSRF (Server-Side Request Forgery) = หลอกให้ server ยิง request ไปที่ผู้โจมตีกำหนด — อันตรายกับ service ที่ fetch URL จาก input:</p>
+<pre><code>// ❌ SSRF — รับ URL จากผู้ใช้แล้ว fetch ตรง
+app.post("/fetch", async (req) =&gt; {
+  const data = await fetch(req.body.url);   // url = "http://169.254.169.254/..." (cloud metadata!)
+  // → ผู้โจมตีอ่าน credential ของ cloud / ยิง service ภายใน
+});
+
+// ✅ allowlist + validate
+const ALLOWED = ["api.meta.com", "analytics.google.com"];
+const url = new URL(req.body.url);
+if (!ALLOWED.includes(url.hostname)) throw new Error("URL ไม่อนุญาต");
+// + บล็อก private IP (127.x, 169.254.x, 10.x, 192.168.x)</code></pre>
+    <div class="warn"><strong>โยงกับ Week 16:</strong> automation service ที่ fetch API ภายนอก — ถ้ารับ URL/endpoint จาก config ผู้ใช้
+    ต้อง allowlist (เฉพาะ domain ที่รู้จัก) + บล็อก internal IP · ไม่งั้นผู้โจมตีหลอกให้ยิง cloud metadata/service ภายในได้ ·
+    SSRF เป็นช่องโหว่ที่โตขึ้นมากในยุค cloud</div>
+  </div>
+
+  <h2>ส่วนที่ 4: A04 Insecure Design + A05 Misconfig</h2>
+  <div class="card">
+    <p><strong>A04 — Threat Modeling เบื้องต้น:</strong> ก่อนสร้าง feature ถามว่า "ผู้โจมตีจะใช้มันยังไง" · เช่น feature reset password —
+    คิดเผื่อ: enumeration (รู้ว่า email ไหนมี), token เดาได้ไหม, link หมดอายุไหม · ออกแบบ security ตั้งแต่ design ไม่ใช่ patch ทีหลัง</p>
+    <p><strong>A05 — Misconfiguration ที่พบบ่อย:</strong></p>
+    <ul>
+      <li>error message รั่วข้อมูลภายใน (W3 — ตอบ 500 กลาง ๆ)</li>
+      <li>security headers ขาด (บทที่ 2 — helmet)</li>
+      <li>default credential / debug mode เปิดใน production</li>
+      <li>directory listing / endpoint ที่ลืมปิด (เช่น /debug)</li>
+    </ul>
+    <p class="muted">A04/A05 คือ "ลืมคิด" — checklist + threat model ช่วยจับก่อนขึ้น production</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation service — A10 SSRF (allowlist API domain), A02 (key ใน env), A09 (ไม่ log key),
+    A06 (scan dependency) · dashboard ลูกค้า — A01 (ownership: ลูกค้าเห็นแค่ของตัวเอง), A03 XSS (escape ข้อมูลที่แสดง) ·
+    คุณ map OWASP กับงานจริงได้เพราะเคยเจาะ</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> OWASP Top 10 เป็นมาตรฐานที่ทุกทีม security ใช้เป็น checklist · "secure coding ตาม OWASP" เป็นข้อบังคับใน code review
+    ของบริษัทที่ใส่ใจ · dev ที่เข้าใจ OWASP ลึก (จากการเจาะจริง) = ผู้สมัคร AppSec/Product Security ที่บริษัทตามหา</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: หลัก "ป้องกัน injection" ทุกชนิด (SQL/XSS/command) เหมือนกันยังไง?</summary>
+    <p>"อย่าให้ input ผู้ใช้กลายเป็นคำสั่ง/โค้ด" — SQL: แยกคำสั่งจากข้อมูล (parameterized $1) · XSS: แยกข้อความจาก HTML (encode/textContent) ·
+    command: ไม่ส่ง input เข้า shell · root cause เดียว: ปนข้อมูลกับคำสั่ง → แยกออกจากกัน</p></details>
+  <details><summary>ข้อ 2: SSRF คืออะไร อันตรายยังไงกับ service ที่ fetch URL?</summary>
+    <p>หลอกให้ server ยิง request ไปที่ผู้โจมตีกำหนด · ถ้ารับ URL จาก input แล้ว fetch ตรง — ผู้โจมตีใส่ <code>169.254.169.254</code> (cloud metadata)
+    อ่าน credential cloud / ยิง service ภายในได้ · ป้องกัน: allowlist domain + บล็อก private IP</p></details>
+  <details><summary>ข้อ 3: ทำไม 8/10 ของ OWASP เราทำมาแล้วในคอร์ส แต่ยังต้องมี Week 17?</summary>
+    <p>เพื่อ "รวมเป็นระบบ/checklist เดียว" + เติมที่ขาด (A04 design, A05 misconfig, A10 SSRF) · ทำให้เห็นภาพรวมว่าทุกอย่างที่เรียน
+    (access control, injection, crypto, auth, logging) คือ defense in depth ที่ทำงานร่วมกัน ไม่ใช่เรื่องแยก ๆ</p></details>
+  <details><summary>ข้อ 4: A04 Insecure Design ป้องกันด้วยอะไร ต่างจาก A05 ยังไง?</summary>
+    <p>A04: threat modeling — คิด "ผู้โจมตีจะใช้ feature นี้ยังไง" ตั้งแต่ออกแบบ (ก่อนเขียน) · A05: misconfiguration — ตั้งค่าหละหลวม
+    (error รั่ว, header ขาด, debug เปิด) แก้ที่ config/deployment · A04 = ปัญหาที่ design, A05 = ปัญหาที่ setup</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>map OWASP Top 10 กับ library-system (เจอที่ยังไม่ปิด)</li>
+    <li>เข้าใจ injection ทุกชนิด (root cause เดียว) + XSS output encoding</li>
+    <li>เข้าใจ SSRF + allowlist (โยง Week 16)</li>
+    <li>threat modeling เบื้องต้น (A04) + misconfig checklist (A05)</li>
+    <li>Quiz + โน้ต <code>notes/owasp-defense.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 17</a>
+    <a class="btn" href="02-hardening.html">บทที่ 2: Hardening →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 17 บทที่ 1</footer>
+</div>
+</body>
+</html>

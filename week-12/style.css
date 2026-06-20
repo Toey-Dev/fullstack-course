@@ -1,0 +1,113 @@
+/* สไตล์กลางของบทเรียน — ใช้ร่วมทุกบท */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg: #f7f8fa; --card: #ffffff; --ink: #1f2937; --muted: #6b7280;
+  --brand: #2563eb; --brand-dark: #1e40af; --ok: #059669; --warn: #d97706;
+  --danger: #dc2626; --code-bg: #0f172a; --code-ink: #e2e8f0; --border: #e5e7eb;
+}
+* { box-sizing: border-box; }
+body { font-family: 'Sarabun', sans-serif; background: var(--bg); color: var(--ink);
+  margin: 0; line-height: 1.8; font-size: 17px; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 24px 20px 80px; }
+header.hero { background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+  color: #fff; padding: 36px 20px; }
+header.hero .wrap { padding: 0 20px; }
+header.hero h1 { margin: 0 0 6px; font-size: 1.7rem; }
+header.hero p { margin: 0; opacity: .9; }
+.crumb { font-size: .85rem; opacity: .8; margin-bottom: 8px; }
+h2 { font-size: 1.35rem; margin: 40px 0 12px; padding-bottom: 8px;
+  border-bottom: 3px solid var(--brand); display: inline-block; }
+h3 { font-size: 1.1rem; margin: 28px 0 8px; color: var(--brand-dark); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 24px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+.step { display: flex; gap: 14px; margin: 14px 0; }
+.step .num { flex: 0 0 34px; height: 34px; border-radius: 50%; background: var(--brand);
+  color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+pre { background: var(--code-bg); color: var(--code-ink); padding: 16px 18px;
+  border-radius: 10px; overflow-x: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: .85rem; line-height: 1.7; }
+code { font-family: 'JetBrains Mono', monospace; font-size: .85em;
+  background: #e8edf5; padding: 2px 6px; border-radius: 5px; }
+pre code { background: none; padding: 0; }
+.tip { border-left: 5px solid var(--ok); background: #ecfdf5; padding: 12px 16px;
+  border-radius: 0 10px 10px 0; margin: 14px 0; }
+.warn { border-left: 5px solid var(--warn); background: #fffbeb; padding: 12px 16px;
+  border-radius: 0 10px 10px 0; margin: 14px 0; }
+.danger { border-left: 5px solid var(--danger); background: #fef2f2; padding: 12px 16px;
+  border-radius: 0 10px 10px 0; margin: 14px 0; }
+.mission { border: 2px solid var(--brand); border-radius: 12px; padding: 20px 24px;
+  margin: 20px 0; background: #eff6ff; }
+.mission h3 { margin-top: 0; }
+.badge { display: inline-block; background: var(--brand); color: #fff; font-size: .75rem;
+  padding: 2px 10px; border-radius: 999px; font-weight: 600; margin-right: 6px; }
+.badge.green { background: var(--ok); } .badge.orange { background: var(--warn); }
+details { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 18px; margin: 10px 0; }
+details summary { cursor: pointer; font-weight: 600; color: var(--brand-dark); }
+details[open] { border-color: var(--brand); }
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: .95rem; }
+th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+th { background: #eef2f7; }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 700px) { .compare { grid-template-columns: 1fr; } }
+.check { list-style: none; padding: 0; }
+.check li { padding: 6px 0 6px 34px; position: relative; }
+.check li::before { content: "☐"; position: absolute; left: 6px; color: var(--brand); font-size: 1.2em; }
+.nav-bottom { display: flex; justify-content: space-between; margin-top: 48px; }
+.btn { display: inline-block; background: var(--brand); color: #fff; text-decoration: none;
+  padding: 10px 22px; border-radius: 8px; font-weight: 600; }
+.btn.ghost { background: transparent; color: var(--brand); border: 2px solid var(--brand); }
+footer { text-align: center; color: var(--muted); font-size: .85rem; margin-top: 60px; }
+
+/* ===== ภาพประกอบ + คีย์เวิร์ดภาพจำ ===== */
+.figure { background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; margin: 16px 0; text-align: center; }
+.figure svg { max-width: 100%; height: auto; }
+.figure figcaption { font-size: .85rem; color: var(--muted); margin-top: 8px; }
+.kw-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.kw { display: inline-block; background: #eef2ff; border: 1.5px solid var(--brand);
+  color: var(--brand-dark); border-radius: 999px; padding: 4px 14px; font-size: .85rem; font-weight: 600; }
+
+/* ===== Responsive: จอใหญ่ (≥1400px) ===== */
+@media (min-width: 1400px) {
+  .wrap { max-width: 1060px; }
+  body { font-size: 18px; }
+}
+
+/* ===== Responsive: แท็บเล็ต (≤900px) ===== */
+@media (max-width: 900px) {
+  .wrap { padding: 20px 14px 60px; }
+  .card, .mission { padding: 16px 16px; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  th, td { min-width: 100px; }
+}
+
+/* ===== Responsive: มือถือ (≤600px) ===== */
+@media (max-width: 600px) {
+  body { font-size: 15px; }
+  header.hero { padding: 24px 14px; }
+  header.hero h1 { font-size: 1.25rem; }
+  header.hero p { font-size: .9rem; }
+  h2 { font-size: 1.15rem; margin-top: 32px; }
+  h3 { font-size: 1rem; }
+  .card, .mission { padding: 14px 12px; border-radius: 10px; }
+  pre { padding: 12px 12px; font-size: .78rem; }
+  .step { gap: 10px; }
+  .step .num { flex: 0 0 28px; height: 28px; font-size: .85rem; }
+  th, td { padding: 7px 9px; font-size: .85rem; }
+  .tip, .warn, .danger { padding: 10px 12px; font-size: .92rem; }
+  details { padding: 10px 12px; }
+  .nav-bottom { flex-direction: column; gap: 10px; }
+  .btn { text-align: center; }
+}
+
+/* ===== Clean Code section ===== */
+.clean { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:14px 0; }
+@media(max-width:700px){ .clean{ grid-template-columns:1fr; } }
+.clean .bad, .clean .good { border-radius:10px; padding:14px 16px; }
+.clean .bad { background:#fef2f2; border:1.5px solid #dc2626; }
+.clean .good { background:#ecfdf5; border:1.5px solid #059669; }
+.clean h4 { margin:0 0 8px; font-size:.95rem; }
+.clean .bad h4 { color:#dc2626; } .clean .good h4 { color:#047857; }
+.clean pre { margin:0; font-size:.8rem; }

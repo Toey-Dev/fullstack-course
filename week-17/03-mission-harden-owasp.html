@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: Harden library-system + Defense Report</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 17</a> · Mission ใหญ่</div>
+    <h1>🛡 Harden library-system + Defense Report</h1>
+    <p>ปิดช่องโหว่ตาม OWASP + เขียนรายงานป้องกัน — portfolio สาย security ที่ทรงพลัง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือ portfolio สาย B (AppSec)</h3>
+    <p>หลังจบ library-system จะ hardened ตาม OWASP + มี <strong>OWASP Defense Report</strong> ที่คุณเขียนเองว่า "ปิดช่องโหว่อะไร ยังไง" ·
+    นี่คือเอกสารที่ตำแหน่ง Product Security/AppSec อยากเห็น และพิสูจน์ว่าคุณ "เข้าใจทั้งโจมตีและป้องกัน" — โปรไฟล์ที่หายากในไทย</p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 17.1 — Security Middleware <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>helmet (security headers) ครอบทั้งแอป</li>
+      <li>rate limiting: ทั่วไป + /login,/register เข้ม (counter ใน Redis ถ้าทำได้)</li>
+      <li>CORS allowlist (เฉพาะ frontend domain ไม่ใช่ *)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> ดู response headers (helmet ใส่แล้ว) · ยิง /login รัว ๆ → โดน rate limit · CORS จาก origin แปลก → block</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 17.2 — ปิดช่องตาม OWASP <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>map OWASP Top 10 กับ library-system — list ว่าข้อไหนปิดแล้ว/ยัง</li>
+      <li>ปิดที่ยังขาด: CSP (XSS), error ไม่รั่ว (W3), validate ทุก input (Zod W4)</li>
+      <li>ถ้ามี endpoint ที่ fetch URL → allowlist (SSRF A10)</li>
+    </ol>
+    <div class="warn"><strong>คิดแบบ pentester:</strong> ลองโจมตีระบบตัวเองตาม OWASP (XSS ใน field, ยิง /login รัว, เรียก API ข้าม origin) → ปิดที่เจอ</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 17.3 — OWASP Defense Report <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>เขียน <code>SECURITY.md</code> (ต่อจาก W12) — ตาราง OWASP Top 10: แต่ละข้อ "ป้องกันยังไง + โค้ดที่ไหน"</li>
+      <li>ระบุ: ช่องที่เคยเปิด → วิธีปิด (เหมือนรายงาน pentest แต่ฝั่ง fix)</li>
+      <li>เขียนสไตล์ที่ทีม security/recruiter อ่านเข้าใจ</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> SECURITY.md อ่านแล้วเห็นว่าระบบป้องกัน OWASP ครบ — เป็น case study สาย security</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 17.4 — ทดสอบ + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>เขียน test ยืนยัน security (rate limit คืน 429, CORS block, headers มี)</li>
+      <li>ทดสอบมือ: ลอง attack แล้วถูกบล็อก</li>
+      <li>push — README + SECURITY.md (OWASP) + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> test security เขียว · attack ที่ลองถูกบล็อกจริง</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Hardening</td><td>30%</td><td>helmet · rate limit (login เข้ม) · CSP · CORS allowlist</td></tr>
+      <tr><td>OWASP coverage</td><td>30%</td><td>map ครบ 10 ข้อ · ปิดที่ขาด (XSS/SSRF/misconfig) · validate ทุก input</td></tr>
+      <tr><td>Defense Report</td><td>25%</td><td>SECURITY.md ชัด (แต่ละ OWASP ป้องกันยังไง โค้ดที่ไหน) — case study</td></tr>
+      <tr><td>Test + Git</td><td>15%</td><td>test security (429/block/headers) · README + AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>security middleware ครบ (helmet/rate limit/CSP/CORS)</li>
+    <li>OWASP Top 10 map + ปิดที่ขาด</li>
+    <li>OWASP Defense Report (SECURITY.md) — portfolio สาย security</li>
+    <li>test security + ลอง attack ตัวเองถูกบล็อก</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #16 (pentest report) ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 18 (OAuth/OIDC)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-hardening.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 17</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 17 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

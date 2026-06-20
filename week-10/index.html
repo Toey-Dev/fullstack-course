@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 10 — CRUD Pages + Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 2 (Production)</div>
+    <h1>Week 10 — CRUD Pages + Dashboard</h1>
+    <p>ทำให้ library-web เป็นแอปที่ "ทำงานได้ครบทุก flow" — เพิ่ม/แก้/ลบ + หน้าภาพรวม</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้ (ปิด Day 8)</h3>
+    <p>Week 9 มีโครงแอป + auth — Week 10 เติมเนื้อ: หน้าจัดการหนังสือครบ (list/add/edit/delete), หน้าจัดการผู้ใช้,
+    และ dashboard ภาพรวม · จบสัปดาห์นี้ library-web จะเป็นแอป CRUD เต็มระบบที่ใช้งานได้จริงทุก flow</p>
+    <ul class="check">
+      <li>CRUD UI ครบ: list, add (form), edit (form prefill), delete (confirm)</li>
+      <li>จัดการ form ใน React: controlled input, validation, submit state</li>
+      <li>อัปเดต UI หลัง mutate (refetch หรือ optimistic update)</li>
+      <li>Dashboard: รวมสถิติ (จำนวนหนังสือ, ที่ยืมอยู่, สมาชิก) + การ์ดสรุป</li>
+      <li>จัดการ loading/error/empty ทุกหน้า (4 สถานะ จาก Week 1+7)</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้สำคัญ:</strong> CRUD + dashboard คือ 80% ของงาน business app จริง —
+    ทำเป็นแล้วทำแอปอะไรก็ได้ · และ form handling ที่ดีคือสิ่งที่แยกแอปที่ "ใช้สบาย" จาก "ใช้แล้วหงุดหงิด"</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-crud-pages.html">CRUD Pages — List, Add, Edit, Delete</a></strong>
+    <p style="margin:6px 0 0">controlled form · add/edit (prefill) · delete + confirm · อัปเดต UI หลัง mutate · 4 สถานะทุกหน้า · type-safe</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-dashboard.html">Dashboard — รวมสถิติ + การ์ดสรุป</a></strong>
+    <p style="margin:6px 0 0">aggregate API · การ์ดสถิติ · ดึงข้อมูลหลายแหล่ง (Promise.all จาก Week 1) · empty/loading state · chart เบื้องต้น</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-crud-dashboard.html">Books/Users CRUD + Dashboard</a></strong>
+    <p style="margin:6px 0 0">books list/add/edit/delete · users CRUD · borrow/return UI · dashboard · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (CRUD + form handling)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>ทำ books add/edit ใน library-web</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (dashboard + aggregate)</td><td>2 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 10.1-10.2 (books CRUD)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (controlled form จากความจำ) + 🤖 AI Drill #9</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 10.3-10.4 (users + dashboard) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 10</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Form add/edit ใช้ component เดียว (DRY)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ AddForm กับ EditForm แยก (ซ้ำ)</h4>
+<pre><code>// AddBookForm.tsx — 50 บรรทัด
+// EditBookForm.tsx — 50 บรรทัดเกือบเหมือนกัน</code></pre></div>
+      <div class="good"><h4>✅ BookForm เดียว (รับ initial)</h4>
+<pre><code>&lt;BookForm onSubmit={create} /&gt;            // add
+&lt;BookForm initial={book} onSubmit={update} /&gt; // edit
+// form เดียว ต่างแค่ค่าเริ่มต้น + handler</code></pre></div>
+    </div>
+
+    <h3>2. แยก data mutation (hook) จาก form (UI)</h3>
+    <p class="muted">useBookMutation (create/update/delete) แยกจาก BookForm — form แค่เรียก callback · test/reuse ง่าย</p>
+    <div class="warn"><strong>กฎทอง:</strong> form add/edit ใช้ component เดียว · validate ฝั่ง client (UX) + backend (จริง) · อัปเดต UI หลัง mutate เสมอ (ไม่ให้ข้อมูลค้าง) ·
+    confirm ก่อน delete · จัดการ 4 สถานะทุกหน้า</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #9 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI ทำหน้า edit form แล้ว<strong>หาจุดที่ลืม</strong> (prefill ค่าเดิมไหม? อัปเดต UI หลัง save ไหม? validate ไหม? จัดการ error ตอน save ล้มเหลวไหม?
+  optimistic update แล้ว rollback ตอนพังไหม?) จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 10 (เฟส 2)</footer>
+</div>
+</body>
+</html>

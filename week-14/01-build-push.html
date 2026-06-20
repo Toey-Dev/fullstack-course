@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Build &amp; Push Image ขึ้น Registry</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 14</a> · บทที่ 1</div>
+    <h1>Build &amp; Push Image ขึ้น Registry</h1>
+    <p>แปลงโค้ดเป็น image แล้วส่งขึ้น "คลังกลาง" ที่ server ดึงไป deploy ได้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📦 คลังเก็บ image = registry (GHCR)</span>
+      <span class="kw">🏷 tag = ป้ายเวอร์ชัน (SHA + latest)</span>
+      <span class="kw">🤖 build บน CI = build-push-action</span>
+      <span class="kw">🚀 CD = ส่งของถึงผู้ใช้อัตโนมัติ</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Registry = คลังกลางที่ทุกที่ดึง image เดียวกัน"</h3>
+    <p>build image ในเครื่อง dev แล้ว server เอาไปรันไม่ได้ตรง ๆ — ต้องผ่าน "คลังกลาง" (registry) · CI build แล้ว push ขึ้น registry,
+    server pull จาก registry · ทุกที่ได้ image เดียวกันเป๊ะ (เครื่อง dev, CI, production รัน image ตัวเดียวกัน) · นี่คือ "build once, run anywhere"</p>
+    <h3>หลักการ 2: "Build ที่เดียว (CI) ไม่ใช่ที่ server"</h3>
+    <p>build บน server = server ต้องมี source + build tools + เสี่ยง build ต่างจาก dev · build บน CI แล้วส่ง image สำเร็จไป server
+    server แค่ "รัน" image (ไม่ต้อง build) → เร็ว, สะอาด, image เดียวกันที่ test แล้ว · separation: CI สร้าง, server รัน</p>
+    <h3>หลักการ 3: "Tag คือประวัติศาสตร์ — ต้อง rollback ได้"</h3>
+    <p>tag image ด้วย commit SHA (ไม่ใช่แค่ latest) · ทุก deploy มี image เฉพาะของ commit นั้น · deploy พัง → ดึง image SHA ก่อนหน้ากลับ = rollback ทันที ·
+    latest อย่างเดียว = ทับของเก่า ไม่รู้จะกลับไปไหน · tag = ความสามารถในการย้อนเวลา</p>
+  </div>
+
+  <h2>ส่วนที่ 1: CD Pipeline ภาพรวม</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 700 110" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="20" y="35" width="100" height="40" rx="6" fill="#dbeafe"/><text x="70" y="60" font-size="10" fill="#1e3a8a" text-anchor="middle">push code</text>
+        <path d="M 122 55 L 148 55" stroke="#6b7280" stroke-width="2" marker-end="url(#cd1)"/>
+        <rect x="150" y="35" width="100" height="40" rx="6" fill="#dcfce7"/><text x="200" y="55" font-size="10" fill="#065f46" text-anchor="middle">CI: test</text><text x="200" y="68" font-size="8" fill="#047857" text-anchor="middle">(Week 13)</text>
+        <path d="M 252 55 L 278 55" stroke="#6b7280" stroke-width="2" marker-end="url(#cd1)"/>
+        <rect x="280" y="35" width="110" height="40" rx="6" fill="#fef3c7"/><text x="335" y="55" font-size="10" fill="#92400e" text-anchor="middle">build image</text><text x="335" y="68" font-size="8" fill="#78350f" text-anchor="middle">+ push GHCR</text>
+        <path d="M 392 55 L 418 55" stroke="#6b7280" stroke-width="2" marker-end="url(#cd1)"/>
+        <rect x="420" y="35" width="110" height="40" rx="6" fill="#fed7aa"/><text x="475" y="55" font-size="10" fill="#9a3412" text-anchor="middle">SSH deploy</text><text x="475" y="68" font-size="8" fill="#7c2d12" text-anchor="middle">(บทที่ 2)</text>
+        <path d="M 532 55 L 558 55" stroke="#6b7280" stroke-width="2" marker-end="url(#cd1)"/>
+        <rect x="560" y="35" width="110" height="40" rx="6" fill="#059669"/><text x="615" y="60" font-size="10" fill="#fff" text-anchor="middle">🎉 production</text>
+        <defs><marker id="cd1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#6b7280"/></marker></defs>
+      </svg>
+      <figcaption>ภาพที่ 1: CD pipeline เต็ม — push → test (CI) → build+push image → deploy → production</figcaption>
+    </figure>
+    <p class="muted"><strong>Delivery vs Deployment:</strong> Continuous Delivery = พร้อม deploy (มีคนกดอนุมัติ) · Continuous Deployment = deploy อัตโนมัติเลย · เราทำแบบ deploy main อัตโนมัติ (แต่ใส่ approval gate ได้)</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Registry — GHCR</h2>
+  <div class="card">
+    <p>GHCR (GitHub Container Registry, <code>ghcr.io</code>) — registry ที่ผูกกับ GitHub (ฟรี, ใช้ token ของ Actions ได้เลย):</p>
+<pre><code># job build-push ใน workflow (ต่อจาก test ที่ผ่าน)
+build-and-push:
+  needs: test                    # ⭐ รันต่อเมื่อ test ผ่าน (Week 13)
+  runs-on: ubuntu-latest
+  permissions:
+    contents: read
+    packages: write              # สิทธิ์ push ไป GHCR (least privilege)
+  steps:
+    - uses: actions/checkout@v4
+    - uses: docker/login-action@v3      # login GHCR
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}   # token อัตโนมัติของ Actions
+    - uses: docker/build-push-action@v6
+      with:
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/${{ github.repository }}:${{ github.sha }}   # ⭐ tag SHA</code></pre>
+    <div class="tip"><strong>ทำไม GHCR:</strong> ผูกกับ repo, ใช้ <code>secrets.GITHUB_TOKEN</code> (สร้างให้อัตโนมัติทุก workflow ไม่ต้องตั้งเอง),
+    ฟรีสำหรับ public · Docker Hub ก็ได้แต่ต้องตั้ง token เอง · <strong>permissions: packages: write</strong> = ให้สิทธิ์เท่าที่จำเป็น (least privilege)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Image Tagging Strategy</h2>
+  <div class="card">
+    <table>
+      <tr><th>tag</th><th>ใช้ทำอะไร</th></tr>
+      <tr><td><code>:latest</code></td><td>เวอร์ชันล่าสุด (สะดวก แต่ทับของเก่า)</td></tr>
+      <tr><td><code>:${{ github.sha }}</code></td><td>⭐ เวอร์ชันเฉพาะ commit — rollback ได้</td></tr>
+      <tr><td><code>:v1.2.3</code></td><td>release version (ถ้าใช้ semantic versioning)</td></tr>
+    </table>
+    <p class="muted">production deploy ควรชี้ <strong>SHA หรือ version ที่แน่นอน</strong> ไม่ใช่ latest — เพราะ latest เปลี่ยนได้ตลอด (deploy ไม่ deterministic, rollback ยาก)</p>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation service — push code → CI build image → ขึ้น GHCR · ทีม/ลูกค้า pull image เดียวกันไปรันได้ทุกที่ ·
+    tag SHA ทำให้รู้ว่า production รัน commit ไหน (debug ง่าย: "เวอร์ชันที่พังคือ SHA นี้")</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> build-once-push-to-registry-deploy-anywhere เป็นมาตรฐานทุกที่ · GHCR/ECR/Docker Hub เป็น registry หลัก ·
+    tag ด้วย SHA/version เป็น best practice สำหรับ rollback · least-privilege token (packages: write เท่านั้น) เป็นสิ่งที่ security ตรวจ</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไมต้อง push image ขึ้น registry ไม่ build บน server ตรง ๆ?</summary>
+    <p>registry = คลังกลาง ทุกที่ pull image เดียวกัน (dev/CI/prod รันตัวเดียวกันเป๊ะ) · build บน server = server ต้องมี source+build tools,
+    เสี่ยง build ต่างจากที่ test · build once บน CI → server แค่รัน = เร็ว สะอาด deterministic</p></details>
+  <details><summary>ข้อ 2: ทำไม tag SHA สำคัญกว่า latest อย่างเดียว?</summary>
+    <p>SHA = image เฉพาะของแต่ละ commit → deploy พัง ดึง SHA ก่อนหน้ากลับ = rollback ทันที + รู้ว่า production รัน commit ไหน ·
+    latest ทับของเก่า ไม่รู้จะกลับไปไหน · production ควรชี้ SHA/version แน่นอน ไม่ใช่ latest</p></details>
+  <details><summary>ข้อ 3: <code>needs: test</code> ใน build job ทำอะไร?</summary>
+    <p>บอกว่า build-push รันต่อเมื่อ job test ผ่าน — ไม่ build/deploy โค้ดที่ test แดง · เป็น gate: test เขียว → ค่อย build → ค่อย deploy ·
+    กันของพังขึ้น production</p></details>
+  <details><summary>ข้อ 4 (security): <code>permissions: packages: write</code> สะท้อนหลักอะไร?</summary>
+    <p>Least privilege — ให้ token สิทธิ์เท่าที่จำเป็น (push package) ไม่ให้สิทธิ์เต็ม · ถ้า workflow โดน compromise ความเสียหายจำกัด ·
+    หลักเดียวกับ auth role (Week 5) แต่ระดับ CI token</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>เข้าใจ CD pipeline + registry (build once, run anywhere)</li>
+    <li>build & push image ขึ้น GHCR ใน Actions</li>
+    <li>tag SHA + latest (rollback ได้)</li>
+    <li>needs: test (deploy เฉพาะที่ผ่าน) + least-privilege permissions</li>
+    <li>Quiz + โน้ต <code>notes/build-push.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 14</a>
+    <a class="btn" href="02-deploy-ssh.html">บทที่ 2: Deploy SSH →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 14 บทที่ 1</footer>
+</div>
+</body>
+</html>

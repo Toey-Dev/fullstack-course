@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Compose หลาย Service + Redis Caching</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 11</a> · บทที่ 2</div>
+    <h1>Compose หลาย Service + Redis Caching</h1>
+    <p>ต่อ app + db + redis เป็นระบบเดียว รันด้วยคำสั่งเดียว — และเร่งความเร็วด้วย cache</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🍱 หลาย service คำสั่งเดียว = compose</span>
+      <span class="kw">📛 เรียกกันด้วยชื่อ = service name = hostname</span>
+      <span class="kw">⏳ รอ db ก่อน = depends_on</span>
+      <span class="kw">⚡ จำคำตอบไว้ = Redis cache</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "ทั้งระบบเป็นไฟล์เดียว — clone แล้วรันได้"</h3>
+    <p>app จริงไม่ได้มีแค่ตัวเอง — ต้องมี database, cache, อาจมี queue · compose รวมทุก service ในไฟล์เดียว
+    เพื่อนร่วมทีม clone → <code>docker compose up</code> → ได้ระบบครบเหมือนคุณ ไม่ต้องไล่ลง Postgres/Redis เอง · นี่คือ onboarding ที่เร็วที่สุด</p>
+    <h3>หลักการ 2: "Service คุยกันด้วยชื่อ ไม่ใช่ localhost"</h3>
+    <p>ใน compose แต่ละ service มี "ชื่อ" ที่ใช้เป็น hostname — app เชื่อม db ด้วย <code>postgres://db:5432</code> (ชื่อ service "db")
+    ไม่ใช่ localhost · เพราะแต่ละ container คือ "เครื่อง" แยกกัน localhost ของ app ไม่ใช่ของ db · Docker จัด network ให้คุยกันด้วยชื่อ</p>
+    <h3>หลักการ 3: "Cache — จำคำตอบที่ถามบ่อย ลดภาระ DB"</h3>
+    <p>query ที่เรียกบ่อยและไม่ค่อยเปลี่ยน (รายการหนังสือ, dashboard stats) — เก็บผลใน Redis (เร็วมาก, in-memory)
+    ครั้งถัดไปดึงจาก cache ไม่ต้อง query DB · ลดภาระ DB, ตอบเร็วขึ้น · แต่ต้องจัดการ "cache เก่า" (invalidation) ให้ดี</p>
+  </div>
+
+  <h2>ส่วนที่ 1: docker-compose หลาย service</h2>
+  <div class="card">
+<pre><code>services:
+  app:
+    build: .                       # build จาก Dockerfile ในโฟลเดอร์นี้
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://postgres:secret@db:5432/library  # "db" = ชื่อ service!
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - db                         # รอ db เริ่มก่อน
+      - redis
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: library
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine          # cache (in-memory)
+
+volumes:
+  db_data:</code></pre>
+    <figure class="figure">
+      <svg viewBox="0 0 700 130" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="40" y="40" width="150" height="55" rx="8" fill="#dcfce7" stroke="#059669" stroke-width="2"/>
+        <text x="115" y="64" font-size="12" fill="#047857" text-anchor="middle" font-weight="700">📦 app</text>
+        <text x="115" y="82" font-size="9" fill="#065f46" text-anchor="middle">Express (Dockerfile)</text>
+        <path d="M 192 58 L 270 58" stroke="#2563eb" stroke-width="2" marker-end="url(#c1)"/>
+        <text x="231" y="50" font-size="9" fill="#1e40af" text-anchor="middle">db:5432</text>
+        <rect x="275" y="40" width="150" height="55" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+        <text x="350" y="64" font-size="12" fill="#1e40af" text-anchor="middle" font-weight="700">🗄 db</text>
+        <text x="350" y="82" font-size="9" fill="#1e3a8a" text-anchor="middle">PostgreSQL</text>
+        <path d="M 192 78 L 510 100 L 510 96" stroke="#dc2626" stroke-width="2" marker-end="url(#c2)"/>
+        <text x="350" y="115" font-size="9" fill="#dc2626" text-anchor="middle">redis:6379</text>
+        <rect x="510" y="40" width="150" height="55" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+        <text x="585" y="64" font-size="12" fill="#dc2626" text-anchor="middle" font-weight="700">⚡ redis</text>
+        <text x="585" y="82" font-size="9" fill="#991b1b" text-anchor="middle">cache</text>
+        <defs>
+          <marker id="c1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#2563eb"/></marker>
+          <marker id="c2" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#dc2626"/></marker>
+        </defs>
+      </svg>
+      <figcaption>ภาพที่ 1: app เชื่อม db และ redis ด้วย "ชื่อ service" (db, redis) — Docker จัด network ให้</figcaption>
+    </figure>
+    <div class="warn"><strong>จุดที่มือใหม่งง:</strong> app เชื่อม DB ด้วย <code>db:5432</code> ไม่ใช่ <code>localhost:5432</code> —
+    เพราะใน compose แต่ละ service เป็นเครื่องแยก · "db" คือ hostname ที่ Docker resolve ให้ · ใช้ localhost = app หา DB ไม่เจอ (localhost คือตัว app เอง)</div>
+  </div>
+
+  <h2>ส่วนที่ 2: depends_on + healthcheck</h2>
+  <div class="card">
+<pre><code>app:
+  depends_on:
+    db:
+      condition: service_healthy   # รอจน db "พร้อมจริง" ไม่ใช่แค่ "เริ่มแล้ว"
+db:
+  image: postgres:16
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U postgres"]
+    interval: 5s
+    retries: 5</code></pre>
+    <div class="tip"><strong>กับดักคลาสสิก:</strong> <code>depends_on</code> เปล่า ๆ รอแค่ "container เริ่ม" ไม่ใช่ "DB พร้อมรับ connection" —
+    app อาจต่อ DB ก่อน DB พร้อม → พัง · ใช้ <code>condition: service_healthy</code> + healthcheck รอจนพร้อมจริง (production ต้องมี)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Redis Caching — pattern จริง</h2>
+  <div class="card">
+<pre><code>npm install ioredis
+
+// cache pattern: เช็ค cache ก่อน → ไม่มีค่อย query DB → เก็บ cache
+async function getBooks() {
+  const cached = await redis.get("books:all");
+  if (cached) return JSON.parse(cached);        // 1. เจอใน cache → ตอบเลย (เร็ว)
+
+  const books = await pool.query("SELECT * FROM books");   // 2. ไม่เจอ → query DB
+  await redis.set("books:all", JSON.stringify(books.rows), "EX", 60);  // 3. เก็บ 60 วิ
+  return books.rows;
+}
+
+// ⚠️ invalidation: เมื่อข้อมูลเปลี่ยน ต้องลบ cache
+async function createBook(data) {
+  await pool.query("INSERT ...");
+  await redis.del("books:all");                 // ลบ cache เก่า → ครั้งหน้าดึงใหม่
+}</code></pre>
+    <div class="danger"><strong>หลักคิดสำคัญ — "There are only two hard things: cache invalidation and naming":</strong>
+    cache ที่ลืม invalidate = ผู้ใช้เห็นข้อมูลเก่า (เพิ่มหนังสือแล้วไม่โผล่) · กฎ: ทุกที่ที่ "เขียน" ข้อมูล ต้องลบ cache ที่เกี่ยวข้อง ·
+    เริ่มจาก cache แบบมี TTL (หมดอายุเอง เช่น 60 วิ) ปลอดภัยกว่า + เพิ่ม invalidation ตอน mutate</div>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> dashboard การตลาด — ข้อมูลสรุปที่ดึงจาก API ภายนอก (ช้า, มี rate limit) เก็บ cache ใน Redis
+    (เช่น 5 นาที) · ลูกค้าเปิด dashboard บ่อย ๆ ไม่ต้องยิง API ทุกครั้ง — เร็วขึ้นมาก + ไม่ชน rate limit · นี่คือ use case จริงของคุณ</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> Redis เป็น cache มาตรฐานของทุกระบบ scale (session, cache, queue, rate limit) ·
+    compose หลาย service เป็นวิธี dev + test ระบบหลายส่วนในเครื่องเดียว · cache invalidation เป็นทักษะที่ interviewer ถามจริง (เพราะยาก)</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: app เชื่อม DB ใน compose ทำไมใช้ <code>db:5432</code> ไม่ใช่ <code>localhost:5432</code>?</summary>
+    <p>แต่ละ service ใน compose เป็น container แยก (เหมือนคนละเครื่อง) · localhost ของ app = ตัว app เอง ไม่ใช่ db ·
+    Docker ให้ service คุยกันด้วย "ชื่อ service" เป็น hostname (db, redis) — Docker resolve ให้</p></details>
+  <details><summary>ข้อ 2: <code>depends_on</code> เปล่า ๆ ไม่พอ ทำไม ต้องเพิ่มอะไร?</summary>
+    <p>depends_on เปล่า รอแค่ "container เริ่ม" ไม่ใช่ "DB พร้อมรับ connection" · app อาจต่อ DB ก่อนพร้อม → พัง ·
+    เพิ่ม <code>condition: service_healthy</code> + healthcheck (pg_isready) รอจน DB พร้อมจริง</p></details>
+  <details><summary>ข้อ 3: cache pattern 3 ขั้นคืออะไร?</summary>
+    <p>① เช็ค cache — เจอ → ตอบเลย (เร็ว) ② ไม่เจอ → query DB ③ เก็บผลลง cache (มี TTL) · ครั้งถัดไปเจอใน cache
+    ลดภาระ DB · เริ่มจาก TTL (หมดอายุเอง) ปลอดภัยกว่า</p></details>
+  <details><summary>ข้อ 4: "cache invalidation" คืออะไร ทำไมยาก?</summary>
+    <p>การลบ/อัปเดต cache เมื่อข้อมูลจริงเปลี่ยน — ลืม invalidate = ผู้ใช้เห็นข้อมูลเก่า (เพิ่มของแล้วไม่โผล่) · ยากเพราะต้องรู้ว่า
+    "เขียนตรงไหน กระทบ cache ไหนบ้าง" ครบทุกจุด · กฎ: ทุกที่ที่เขียนข้อมูล ลบ cache ที่เกี่ยวข้อง + ใช้ TTL เป็นตาข่าย</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>compose app + db + redis (รัน compose up ได้ครบ)</li>
+    <li>app เชื่อม db/redis ด้วยชื่อ service · depends_on + healthcheck</li>
+    <li>cache 1 endpoint ด้วย Redis (TTL + invalidation)</li>
+    <li>เข้าใจ cache invalidation</li>
+    <li>Quiz + โน้ต <code>notes/compose-redis.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-dockerfile.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-dockerize.html">Mission ใหญ่: Dockerize →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 11 บทที่ 2</footer>
+</div>
+</body>
+</html>

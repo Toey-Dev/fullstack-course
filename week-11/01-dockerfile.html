@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Dockerfile + Multi-stage Build</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 11</a> · บทที่ 1</div>
+    <h1>Dockerfile + Multi-stage Build</h1>
+    <p>เขียน "สูตร" แพ็ค app ลง container — ให้รันเหมือนกันทุกที่</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📜 สูตรแพ็ค app = Dockerfile</span>
+      <span class="kw">🧱 แต่ละบรรทัด = layer (cache ได้)</span>
+      <span class="kw">🏗 build แยก run = multi-stage (เล็ก)</span>
+      <span class="kw">🚫 อย่าก๊อปขยะ = .dockerignore</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Dockerfile = สูตรที่ทำซ้ำได้เป๊ะ"</h3>
+    <p>Dockerfile บอกทีละขั้นว่า "สร้าง environment ของ app ยังไง" (base image, copy code, install, build, รัน) ·
+    ใครรันก็ได้ image เหมือนกัน · นี่คือ "infrastructure as code" (Week 4) ในระดับ app — env ไม่ขึ้นกับเครื่อง</p>
+    <h3>หลักการ 2: "Layer caching — เรียงคำสั่งให้ใช้ cache คุ้ม"</h3>
+    <p>แต่ละบรรทัดใน Dockerfile = layer ที่ cache ได้ · ถ้าบรรทัดบนไม่เปลี่ยน Docker ใช้ cache (build เร็ว) ·
+    เคล็ดลับ: copy <code>package.json</code> + install <strong>ก่อน</strong> copy source — เพราะ deps เปลี่ยนน้อยกว่า code
+    (แก้ code ไม่ต้อง install ใหม่) · เรียงผิด = build ช้าทุกครั้ง</p>
+    <h3>หลักการ 3: "Multi-stage — image production ควรมีแค่ที่ต้องรัน"</h3>
+    <p>ตอน build ต้องการ dev deps, source, build tools — แต่ตอน <strong>รัน</strong>ต้องการแค่ผลลัพธ์ (dist) + prod deps ·
+    multi-stage: stage แรก build, stage สอง copy เฉพาะผลลัพธ์มา · image เล็กลงหลายเท่า = deploy เร็ว, ผิวการโจมตีน้อย (security)</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Dockerfile พื้นฐาน — ทีละ instruction</h2>
+  <div class="card">
+<pre><code>FROM node:20-slim              # 1. base image (Node 20 รุ่นเล็ก)
+WORKDIR /app                   # 2. โฟลเดอร์ทำงานใน container
+COPY package*.json ./          # 3. copy แค่ package ก่อน (cache!)
+RUN npm ci                     # 4. install (ใช้ cache ถ้า package ไม่เปลี่ยน)
+COPY . .                       # 5. copy source ที่เหลือ
+RUN npm run build              # 6. build TS → JS (dist/)
+EXPOSE 3000                    # 7. บอกว่า app ฟัง port ไหน
+CMD ["node", "dist/server.js"] # 8. คำสั่งรันตอน start container</code></pre>
+    <table>
+      <tr><th>instruction</th><th>ทำอะไร (และทำไม)</th></tr>
+      <tr><td><code>FROM</code></td><td>เลือก base image — slim/alpine เล็กกว่า, pin เวอร์ชัน (ไม่ใช้ latest)</td></tr>
+      <tr><td><code>WORKDIR</code></td><td>ตั้งโฟลเดอร์ทำงาน (คำสั่งถัดไปรันที่นี่)</td></tr>
+      <tr><td>3-4 ก่อน 5</td><td>⭐ copy package + install ก่อน copy code — layer caching (แก้ code ไม่ต้อง install ใหม่)</td></tr>
+      <tr><td><code>npm ci</code></td><td>install จาก lockfile แบบ clean (เร็ว + reproducible กว่า npm install)</td></tr>
+      <tr><td><code>EXPOSE</code></td><td>เอกสาร (บอกว่าฟัง port ไหน) — ไม่เปิด port จริง (compose/-p ทำ)</td></tr>
+      <tr><td><code>CMD</code></td><td>คำสั่งรันตอน start (ต่างจาก RUN ที่รันตอน build)</td></tr>
+    </table>
+  </div>
+
+  <h2>ส่วนที่ 2: Multi-stage Build</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="30" y="25" width="280" height="110" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+        <text x="170" y="48" font-size="12" font-weight="700" fill="#92400e" text-anchor="middle">Stage 1: build 🏗</text>
+        <text x="170" y="70" font-size="10" fill="#78350f" text-anchor="middle">node:20 (เต็ม)</text>
+        <text x="170" y="88" font-size="10" fill="#78350f" text-anchor="middle">+ dev deps + source</text>
+        <text x="170" y="106" font-size="10" fill="#78350f" text-anchor="middle">→ npm run build → dist/</text>
+        <text x="170" y="125" font-size="9" fill="#6b7280" text-anchor="middle">ใหญ่ แต่ทิ้งหลัง build</text>
+        <path d="M 315 80 L 375 80" stroke="#059669" stroke-width="2.5" marker-end="url(#s1)"/>
+        <text x="345" y="70" font-size="9" fill="#047857" text-anchor="middle">copy</text>
+        <text x="345" y="98" font-size="9" fill="#047857" text-anchor="middle">เฉพาะ dist</text>
+        <rect x="380" y="25" width="290" height="110" rx="10" fill="#dcfce7" stroke="#059669" stroke-width="2"/>
+        <text x="525" y="48" font-size="12" font-weight="700" fill="#047857" text-anchor="middle">Stage 2: run 🚀</text>
+        <text x="525" y="70" font-size="10" fill="#065f46" text-anchor="middle">node:20-slim (เล็ก)</text>
+        <text x="525" y="88" font-size="10" fill="#065f46" text-anchor="middle">+ prod deps + dist เท่านั้น</text>
+        <text x="525" y="106" font-size="10" fill="#065f46" text-anchor="middle">→ CMD node dist/server.js</text>
+        <text x="525" y="125" font-size="9" fill="#dc2626" text-anchor="middle">นี่คือ image จริงที่ deploy (เล็ก!)</text>
+        <defs><marker id="s1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#059669"/></marker></defs>
+      </svg>
+      <figcaption>ภาพที่ 1: multi-stage — build ใน stage ใหญ่ แล้ว copy เฉพาะผลลัพธ์ไป stage เล็กที่ deploy จริง</figcaption>
+    </figure>
+<pre><code># ===== Stage 1: build =====
+FROM node:20 AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci                     # ติดตั้งครบ (รวม dev deps สำหรับ build)
+COPY . .
+RUN npm run build              # TS → dist/
+
+# ===== Stage 2: run =====
+FROM node:20-slim AS run
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev          # prod deps เท่านั้น (ไม่เอา dev)
+COPY --from=build /app/dist ./dist   # copy แค่ผลลัพธ์จาก stage build
+EXPOSE 3000
+CMD ["node", "dist/server.js"]</code></pre>
+    <p class="muted">ผล: image สุดท้ายมีแค่ Node slim + prod deps + dist — เล็กกว่า single-stage หลายเท่า · deploy เร็ว, ช่องโหว่น้อย (ไม่มี build tools/source ติดไป)</p>
+  </div>
+
+  <h2>ส่วนที่ 3: .dockerignore</h2>
+  <div class="card">
+<pre><code># .dockerignore (เหมือน .gitignore แต่สำหรับ docker build)
+node_modules
+.env
+.git
+dist
+*.md</code></pre>
+    <div class="danger"><strong>🔐 มุม pentester:</strong> ถ้าไม่มี .dockerignore แล้ว <code>COPY . .</code> จะก๊อป <code>.env</code> (secret),
+    <code>.git</code> (history มี secret เก่า) เข้า image — ใครได้ image ไปก็ขุด secret ได้ · .dockerignore กันเรื่องนี้ + ทำ build เร็วขึ้น (ไม่ก๊อป node_modules ใหญ่ ๆ)</div>
+  </div>
+
+  <h2>ส่วนที่ 4: build + run</h2>
+  <div class="card">
+<pre><code>docker build -t library-api .          # build จาก Dockerfile → image ชื่อ library-api
+docker run -p 3000:3000 library-api    # รัน container (map port)
+docker images                          # ดูขนาด image (เทียบ single vs multi-stage)</code></pre>
+    <p class="muted">ลองเทียบขนาด: single-stage อาจ ~1GB+ · multi-stage slim อาจ ~150-200MB — ต่างกันชัดเจน</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation report service (Week 16) — Dockerfile multi-stage ทำให้ deploy ขึ้น cloud ได้ image เล็ก เร็ว ·
+    ลูกค้า/ทีม clone แล้ว build ได้เหมือนกัน ไม่ต้องไล่ตั้งค่า Node เวอร์ชัน</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> ทุก app production deploy เป็น container · multi-stage + slim image เป็นมาตรฐาน (เล็ก = ถูก = ปลอดภัย) ·
+    "เขียน Dockerfile ที่ optimal ได้" เป็นสิ่งที่ JD DevOps/Backend ขอ และ pentester มอง image security (ไม่รัน root, ไม่มี secret) เป็นจุดเด่นของคุณ</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไม copy package.json + npm ci ควรอยู่ก่อน copy source code?</summary>
+    <p>Layer caching — deps เปลี่ยนน้อยกว่า code · ถ้า copy package ก่อน install แล้วค่อย copy code: แก้ code ไม่ทำให้ install ใหม่
+    (ใช้ cache layer install) build เร็ว · ถ้า copy . . ก่อน install: แก้ code นิดเดียว install ใหม่ทุกครั้ง ช้า</p></details>
+  <details><summary>ข้อ 2: multi-stage build ทำให้ image เล็กลงยังไง?</summary>
+    <p>stage build มี dev deps + source + build tools (ใหญ่) แต่ทิ้งหลัง build · stage run copy เฉพาะผลลัพธ์ (dist) + prod deps
+    มา image เล็ก slim · image สุดท้ายไม่มีของที่ใช้แค่ตอน build → เล็กกว่าหลายเท่า, ปลอดภัยกว่า (ผิวโจมตีน้อย)</p></details>
+  <details><summary>ข้อ 3 (security): ไม่มี .dockerignore แล้ว COPY . . อันตรายยังไง?</summary>
+    <p>ก๊อป .env (secret), .git (history มี secret เก่า), node_modules (ใหญ่) เข้า image · ใครได้ image ไปขุด secret ได้ + image ใหญ่ช้า ·
+    .dockerignore กัน (เหมือน .gitignore) — ต้องมีเสมอ</p></details>
+  <details><summary>ข้อ 4: <code>npm ci</code> ต่างจาก <code>npm install</code> ยังไง ทำไมใช้ใน Docker?</summary>
+    <p>npm ci ติดตั้งจาก lockfile แบบ clean (ลบ node_modules ก่อน, ไม่แก้ lockfile) → reproducible เป๊ะและเร็วกว่า ·
+    เหมาะกับ CI/Docker ที่ต้องการ build ซ้ำได้เหมือนกันทุกครั้ง · npm install อาจอัปเดต lockfile (ไม่ deterministic)</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>เขียน Dockerfile (เข้าใจทุก instruction)</li>
+    <li>multi-stage build (build + run แยก) · image เล็ก</li>
+    <li>.dockerignore (กัน secret + ทำเร็ว)</li>
+    <li>build + run + เทียบขนาด image</li>
+    <li>Quiz + โน้ต <code>notes/dockerfile.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 11</a>
+    <a class="btn" href="02-compose-redis.html">บทที่ 2: Compose + Redis →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 11 บทที่ 1</footer>
+</div>
+</body>
+</html>

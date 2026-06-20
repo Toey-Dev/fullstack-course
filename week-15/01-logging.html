@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Structured Logging ด้วย pino</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 15</a> · บทที่ 1</div>
+    <h1>Structured Logging ด้วย pino</h1>
+    <p>เปลี่ยน console.log มั่ว ๆ เป็น log ที่ค้นได้ ตามรอยได้ ในระบบจริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📋 log เป็น JSON ค้นได้ = structured</span>
+      <span class="kw">🎚 error/warn/info/debug = log levels</span>
+      <span class="kw">🧵 ตามรอย request เดียว = correlation ID</span>
+      <span class="kw">🙈 ไม่ log ความลับ = redact</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Log เพื่อ 'ค้นหา' ไม่ใช่ 'อ่าน'"</h3>
+    <p>console.log string สวยสำหรับคนอ่านทีละบรรทัด — แต่ production มี log ล้านบรรทัด/วัน คุณต้อง "ค้น" (filter userId นี้, action นี้, error ช่วงนี้) ·
+    structured log (JSON) ทำให้ log system (Datadog/Loki/CloudWatch) ค้น/filter/alert ได้ · log ที่ค้นไม่ได้ = log ที่ไร้ค่าตอนวิกฤต</p>
+    <h3>หลักการ 2: "Correlation ID — ตามรอย 1 request ข้ามหลายจุด"</h3>
+    <p>1 request ผ่านหลาย log (เข้า → query DB → error) · ถ้าทุก log มี "requestId" เดียวกัน คุณ filter เห็น lifecycle ทั้งหมดของ request นั้น ·
+    ไม่มี = log ปนกันมั่ว แยกไม่ออกว่าอันไหนของ request ไหน · นี่คือสิ่งที่ทำให้ debug production เป็นไปได้</p>
+    <h3>หลักการ 3: "Log level — แยกเสียงดังจากเสียงสำคัญ"</h3>
+    <p>error (พังจริง) / warn (น่าสงสัย) / info (เหตุการณ์สำคัญ) / debug (รายละเอียด dev) · production เปิด info ขึ้นไป (debug ปิด — ไม่งั้น log ท่วม) ·
+    level ทำให้ filter "เอาแค่ error" ตอนวิกฤตได้ · console.log ไม่มี level = ทุกอย่างเสียงดังเท่ากัน</p>
+  </div>
+
+  <h2>ส่วนที่ 1: pino — structured logger</h2>
+  <div class="card">
+<pre><code>npm install pino pino-http
+
+// src/logger.ts
+import pino from "pino";
+export const logger = pino({
+  level: process.env.LOG_LEVEL ?? "info",
+  redact: ["req.headers.authorization", "password", "*.token"],  // ⭐ ไม่ log secret
+});
+
+// ใช้งาน — ส่ง object (context) + ข้อความ
+logger.info({ userId: 7, bookId: 3, action: "borrow" }, "book borrowed");
+// output: {"level":30,"time":...,"userId":7,"bookId":3,"action":"borrow","msg":"book borrowed"}
+logger.error({ err }, "failed to borrow");
+logger.warn({ attempts: 5 }, "too many login attempts");</code></pre>
+    <p class="muted">pino เร็วมาก (ออกแบบมาเพื่อ production), log เป็น JSON · field แรก = context (object), field สอง = ข้อความ · <code>redact</code> ปกปิด field อ่อนไหวอัตโนมัติ</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Request Logging + Correlation ID</h2>
+  <div class="card">
+<pre><code>import pinoHttp from "pino-http";
+import { randomUUID } from "crypto";
+
+// middleware — log ทุก request + แปะ requestId
+app.use(pinoHttp({
+  logger,
+  genReqId: (req) =&gt; req.headers["x-request-id"] ?? randomUUID(),  // correlation ID
+}));
+
+// ในแต่ละ route ใช้ req.log (มี requestId ติดอยู่แล้ว)
+app.post("/api/borrow", (req, res) =&gt; {
+  req.log.info({ bookId: req.body.bookId }, "borrow requested");
+  // ทุก log ของ request นี้มี reqId เดียวกัน → filter ตามรอยได้
+});</code></pre>
+    <figure class="figure">
+      <svg viewBox="0 0 700 110" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <text x="20" y="25" font-size="10" fill="#6b7280">reqId: abc-123 (filter เห็นทั้ง lifecycle)</text>
+        <rect x="20" y="35" width="200" height="22" rx="3" fill="#dbeafe"/><text x="120" y="50" font-size="9" fill="#1e3a8a" text-anchor="middle">abc-123 → request received</text>
+        <rect x="20" y="62" width="200" height="22" rx="3" fill="#dbeafe"/><text x="120" y="77" font-size="9" fill="#1e3a8a" text-anchor="middle">abc-123 → query DB</text>
+        <rect x="240" y="35" width="200" height="22" rx="3" fill="#fef2f2"/><text x="340" y="50" font-size="9" fill="#991b1b" text-anchor="middle">abc-123 → error: DB timeout</text>
+        <rect x="240" y="62" width="200" height="22" rx="3" fill="#dcfce7"/><text x="340" y="77" font-size="9" fill="#065f46" text-anchor="middle">abc-123 → response 500</text>
+        <text x="560" y="60" font-size="10" fill="#1f2937" text-anchor="middle">filter abc-123</text>
+        <text x="560" y="76" font-size="9" fill="#6b7280" text-anchor="middle">= เห็นเรื่องราวครบ</text>
+      </svg>
+      <figcaption>ภาพที่ 1: correlation ID ทำให้ filter เห็น lifecycle ของ request เดียวครบ (เข้า→query→error→response)</figcaption>
+    </figure>
+  </div>
+
+  <h2>ส่วนที่ 3: 🔐 ไม่ log Secret/PII</h2>
+  <div class="card">
+    <div class="danger"><strong>มุม pentester — log leak คือช่องโหว่จริง:</strong> log ไปอยู่ใน log system ที่อาจเข้าถึงได้กว้างกว่า DB
+    (ทีม ops, third-party log service) · ถ้า log มี password, token, credit card, เลขบัตรประชาชน → ข้อมูลรั่วผ่าน log ·
+    คุณเคยเจอระบบที่ log token แล้วใช้ขโมย session มาแล้วตอน pentest</div>
+    <table>
+      <tr><th>ห้าม log</th><th>เหตุผล</th></tr>
+      <tr><td>password (แม้ hash)</td><td>ความลับ</td></tr>
+      <tr><td>JWT/token/API key</td><td>ใช้สวมรอยได้</td></tr>
+      <tr><td>credit card, เลขบัตร ปชช.</td><td>PII — กฎหมาย (PDPA/GDPR)</td></tr>
+      <tr><td>request body เต็ม (อาจมี secret)</td><td>เลือก field ที่ปลอดภัย</td></tr>
+    </table>
+    <p class="muted">pino <code>redact</code> ปกปิดให้อัตโนมัติ (แทนด้วย [Redacted]) · แต่ดีกว่าคือ "เลือก log เฉพาะ field ที่ปลอดภัย" ตั้งแต่ต้น (userId แทน user ทั้ง object)</p>
+  </div>
+
+  <h2>ส่วนที่ 4: Log ใน Docker/Production</h2>
+  <div class="card">
+<pre><code># container log ออก stdout — Docker/orchestrator เก็บให้
+docker compose logs -f app
+# production: ส่ง stdout ไป log aggregator (Loki/Datadog/CloudWatch)
+# pino-pretty สำหรับ dev เท่านั้น (production เก็บ JSON ดิบ)</code></pre>
+    <div class="tip"><strong>หลักคิด (12-Factor):</strong> app ไม่ควรเขียน log ลงไฟล์เอง — เขียนออก stdout แล้วให้ platform (Docker/cloud) จัดการเก็บ/ส่งต่อ ·
+    แยกหน้าที่: app สร้าง log, platform จัดการ log · ทำให้ scale/ย้าย platform ง่าย</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation service — log แต่ละ report job (clientId, แพลตฟอร์ม, สำเร็จ/ล้มเหลว) แบบ structured ·
+    เมื่อ report ลูกค้าผิด คุณ filter <code>clientId</code> นั้นเห็นว่าแหล่งไหนล่ม · requestId ตามรอย job เดียวข้าม API หลายตัว ·
+    และ<strong>ไม่ log API key ของ GA4/Meta</strong> (redact) — ป้องกัน credential รั่วผ่าน log</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> structured logging + correlation ID เป็นมาตรฐานของ production ทุกที่ (debug distributed system ไม่ได้ถ้าไม่มี) ·
+    log security (ไม่รั่ว PII/secret) เป็นข้อบังคับ PDPA/GDPR ที่ทีม security ตรวจ · pentester ที่มอง log leak เป็นจุดเด่นในสาย AppSec</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: structured log (JSON) ดีกว่า console.log string ยังไงใน production?</summary>
+    <p>ค้น/filter/alert ได้ (log system อ่าน JSON) — production มี log ล้านบรรทัด ต้องค้น (userId นี้, action นี้, error ช่วงนี้) ·
+    string ค้นยาก, ไม่มี level/timestamp/context มาตรฐาน · log ที่ค้นไม่ได้ = ไร้ค่าตอนวิกฤต</p></details>
+  <details><summary>ข้อ 2: correlation ID (requestId) ช่วย debug ยังไง?</summary>
+    <p>1 request ผ่านหลาย log — ถ้าทุก log มี requestId เดียวกัน filter เห็น lifecycle ครบ (เข้า→query→error→response) ·
+    ไม่มี = log ปนกัน แยกไม่ออกว่าอันไหนของ request ไหน · จำเป็นมากใน distributed system</p></details>
+  <details><summary>ข้อ 3 (security): ทำไม log password/token เป็นช่องโหว่ แม้ DB ปลอดภัย?</summary>
+    <p>log ไปอยู่ใน log system ที่เข้าถึงได้กว้างกว่า DB (ทีม ops, third-party service) · token ใน log = ใครเห็นก็สวมรอยได้ ·
+    password/PII = ผิด PDPA/GDPR · redact หรือเลือก log เฉพาะ field ปลอดภัย (userId ไม่ใช่ user ทั้ง object)</p></details>
+  <details><summary>ข้อ 4: ทำไม app ควร log ออก stdout ไม่เขียนไฟล์เอง?</summary>
+    <p>12-Factor — แยกหน้าที่: app สร้าง log (stdout), platform (Docker/cloud) จัดการเก็บ/ส่งต่อ (aggregator) ·
+    ทำให้ scale/ย้าย platform ง่าย, ไม่ต้องจัดการ log rotation เอง · container log → stdout เป็นมาตรฐาน</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>pino structured logging (JSON + context)</li>
+    <li>request logging + correlation ID (pino-http)</li>
+    <li>log levels เหมาะสม · redact secret</li>
+    <li>เข้าใจว่าทำไมไม่ log PII/secret + log ออก stdout</li>
+    <li>Quiz + โน้ต <code>notes/logging.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 15</a>
+    <a class="btn" href="02-sentry-staging.html">บทที่ 2: Sentry + Staging →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 15 บทที่ 1</footer>
+</div>
+</body>
+</html>

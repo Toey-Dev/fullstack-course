@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: เพิ่ม Observability ให้ library-system</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 15</a> · Mission ใหญ่</div>
+    <h1>👁 เพิ่ม Observability ให้ library-system</h1>
+    <p>ทำให้ระบบ "มองเห็นได้" — logging, error tracking, staging · ปิดเฟส 2 สมบูรณ์</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้ปิดเฟส 2 ได้สมบูรณ์</h3>
+    <p>หลังจบ library-system จะ "ดูแลได้จริง": รู้ว่าเกิดอะไรขึ้น (structured log), รู้ทันทีเมื่อพัง (Sentry),
+    มีที่ทดสอบก่อนของจริง (staging), และ log ไม่รั่ว secret (มุม pentester) · นี่คือสิ่งที่ทำให้ library-system เป็น
+    "production-grade application" เต็มตัว — portfolio piece ที่เล่า interview ได้ครบทั้ง dev + ops + security</p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 15.1 — Structured Logging (pino) <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>setup pino logger + pino-http (request logging + correlation ID)</li>
+      <li>แทน console.log ทั้งหมดด้วย structured log (context + level เหมาะสม)</li>
+      <li>redact secret (authorization, password, token) — ไม่ log ความลับ</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> log เป็น JSON มี requestId · filter requestId เห็น lifecycle · ไม่มี secret ใน log</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 15.2 — Error Tracking (Sentry) <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>Sentry init + setupExpressErrorHandler + release (GIT_SHA)</li>
+      <li>beforeSend กรอง secret/PII ก่อนส่ง</li>
+      <li>ทดสอบ: ทำให้ error เกิด → เห็นใน Sentry dashboard (พร้อม context)</li>
+    </ol>
+    <div class="warn"><strong>security:</strong> ตรวจว่า request body/headers ที่ส่งเข้า Sentry ไม่มี token/password (beforeSend)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 15.3 — Staging Environment <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>แยก env staging (NODE_ENV, DB แยก, SENTRY environment)</li>
+      <li>CI/CD: merge main → deploy staging → (approve) → production (ต่อจาก Week 14)</li>
+      <li>uptime monitor (UptimeRobot) ping /api/health</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> deploy ขึ้น staging ก่อน · Sentry แยก staging/prod · uptime เด้งถ้า /health ล่ม</li></div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 15.4 — Audit log security + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>ไล่ตรวจ log ทั้งระบบ: ไม่มี password/token/PII หลุด (เขียนใน SECURITY.md)</li>
+      <li>README: observability section (log, Sentry, monitoring) + อัปเดต architecture</li>
+      <li>push + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> review log จริง — ไม่มี secret · SECURITY.md ระบุการป้องกัน log leak</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Logging</td><td>30%</td><td>structured (JSON) · correlation ID · level เหมาะสม · ไม่ log secret</td></tr>
+      <tr><td>Error tracking</td><td>25%</td><td>Sentry + context + release · beforeSend กรอง PII</td></tr>
+      <tr><td>Staging + monitoring</td><td>25%</td><td>staging env แยก · deploy flow · uptime/healthcheck</td></tr>
+      <tr><td>Security audit + Git</td><td>20%</td><td>log ไม่รั่ว secret/PII (audit) · SECURITY.md · README · AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์ + จบเฟส 2 🎉🎉</h2>
+  <ul class="check">
+    <li>structured logging (pino) + correlation ID + redact</li>
+    <li>Sentry error tracking + release + กรอง PII</li>
+    <li>staging environment + monitoring 3 ชั้น</li>
+    <li>audit log ไม่รั่ว secret/PII</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #14 ใน chat</li>
+    <li><strong>🎉 จบเฟส 2 (Week 9-15)!</strong> library-system = production-grade: Docker · CI/CD · observability · security hardened</li>
+  </ul>
+
+  <div class="card" style="background:#eff6ff;border-color:#2563eb">
+    <h3 style="margin-top:0">🏆 สรุปสิ่งที่คุณมีหลังจบเฟส 2</h3>
+    <p><strong>library-system production-grade เต็มตัว:</strong> Full-stack (TS/Next.js) · PostgreSQL+Redis ใน Docker (multi-stage, non-root, scanned) ·
+    CI/CD เต็มวงจร (push→test→build→deploy อัตโนมัติ + rollback) · observability (structured log + Sentry + staging + monitoring) ·
+    security hardened ทุกชั้น · <strong>นี่คือระบบที่เล่า interview ได้ว่า "สร้าง+deploy+ดูแล production ได้ทั้งระบบ" — ครบ dev + DevOps + security</strong></p>
+    <p style="margin-top:8px">ถัดไป: <strong>เฟส 3 (Week 17-20) Security-First</strong> — OWASP, pentest โปรเจกต์ตัวเอง, รายงาน attack→fix (จุดแข็งที่สุดของคุณ)</p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-sentry-staging.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 15</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 15 Mission ใหญ่ · จบเฟส 2</footer>
+</div>
+</body>
+</html>

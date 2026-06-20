@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: Dockerize library-system เต็มระบบ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 11</a> · Mission ใหญ่</div>
+    <h1>🐳 Dockerize library-system เต็มระบบ</h1>
+    <p>แพ็คทั้งระบบลง container — clone แล้ว <code>docker compose up</code> ได้เลย</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือทักษะ DevOps ชิ้นแรก</h3>
+    <p>หลังจบ library-system จะ "รันได้ทุกที่ด้วยคำสั่งเดียว" — Dockerfile multi-stage (image เล็ก), compose app+db+redis,
+    cache ด้วย Redis · นี่คือสิ่งที่ทำให้ deploy ขึ้น cloud ได้ (Week 14) และเป็นทักษะที่ JD DevOps/Backend ขอ ·
+    มุม pentester: image ที่ปลอดภัย (ไม่มี secret, ไม่รัน root) คือจุดเด่นของคุณ</p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 11.1 — Dockerfile multi-stage <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>เขียน Dockerfile multi-stage (build → run slim) สำหรับ library-system (TS → dist)</li>
+      <li>เรียง copy package + npm ci ก่อน copy source (layer caching)</li>
+      <li>.dockerignore (node_modules, .env, .git, dist)</li>
+      <li>build + เทียบขนาด image (single vs multi-stage)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> <code>docker build</code> ผ่าน · image multi-stage เล็กกว่า single ชัดเจน</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 11.2 — Compose app+db+redis <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>compose 3 service: app (build .), db (postgres), redis</li>
+      <li>app เชื่อม DB ด้วยชื่อ service (<code>db:5432</code> ไม่ใช่ localhost) + redis</li>
+      <li>depends_on + healthcheck (รอ db พร้อมจริง) · volume db</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> <code>docker compose up</code> → ทั้ง 3 service รัน · API ตอบได้ · ข้อมูลรอด restart</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 11.3 — Redis cache <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>cache endpoint ที่เรียกบ่อย (GET /api/books หรือ /api/dashboard) ด้วย Redis (TTL 60 วิ)</li>
+      <li>invalidation: ลบ cache เมื่อ POST/PUT/DELETE books</li>
+      <li>ทดสอบ: ดู log/เวลา — ครั้งแรก query DB, ครั้งถัดไปจาก cache</li>
+    </ol>
+    <div class="warn"><strong>คิดให้รอบ:</strong> เพิ่มหนังสือแล้วต้องโผล่ทันที (invalidate ถูก) — ไม่ใช่รอ cache หมดอายุ</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 11.4 — Clone test + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>ทดสอบจริง: clone repo ไปโฟลเดอร์ใหม่ → <code>docker compose up</code> → ใช้งานได้ (บททดสอบว่า setup ครบ)</li>
+      <li>README: วิธีรัน (compose up อย่างเดียว) + .env.example + Tech Stack เพิ่ม Docker/Redis</li>
+      <li>push + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> clone ใหม่ → compose up → ระบบรันครบโดยไม่ต้องลงอะไรเพิ่ม = setup สมบูรณ์</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Dockerfile</td><td>30%</td><td>multi-stage · layer caching ถูก · image เล็ก · npm ci</td></tr>
+      <tr><td>Compose</td><td>25%</td><td>3 service · service name networking · depends_on+healthcheck · volume</td></tr>
+      <tr><td>Redis cache</td><td>20%</td><td>cache pattern + TTL + invalidation ถูก (ข้อมูลไม่ค้าง)</td></tr>
+      <tr><td>Security + Git</td><td>25%</td><td>.dockerignore (ไม่มี secret ใน image) · clone แล้วรันได้ · README + AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>Dockerfile multi-stage (image เล็ก) + .dockerignore</li>
+    <li>compose app+db+redis (service name + healthcheck)</li>
+    <li>Redis cache (TTL + invalidation)</li>
+    <li>clone ใหม่ → compose up → รันได้ครบ</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #10 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 12</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-compose-redis.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 11</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 11 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

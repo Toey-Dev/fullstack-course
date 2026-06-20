@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 11 — Dockerize App + Compose (app+db+redis)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 2 (Production)</div>
+    <h1>Week 11 — Dockerize App + Compose</h1>
+    <p>แพ็ค library-system ทั้งระบบลง container — app + database + redis รันด้วยคำสั่งเดียว</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>Week 4 คุณรัน PostgreSQL ใน Docker แล้ว — Week 11 แพ็ค <strong>app ของคุณ</strong>ลง container ด้วย
+    (Dockerfile + multi-stage build) แล้วต่อทุกอย่างด้วย compose: app + db + redis รันพร้อมกัน · ใครก็ตามที่ clone repo
+    พิมพ์ <code>docker compose up</code> ได้ระบบเหมือนคุณเป๊ะ ไม่ต้องลง Node/Postgres/Redis เอง</p>
+    <ul class="check">
+      <li>เขียน Dockerfile แพ็ค Node app + เข้าใจแต่ละ instruction</li>
+      <li>Multi-stage build — image เล็กลง (build แยกจาก run)</li>
+      <li>docker-compose เชื่อม app + db + redis (networking, depends_on)</li>
+      <li>Redis คืออะไร + ใช้ caching เบื้องต้น (ลดภาระ DB)</li>
+      <li>.dockerignore, env ใน compose, volume — production-ready</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้สำคัญต่อ 100k:</strong> "containerize app เป็น" คือทักษะ DevOps ที่ JD เกือบทุกที่ขอ ·
+    multi-stage build + compose หลาย service คือสิ่งที่แยก "รู้จัก Docker" จาก "ใช้ Docker เป็นจริง"</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-dockerfile.html">Dockerfile + Multi-stage Build</a></strong>
+    <p style="margin:6px 0 0">Dockerfile ทีละ instruction · layer caching · multi-stage (build vs run) · .dockerignore · image เล็กลง</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-compose-redis.html">Compose หลาย Service + Redis Caching</a></strong>
+    <p style="margin:6px 0 0">compose app+db+redis · networking (service name) · depends_on · Redis คืออะไร + cache pattern · env</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-dockerize.html">Dockerize library-system เต็มระบบ</a></strong>
+    <p style="margin:6px 0 0">Dockerfile multi-stage · compose app+db+redis · cache 1 endpoint ด้วย Redis · clone แล้วรันได้ · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (Dockerfile + multi-stage)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>เขียน Dockerfile ให้ library-system + build</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (compose + redis)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 11.1-11.2 (Dockerfile + compose)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (Dockerfile จากความจำ) + 🤖 AI Drill #10</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 11.3-11.4 (redis cache + clone test) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 11</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Multi-stage — แยก build จาก run (image เล็ก)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ stage เดียว (image ใหญ่)</h4>
+<pre><code>FROM node:20
+COPY . .
+RUN npm install &amp;&amp; npm run build
+CMD ["node", "dist/server.js"]
+# image มี dev deps + source + build tools = ใหญ่</code></pre></div>
+      <div class="good"><h4>✅ multi-stage (เอาแค่ที่ต้องรัน)</h4>
+<pre><code>FROM node:20 AS build
+RUN npm ci &amp;&amp; npm run build
+FROM node:20-slim AS run
+COPY --from=build /app/dist ./dist
+# image มีแค่ dist + prod deps = เล็กกว่ามาก</code></pre></div>
+    </div>
+
+    <h3>2. .dockerignore — อย่าก๊อป node_modules/secret เข้า image</h3>
+    <p class="muted">node_modules, .env, .git, dist → ใส่ .dockerignore (เหมือน .gitignore) — image เล็กลง + ไม่หลุด secret เข้า image</p>
+    <div class="warn"><strong>กฎทอง:</strong> multi-stage เสมอ (เล็ก+ปลอดภัย) · .dockerignore · ใช้ node:slim/alpine สำหรับ run · ไม่ hardcode secret ใน Dockerfile (ใช้ env) ·
+    pin เวอร์ชัน image (node:20 ไม่ใช่ node:latest)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #10 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน Dockerfile สำหรับ Node app แล้ว<strong>หาจุดที่ไม่ optimal/ไม่ปลอดภัย</strong>
+  (stage เดียว image ใหญ่? COPY . . ก่อน npm install ทำลาย cache? รันด้วย root? hardcode secret? ใช้ latest tag?) จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 11 (เฟส 2)</footer>
+</div>
+</body>
+</html>

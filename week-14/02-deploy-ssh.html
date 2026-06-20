@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Deploy ผ่าน SSH + Strategy + Rollback</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 14</a> · บทที่ 2</div>
+    <h1>Deploy ผ่าน SSH + Strategy + Rollback</h1>
+    <p>ส่ง image ขึ้น server จริง — อย่างปลอดภัยและกลับเวอร์ชันได้เมื่อพัง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🔑 SSH key ใน secrets ไม่ commit</span>
+      <span class="kw">📥 pull image + compose up = deploy</span>
+      <span class="kw">↩️ พัง → ดึง SHA เก่า = rollback</span>
+      <span class="kw">👤 deploy user ≠ root</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Server แค่ pull + run — ไม่ build, ไม่มี source"</h3>
+    <p>deploy = SSH เข้า server → <code>docker compose pull</code> (ดึง image ใหม่จาก registry) → <code>up -d</code> (รันแทนของเก่า) ·
+    server ไม่ต้องมี source code/build tools — แค่ Docker + compose file · image ที่ test แล้วใน CI = ตัวเดียวกับที่รัน production</p>
+    <h3>หลักการ 2: "Deploy ต้องกลับได้ — ไม่มี rollback = ห้าม deploy"</h3>
+    <p>ทุก deploy ต้องตอบได้ว่า "ถ้าพังจะกลับยังไง" · เพราะ tag image ด้วย SHA (บทที่ 1) → rollback = <code>compose up</code> ด้วย SHA เก่า ·
+    deploy โดยไม่มีแผน rollback = เล่นการพนันกับ production · มืออาชีพเตรียมทางถอยก่อนเดินหน้าเสมอ</p>
+    <h3>หลักการ 3: "Credential ของ deploy คือกุญแจบ้าน — ป้องกันสุดชีวิต"</h3>
+    <p>SSH key ที่ deploy เข้า server = ถ้าหลุด ใครก็เข้า server ได้ · เก็บใน GitHub Secrets (ไม่ commit), ใช้ deploy user สิทธิ์จำกัด
+    (ไม่ใช่ root), verify host key · มุม pentester: deploy pipeline คือเป้าหมายโจมตียอดนิยม (เข้าถึง production ได้)</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Deploy Job ผ่าน SSH</h2>
+  <div class="card">
+<pre><code>deploy:
+  needs: build-and-push           # ต่อจาก image ขึ้น registry แล้ว
+  runs-on: ubuntu-latest
+  if: github.ref == 'refs/heads/main'    # ⭐ deploy เฉพาะ main เท่านั้น
+  steps:
+    - uses: appleboy/ssh-action@v1
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: ${{ secrets.DEPLOY_USER }}      # user สิทธิ์จำกัด ไม่ใช่ root
+        key: ${{ secrets.DEPLOY_SSH_KEY }}        # private key ใน secrets
+        script: |
+          cd /opt/library-system
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker compose pull                      # ดึง image ใหม่
+          docker compose up -d                     # รันแทนของเก่า
+          docker image prune -f                    # ลบ image เก่าที่ไม่ใช้</code></pre>
+    <div class="warn"><strong>🔐 จุด security 4 ข้อ:</strong> ① SSH key ใน secrets (ไม่ commit) ② <code>if: ref == main</code> deploy เฉพาะ main
+    (ไม่ใช่ทุก branch/PR) ③ deploy user สิทธิ์จำกัด (ไม่ใช่ root) ④ login registry ด้วย token ชั่วคราว ·
+    คุณในฐานะ pentester รู้ว่า deploy pipeline ที่หละหลวม = ทางเข้า production</div>
+  </div>
+
+  <h2>ส่วนที่ 2: เตรียม Server (ครั้งเดียว)</h2>
+  <div class="card">
+<pre><code># บน server (setup ครั้งแรก)
+# 1. ติดตั้ง Docker + compose
+# 2. สร้าง deploy user (ไม่ใช่ root) + เพิ่มเข้า docker group
+sudo adduser deploy &amp;&amp; sudo usermod -aG docker deploy
+# 3. ใส่ public key ของ deploy ใน ~/.ssh/authorized_keys
+# 4. วาง compose.prod.yml + .env (secret จริง) ที่ /opt/library-system
+# 5. เปิด firewall เฉพาะ port ที่ใช้ (80/443) ปิด DB port</code></pre>
+    <p class="muted">server มีแค่ compose file + .env — ไม่มี source code · image มาจาก registry · นี่คือ "immutable infrastructure" เบื้องต้น (server เป็นแค่ที่รัน image)</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Deployment Strategy</h2>
+  <div class="card">
+    <table>
+      <tr><th>strategy</th><th>ทำงาน</th><th>downtime</th></tr>
+      <tr><td>Recreate</td><td>หยุดเก่า → start ใหม่</td><td>มี (วินาที-นาที) — ง่ายสุด</td></tr>
+      <tr><td>Rolling</td><td>ค่อย ๆ เปลี่ยนทีละ instance</td><td>เกือบ 0 (ต้องมีหลาย instance)</td></tr>
+      <tr><td>Blue-Green</td><td>รันใหม่ข้าง ๆ → สลับ traffic</td><td>0 + rollback ทันที (สลับกลับ)</td></tr>
+    </table>
+    <p class="muted">เริ่มจาก Recreate (compose up -d ก็คือ recreate — ง่าย พอสำหรับเริ่มต้น) · zero-downtime (rolling/blue-green) ทำเมื่อ traffic เยอะจริง — อย่า over-engineer ตั้งแต่แรก</p>
+  </div>
+
+  <h2>ส่วนที่ 4: Rollback</h2>
+  <div class="card">
+<pre><code># deploy พัง → rollback ด้วย SHA เก่า (เพราะ tag SHA จากบทที่ 1)
+# บน server:
+docker compose down
+# แก้ image tag ใน compose เป็น SHA ก่อนหน้า (หรือ env IMAGE_TAG)
+IMAGE_TAG=&lt;previous-sha&gt; docker compose up -d
+# ระบบกลับเวอร์ชันที่ทำงานได้ภายในไม่กี่วินาที</code></pre>
+    <div class="tip"><strong>ทำให้ rollback ง่าย:</strong> ใช้ env <code>IMAGE_TAG</code> ใน compose (<code>image: ghcr.io/...:${IMAGE_TAG}</code>) ·
+    rollback = เปลี่ยน IMAGE_TAG แล้ว up -d · เก็บ image หลาย version ใน registry · <strong>ซ้อม rollback ก่อนต้องใช้จริง</strong> (ตอนวิกฤตไม่ใช่เวลาเรียน)</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> deploy automation service ขึ้น VPS — push main → CI build → SSH deploy อัตโนมัติ ·
+    rollback ได้ทันทีถ้า logic สรุปพัง · deploy user สิทธิ์จำกัด + DB port ปิด = ปลอดภัยพอ production จริง</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> SSH deploy เหมาะกับ VPS/single server (startup, project เล็ก-กลาง) · scale ใหญ่ใช้ K8s/managed (rolling อัตโนมัติ) ·
+    rollback strategy + secret management ของ deploy เป็นสิ่งที่ทุกทีมต้องมี · pentester ที่เข้าใจ "deploy pipeline security" หายากและมีค่าในสาย DevSecOps</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ตอน deploy ทำไม server แค่ pull + up ไม่ build เอง?</summary>
+    <p>image ถูก build + test บน CI แล้ว (ตัวเดียวกับที่จะรัน) · server แค่ pull จาก registry + รัน → เร็ว, สะอาด, ไม่ต้องมี source/build tools,
+    deterministic (รัน image ที่ test แล้ว) · separation: CI สร้าง, server รัน</p></details>
+  <details><summary>ข้อ 2: ทำไมทุก deploy ต้องมี rollback plan?</summary>
+    <p>deploy อาจพัง (bug ที่ test ไม่จับ, config ผิด) · ต้องกลับเวอร์ชันที่ทำงานได้เร็ว · เพราะ tag SHA → rollback = up -d ด้วย SHA เก่า ·
+    ไม่มี rollback = deploy แล้วภาวนา = เล่นพนันกับ production</p></details>
+  <details><summary>ข้อ 3 (security): จุด security ของ SSH deploy 4 ข้อคืออะไร?</summary>
+    <p>① SSH key ใน secrets ไม่ commit ② deploy เฉพาะ main (<code>if: ref==main</code>) ไม่ใช่ทุก branch ③ deploy user สิทธิ์จำกัด ไม่ใช่ root
+    ④ ปิด port ที่ไม่ใช้ (DB) + verify host · deploy pipeline = ทางเข้า production ต้องป้องกันสุด</p></details>
+  <details><summary>ข้อ 4: Recreate vs Blue-Green ต่างกันยังไง ควรเริ่มอันไหน?</summary>
+    <p>Recreate: หยุดเก่า→start ใหม่ (มี downtime สั้น, ง่ายสุด) · Blue-Green: รันใหม่ข้าง ๆ→สลับ traffic (0 downtime + rollback ทันที แต่ซับซ้อน) ·
+    เริ่มจาก Recreate (compose up -d) — พอสำหรับเริ่มต้น · blue-green เมื่อ traffic เยอะจริง อย่า over-engineer</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>deploy job ผ่าน SSH (pull + compose up) · deploy เฉพาะ main</li>
+    <li>SSH key/secret ใน GitHub Secrets · deploy user ไม่ใช่ root</li>
+    <li>เข้าใจ deployment strategy (เริ่ม recreate)</li>
+    <li>rollback ด้วย SHA tag (ซ้อมก่อนใช้จริง)</li>
+    <li>Quiz + โน้ต <code>notes/deploy-ssh.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-build-push.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-cd.html">Mission ใหญ่: CI/CD เต็มวงจร →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 14 บทที่ 2</footer>
+</div>
+</body>
+</html>

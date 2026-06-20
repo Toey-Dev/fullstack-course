@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 12 — Docker Production + Security Hardening</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 2 (Production)</div>
+    <h1>Week 12 — Docker Production + Hardening</h1>
+    <p>ทำให้ container พร้อม production จริง — เล็ก เร็ว ปลอดภัย (จุดที่ pentester ของคุณเปล่งประกาย)</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>Week 11 ทำให้ระบบ "รันใน Docker ได้" — Week 12 ทำให้มัน "พร้อม production จริง": ปลอดภัย (ไม่รัน root, image สแกนผ่าน),
+    ทนทาน (healthcheck, restart, resource limit), และ dockerize frontend ด้วย · นี่คือสัปดาห์ที่ความรู้ pentester
+    ทำให้คุณทำ container security ได้ดีกว่า dev ทั่วไปชัดเจน</p>
+    <ul class="check">
+      <li>Container security: non-root user, minimal image, อ่าน CVE จาก scan</li>
+      <li>Secret management — ไม่ฝัง secret ใน image/compose (build args vs runtime env)</li>
+      <li>Production compose: healthcheck, restart policy, resource limits, networks</li>
+      <li>Dockerize Next.js frontend (standalone output)</li>
+      <li>image scanning (docker scout / trivy) — หาช่องโหว่ก่อน deploy</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้คือจุดขายสาย B:</strong> container security คือหัวข้อหลักของ DevSecOps —
+    non-root, image scanning, secret management เป็นสิ่งที่ตำแหน่ง Product Security/DevSecOps ขอ · คุณทำเป็นตั้งแต่เรียน = เรื่องเล่า interview ที่แข็ง</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-container-security.html">Container Security + Hardening</a></strong>
+    <p style="margin:6px 0 0">ทำไม root ใน container อันตราย · non-root user · minimal image · image scanning (CVE) · secret management</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-production-compose.html">Production Compose + Dockerize Frontend</a></strong>
+    <p style="margin:6px 0 0">healthcheck · restart policy · resource limits · networks · env/secrets · dockerize Next.js (standalone)</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-harden.html">Harden + Production-ize Docker</a></strong>
+    <p style="margin:6px 0 0">non-root + scan ผ่าน · prod compose (healthcheck/limit/restart) · dockerize frontend · เขียนรายงาน hardening · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (container security + non-root)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>scan image + แก้ CVE ที่เจอ</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (prod compose + dockerize frontend)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 12.1-12.2 (hardening)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (non-root Dockerfile จากความจำ) + 🤖 AI Drill #11</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 12.3-12.4 (prod compose + รายงาน) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 12</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. รัน container ด้วย non-root user</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ default = root (อันตราย)</h4>
+<pre><code>FROM node:20-slim
+COPY --from=build /app/dist ./dist
+CMD ["node", "dist/server.js"]
+# รันด้วย root — โดนเจาะ = คุม container ได้เต็ม</code></pre></div>
+      <div class="good"><h4>✅ non-root user</h4>
+<pre><code>FROM node:20-slim
+COPY --from=build /app/dist ./dist
+USER node                  # ⭐ รันด้วย user ธรรมดา
+CMD ["node", "dist/server.js"]
+# โดนเจาะ = สิทธิ์จำกัด</code></pre></div>
+    </div>
+
+    <h3>2. Secret runtime ไม่ใช่ build-time</h3>
+    <p class="muted">DB password, JWT secret = ใส่ตอน <strong>runtime</strong> (env/secret) ไม่ใช่ ARG/ENV ใน Dockerfile (ติดอยู่ใน image layer ถาวร — ใครได้ image ขุดเจอ)</p>
+    <div class="warn"><strong>กฎทอง:</strong> non-root เสมอ · minimal image (slim/distroless) · scan ก่อน deploy · secret runtime ไม่ฝัง image · pin version · resource limit กัน 1 service กิน CPU/RAM หมด</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #11 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน production Dockerfile + compose แล้ว<strong>หาช่องโหว่ container security</strong>
+  (รัน root? secret ใน build args? image latest/ใหญ่? ไม่มี healthcheck/limit? expose port เกิน?) —
+  เขียนเป็น "mini hardening report" จดลง <code>notes/ai-review-log.md</code> (ซ้อมรายงาน pentest!)</div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 12 (เฟส 2)</footer>
+</div>
+</body>
+</html>

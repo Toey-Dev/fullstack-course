@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: CI/CD เต็มวงจร — Deploy library-system</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 14</a> · Mission ใหญ่</div>
+    <h1>🚀 CI/CD เต็มวงจร — Deploy library-system</h1>
+    <p>push code เข้า main → ของขึ้น production เอง — checkpoint สำคัญของเฟส 2</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือ checkpoint เฟส 2</h3>
+    <p>หลังจบ library-system จะมี pipeline เต็ม: push → test → build image → push registry → deploy ขึ้น server เอง ·
+    "push → deploy อัตโนมัติ" คือเป้าหมายของเฟส 2 ทั้งหมด · นี่คือสิ่งที่ทำให้คุณพูดใน interview ได้ว่า "ทำ CI/CD เป็นทั้งวงจร"
+    — ทักษะที่บริษัท 100k+ ถือเป็นพื้นฐาน</p>
+    <div class="warn"><strong>ต้องมี server:</strong> ใช้ VPS ราคาถูก (DigitalOcean/Linode ~$5-6) หรือ free tier (Oracle Cloud, fly.io) — สำหรับฝึก deploy จริง</div>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 14.1 — Build & Push ขึ้น GHCR <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>เพิ่ม job <code>build-and-push</code> (needs: test) ใน workflow</li>
+      <li>login GHCR + build-push-action · tag latest + ${{ github.sha }}</li>
+      <li>permissions: packages: write (least privilege)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> push → image โผล่ใน GHCR (Packages ของ repo) มี 2 tag (latest + sha)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 14.2 — เตรียม server + SSH deploy <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>server: ติดตั้ง Docker, สร้าง deploy user (ไม่ใช่ root), วาง compose.prod + .env</li>
+      <li>สร้าง SSH key pair → public บน server, private ใน GitHub Secrets</li>
+      <li>job deploy (needs: build-and-push, if: main) — SSH pull + compose up</li>
+    </ol>
+    <div class="warn"><strong>security:</strong> deploy user สิทธิ์จำกัด · DB port ปิดจากภายนอก (Week 12) · SSH key ใน secrets เท่านั้น</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 14.3 — Rollback + deploy จริง <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>compose ใช้ env IMAGE_TAG (rollback ง่าย)</li>
+      <li>push เข้า main → ดู pipeline ทำงานครบ → เปิด URL production เห็นของจริง</li>
+      <li>ซ้อม rollback: deploy SHA เก่า → ระบบกลับเวอร์ชันก่อนหน้า</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> push code → ~ไม่กี่นาที → เปิด production URL เห็นการเปลี่ยนแปลง · rollback กลับได้</li></div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 14.4 — Document + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>README: diagram CI/CD flow + URL production + วิธี rollback</li>
+      <li>เพิ่ม CI/CD badge · DEPLOYMENT.md (ขั้นตอน + rollback plan)</li>
+      <li>push + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> คนอ่าน README เข้าใจ flow + รู้วิธี rollback — เหมือน runbook ทีมจริง</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Pipeline เต็มวงจร</td><td>35%</td><td>push→test→build→push→deploy ทำงานจริง · deploy เฉพาะ main · needs ถูก</td></tr>
+      <tr><td>Security</td><td>30%</td><td>SSH key secrets · deploy user ไม่ root · DB ปิด · tag SHA · least privilege</td></tr>
+      <tr><td>Rollback</td><td>15%</td><td>rollback ได้จริง (IMAGE_TAG/SHA) · ซ้อมแล้ว</td></tr>
+      <tr><td>Document + Git</td><td>20%</td><td>README flow + DEPLOYMENT.md (rollback plan) · badge · AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์ + checkpoint เฟส 2 🎉</h2>
+  <ul class="check">
+    <li>CI/CD เต็มวงจร: push → deploy production อัตโนมัติ</li>
+    <li>image ขึ้น GHCR (tag SHA) · deploy SSH ปลอดภัย</li>
+    <li>rollback ได้จริง (ซ้อมแล้ว)</li>
+    <li>README flow + DEPLOYMENT.md (runbook)</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #13 ใน chat</li>
+    <li><strong>🎯 ทำได้ตาม checkpoint เฟส 2: "push → deploy อัตโนมัติ + อธิบาย pipeline ได้"</strong></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-deploy-ssh.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 14</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 14 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

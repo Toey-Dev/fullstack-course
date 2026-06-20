@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Scheduled Jobs + Resilience + Export</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 16</a> · บทที่ 2</div>
+    <h1>Scheduled Jobs + Resilience + Export</h1>
+    <p>ให้ report รันเอง ทนต่อความพังบางส่วน และส่งออกในรูปที่ใช้ได้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">⏰ รันตามเวลา = cron / scheduled job</span>
+      <span class="kw">🛟 บางแหล่งล่มก็ออก = Promise.allSettled</span>
+      <span class="kw">🔄 ดึง→แปลง→ส่งออก = 3 ชั้น</span>
+      <span class="kw">📤 JSON/CSV/email = export</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Automate the recurring — งานประจำควรรันเอง"</h3>
+    <p>report รายเดือนที่ทำมือ = เสียเวลา + ลืม + ทำตอนดึก · scheduled job (cron) รันเองตามเวลา (ทุกวันที่ 1, ทุกเช้า) ·
+    คุณตื่นมาเจอ report เสร็จแล้ว · นี่คือคุณค่าหลักของ "automation" — เปลี่ยนงานซ้ำ ๆ เป็นของที่ทำงานเอง</p>
+    <h3>หลักการ 2: "Partial failure resilience — บางส่วนพังไม่ควรล้มทั้งหมด"</h3>
+    <p>ดึง 4 แพลตฟอร์ม ถ้า LINE ล่ม — report ที่มี 3 แพลตฟอร์มยังมีค่ากว่าไม่มีเลย · <code>Promise.allSettled</code> (Week 1)
+    ดึงทุกแหล่ง คืนผลแยกสำเร็จ/ล้มเหลว → report ออกพร้อมหมายเหตุ "LINE ดึงไม่ได้" · ระบบจริงทนต่อความพังบางส่วน</p>
+    <h3>หลักการ 3: "แยก fetch / transform / export — 3 ชั้นชัดเจน"</h3>
+    <p>ดึงข้อมูล (clients) → แปลง+สรุป (transformer) → ส่งออก (exporter) · แต่ละชั้นทำหน้าที่เดียว test แยกได้ ·
+    เปลี่ยน export จาก JSON เป็น email ไม่กระทบ fetch/transform · layered architecture (Week 2) ในบริบท data pipeline</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Aggregate แบบ Resilient</h2>
+  <div class="card">
+<pre><code>// ดึงทุกแพลตฟอร์มขนานกัน + ทนต่อบางแหล่งล่ม (Week 1)
+async function buildReport(clientId: string): Promise&lt;Report&gt; {
+  const results = await Promise.allSettled(
+    clients.map(c =&gt; getMetrics(clientId, c))   // มี retry+cache จากบทที่ 1
+  );
+
+  const success = results
+    .filter((r): r is PromiseFulfilledResult&lt;Metrics&gt; =&gt; r.status === "fulfilled")
+    .map(r =&gt; r.value);
+  const failed = results
+    .filter(r =&gt; r.status === "rejected")
+    .map((r, i) =&gt; clients[i].platform);
+
+  if (failed.length) logger.warn({ failed }, "some platforms failed");
+
+  return { clientId, metrics: success, failedPlatforms: failed, generatedAt: new Date() };
+}</code></pre>
+    <p class="muted">report ออกเสมอ (ถ้ามีแหล่งที่สำเร็จ) + บันทึกว่าแหล่งไหนล่ม → ผู้ใช้รู้ว่าข้อมูลครบไหม · ดีกว่า Promise.all ที่ 1 ตัวพัง = ไม่ได้ report เลย</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Scheduled Jobs</h2>
+  <div class="card">
+<pre><code># ตัวเลือก scheduled job
+# 1. node-cron (ง่าย — ใน process เดียว)
+npm install node-cron</code></pre>
+<pre><code>import cron from "node-cron";
+
+// รันทุกวันที่ 1 เวลา 06:00 (report รายเดือน)
+cron.schedule("0 6 1 * *", async () =&gt; {
+  logger.info("monthly report job started");
+  for (const clientId of await getActiveClients()) {
+    const report = await buildReport(clientId);
+    await exportReport(report);
+  }
+});</code></pre>
+    <table>
+      <tr><th>ตัวเลือก</th><th>เหมาะกับ</th></tr>
+      <tr><td>node-cron</td><td>ง่าย, job ไม่เยอะ, ใน process เดียว (เริ่มจากนี่)</td></tr>
+      <tr><td>BullMQ (+ Redis)</td><td>job เยอะ, retry, แยก worker, ดู queue ได้ (scale)</td></tr>
+      <tr><td>cloud scheduler</td><td>serverless, ไม่ต้องมี process รันตลอด</td></tr>
+    </table>
+    <div class="tip"><strong>cron syntax:</strong> <code>นาที ชม. วันที่ เดือน วัน</code> · <code>0 6 1 * *</code> = วันที่ 1 ทุกเดือน 6 โมง ·
+    <strong>กับดัก:</strong> ถ้า process restart ตอน job กำลังรัน → job หาย (node-cron) · งานสำคัญใช้ BullMQ (persist ใน Redis) จะ resume ได้</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Export (3 ชั้น)</h2>
+  <div class="card">
+<pre><code>// exporter interface — เปลี่ยนรูปแบบส่งออกได้โดยไม่แตะ fetch/transform
+interface ReportExporter {
+  export(report: Report): Promise&lt;void&gt;;
+}
+
+class JsonExporter implements ReportExporter { ... }   // เก็บไฟล์/DB
+class CsvExporter implements ReportExporter { ... }    // CSV ให้เปิด Excel
+class EmailExporter implements ReportExporter { ... }  // ส่งเมลให้ลูกค้า
+
+// ใช้ — เลือก exporter ตามต้องการ
+const exporters: ReportExporter[] = [new JsonExporter(), new EmailExporter()];
+await Promise.all(exporters.map(e =&gt; e.export(report)));</code></pre>
+    <p class="muted">CSV สำหรับลูกค้าเปิด Excel · JSON เก็บ/ส่งต่อระบบอื่น · email ส่งอัตโนมัติ · แยก exporter = เพิ่มรูปแบบใหม่ไม่กระทบส่วนอื่น (เหมือน client บทที่ 1)</p>
+  </div>
+
+  <h2>ส่วนที่ 4: วัดผล — ภาษาที่ resume ชอบ</h2>
+  <div class="card">
+<pre><code>// log เวลาที่ใช้ — เพื่อเทียบกับทำมือ
+const start = Date.now();
+await runAllReports();
+logger.info({ durationMs: Date.now() - start, clients: count },
+  "all reports completed");
+// → "ทำ report 20 ลูกค้าใน 45 วินาที (เดิมทำมือ ~3 ชม.)"</code></pre>
+    <div class="tip"><strong>นี่คือ gold สำหรับ interview/resume:</strong> "ลดเวลาทำ report จาก 3 ชม. เหลือ 45 วินาที" หรือ
+    "automate งานที่เคยทำมือทุกเดือน" — ตัวเลขที่วัดได้คือสิ่งที่ทำให้ผลงานคุณโดดเด่นกว่าโปรเจกต์เรียนทั่วไป · เก็บ metric นี้ไว้เล่า</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี (โดยตรง):</strong> service นี้คือคำตอบของงานคุณ — cron รันวันที่ 1 ทุกเดือน → ดึงทุกแพลตฟอร์ม (allSettled ทนแหล่งล่ม)
+    → สรุป → export CSV + email ให้ลูกค้าอัตโนมัติ · คุณไม่ต้องนั่งทำมือ + วัดได้ว่าประหยัดเวลาเท่าไหร่</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> scheduled data pipeline (ETL — extract/transform/load) เป็นงานพบบ่อยในทุกบริษัทที่มีข้อมูล ·
+    resilience (partial failure) + scheduled + multiple export เป็น pattern มาตรฐาน · "สร้าง automation ที่วัดผลได้" คือสิ่งที่แสดง impact จริง</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ดึง 4 แพลตฟอร์ม LINE ล่ม — ใช้ Promise.all หรือ allSettled? เพราะอะไร?</summary>
+    <p>allSettled — ดึงทุกแหล่ง คืนผลแยกสำเร็จ/ล้มเหลว → report ออกพร้อม 3 แพลตฟอร์ม + หมายเหตุ "LINE ล่ม" ·
+    Promise.all 1 ตัวพัง = reject ทั้งหมด = ไม่ได้ report เลย · report ที่ขาด 1 แหล่ง &gt; ไม่มี report (partial failure resilience)</p></details>
+  <details><summary>ข้อ 2: node-cron vs BullMQ ต่างกันยังไง เลือกอันไหน?</summary>
+    <p>node-cron: ง่าย ใน process เดียว (เริ่มจากนี่ พอสำหรับ job ไม่เยอะ) แต่ restart ตอน job รัน = job หาย ·
+    BullMQ (+Redis): persist ใน Redis, retry, แยก worker, resume ได้ — สำหรับ job เยอะ/สำคัญ/ต้อง scale</p></details>
+  <details><summary>ข้อ 3: ทำไมแยก exporter (JSON/CSV/email) เป็น interface?</summary>
+    <p>เพิ่มรูปแบบส่งออกใหม่ (เช่น Google Sheets) = exporter ใหม่ที่ implement interface เดิม ไม่แตะ fetch/transform ·
+    เปลี่ยน/เพิ่ม export ไม่กระทบส่วนอื่น · แยก 3 ชั้น (fetch/transform/export) test แยกได้ · เหมือน client บทที่ 1</p></details>
+  <details><summary>ข้อ 4: ทำไมการ log เวลาที่ service ใช้สำคัญต่อ career?</summary>
+    <p>วัดผลเป็นตัวเลข = ภาษาที่ resume/interview ชอบ — "ลดเวลา report จาก 3 ชม. เหลือ 45 วิ" แสดง impact จริง ·
+    ดีกว่า "ทำ service เป็น" เพราะพิสูจน์คุณค่าทางธุรกิจ · เก็บ metric ไว้เล่า interview</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>aggregate ด้วย Promise.allSettled (partial failure resilient)</li>
+    <li>scheduled job (cron) รันอัตโนมัติ</li>
+    <li>แยก exporter (JSON/CSV/email) — interface</li>
+    <li>log เวลาที่ใช้ (วัดผล vs ทำมือ)</li>
+    <li>Quiz + โน้ต <code>notes/scheduled-export.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-integration-design.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-report-service.html">Mission ใหญ่: Report Service →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 16 บทที่ 2</footer>
+</div>
+</body>
+</html>

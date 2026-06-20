@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Hardening — Helmet, Rate Limit, CSP, CORS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 17</a> · บทที่ 2</div>
+    <h1>Hardening — Helmet, Rate Limit, CSP, CORS</h1>
+    <p>เครื่องมือป้องกันที่ใส่เป็น middleware — เกราะที่ทุก production ต้องมี</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🪖 หมวกกันน็อค headers = helmet</span>
+      <span class="kw">🚦 จำกัดจำนวนยิง = rate limit</span>
+      <span class="kw">📜 อนุญาตแหล่ง script = CSP</span>
+      <span class="kw">🌐 ใครเรียกข้าม origin ได้ = CORS</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Security headers — บอก browser ให้ช่วยป้องกัน"</h3>
+    <p>browser มีกลไกป้องกันในตัว (กัน clickjacking, XSS, MIME sniffing) แต่ต้อง "เปิด" ด้วย HTTP headers · helmet ตั้ง headers เหล่านี้ให้
+    · นี่คือ "ให้ browser เป็นแนวร่วมป้องกัน" — header เดียวกันกัน attack หลายแบบ ฟรี ๆ</p>
+    <h3>หลักการ 2: "Rate limit — abuse ไม่ใช่แค่ traffic เยอะ"</h3>
+    <p>ไม่จำกัดจำนวน request → brute force password (ลองพันรหัส/วินาที), scrape ข้อมูล, DoS (ยิงจนล่ม) · rate limit จำกัด
+    "คนเดียวยิงได้กี่ครั้ง/ช่วงเวลา" · โดยเฉพาะ /login (กัน brute force) · คุณเคยใช้ brute force เจาะ — รู้ว่า rate limit สำคัญแค่ไหน</p>
+    <h3>หลักการ 3: "CORS — กันเว็บอื่นเรียก API เราในนามผู้ใช้"</h3>
+    <p>browser ห้าม JS จากเว็บ A เรียก API เว็บ B (same-origin policy) เว้นแต่ B อนุญาต (CORS) · ตั้ง CORS ผิด (allow *) =
+    เว็บร้ายเรียก API เราด้วย cookie ผู้ใช้ได้ · allow เฉพาะ origin ที่รู้จัก (frontend ของเราเท่านั้น)</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Helmet — Security Headers</h2>
+  <div class="card">
+<pre><code>npm install helmet
+app.use(helmet());          // ใส่ security headers ทั้งชุด (1 บรรทัด)</code></pre>
+    <table>
+      <tr><th>header (helmet ตั้งให้)</th><th>กันอะไร</th></tr>
+      <tr><td><code>Content-Security-Policy</code></td><td>XSS (จำกัดแหล่ง script — ส่วนที่ 3)</td></tr>
+      <tr><td><code>X-Frame-Options: DENY</code></td><td>Clickjacking (กันเว็บอื่นเอาเราใส่ iframe หลอกคลิก)</td></tr>
+      <tr><td><code>Strict-Transport-Security (HSTS)</code></td><td>บังคับ HTTPS (กัน downgrade เป็น HTTP)</td></tr>
+      <tr><td><code>X-Content-Type-Options: nosniff</code></td><td>กัน MIME sniffing (browser เดา type ผิดแล้วรัน)</td></tr>
+      <tr><td>ซ่อน <code>X-Powered-By</code></td><td>ไม่บอกว่าใช้ Express (ลด recon — มุม pentester)</td></tr>
+    </table>
+    <p class="muted">helmet 1 บรรทัดตั้ง header ป้องกันหลายแบบ · ปรับแต่ง CSP เพิ่มได้ (ส่วนที่ 3) · นี่คือ low-effort high-impact ที่ทุก production ต้องมี</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Rate Limiting</h2>
+  <div class="card">
+<pre><code>npm install express-rate-limit
+
+import rateLimit from "express-rate-limit";
+
+// ทั่วไป — 100 req/15 นาที/IP
+app.use(rateLimit({ windowMs: 15*60*1000, max: 100 }));
+
+// /login เข้มกว่า — กัน brute force (5 ครั้ง/15 นาที)
+const loginLimiter = rateLimit({
+  windowMs: 15*60*1000, max: 5,
+  message: { ok: false, error: "พยายาม login มากเกินไป ลองใหม่ภายหลัง" },
+});
+app.post("/api/login", loginLimiter, loginController);</code></pre>
+    <div class="danger"><strong>มุม pentester ของคุณ:</strong> คุณเคย brute force /login มาแล้ว — รู้ว่าถ้าไม่มี rate limit ลองรหัสได้ไม่จำกัด ·
+    /login, /register, /reset-password ต้อง rate limit เข้มเป็นพิเศษ · production จริงเก็บ counter ใน Redis (W11) เพื่อให้ข้าม instance ได้
+    (rate limit ใน memory ไม่ work ถ้ามีหลาย server)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Content Security Policy (CSP)</h2>
+  <div class="card">
+<pre><code>// CSP — บอก browser ว่า script/style/img โหลดจากไหนได้บ้าง
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],                    // default โหลดจากเว็บตัวเองเท่านั้น
+    scriptSrc: ["'self'"],                     // script จากเราเท่านั้น
+    imgSrc: ["'self'", "https://cdn.example.com"],
+    objectSrc: ["'none'"],                     // ไม่อนุญาต <object>/Flash
+  },
+}));</code></pre>
+    <p><strong>ทำไม CSP คือ XSS defense ชั้นสอง:</strong> แม้ผู้โจมตีฉีด <code>&lt;script&gt;</code> เข้ามาได้ (XSS) — CSP บอก browser
+    "รัน script จาก 'self' เท่านั้น" → inline script / script จาก evil.com <strong>ไม่ถูกรัน</strong> · เป็นตาข่ายกันแม้ output encoding พลาด ·
+    defense in depth: encode (ชั้น 1) + CSP (ชั้น 2)</p>
+    <p class="muted">CSP ตั้งเข้มแล้วอาจ break ของที่โหลดจากภายนอก — ค่อย ๆ ผ่อนเฉพาะที่จำเป็น (report-only mode ช่วย test ก่อนบังคับ)</p>
+  </div>
+
+  <h2>ส่วนที่ 4: CORS ที่ถูกต้อง</h2>
+  <div class="card">
+<pre><code>npm install cors
+
+// ❌ อันตราย — อนุญาตทุก origin
+app.use(cors({ origin: "*", credentials: true }));   // เว็บร้ายเรียก API ด้วย cookie ได้
+
+// ✅ allowlist เฉพาะ frontend ของเรา
+app.use(cors({
+  origin: ["https://library.example.com", "http://localhost:3000"],
+  credentials: true,                          // ส่ง cookie ได้ (เฉพาะ origin ที่ allow)
+}));</code></pre>
+    <div class="warn"><strong>กับดักร้ายแรง:</strong> <code>origin: "*"</code> + <code>credentials: true</code> = เว็บใดก็ได้เรียก API เราพร้อม cookie ผู้ใช้
+    (ขโมยข้อมูล/ทำ action แทนผู้ใช้) · จริง ๆ browser บล็อก * + credentials แต่ dev มักหา workaround ผิด ·
+    allow เฉพาะ origin ที่รู้จักเสมอ — secure by default</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> dashboard ลูกค้า — helmet (headers), rate limit /login (กัน brute force), CORS allow เฉพาะ domain dashboard,
+    CSP กัน XSS ที่ข้อมูลลูกค้า · automation API — rate limit กัน abuse · ทั้งหมดเป็น middleware กลางไม่กี่บรรทัด แต่ปิดช่องโหว่หลายข้อ</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> helmet + rate limit + CORS + CSP เป็น baseline security ที่ทุก production มี · code review จะถามหา ·
+    การตั้ง CORS/CSP ถูกต้อง (ไม่ใช่ allow * เพื่อให้มันทำงาน) คือสิ่งที่แยก secure dev จากคนที่ "ทำให้มันรันได้ก่อน" · pentester เห็น misconfig พวกนี้ทันที</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: helmet ช่วยอะไร ทำไม "ให้ browser เป็นแนวร่วมป้องกัน"?</summary>
+    <p>helmet ตั้ง security headers (CSP, X-Frame-Options, HSTS, nosniff) ที่ "เปิด" กลไกป้องกันในตัว browser —
+    กัน clickjacking, XSS, MIME sniffing, downgrade · header เดียวกัน attack หลายแบบ ฟรี · 1 บรรทัด high-impact</p></details>
+  <details><summary>ข้อ 2: ทำไม /login ต้อง rate limit เข้มเป็นพิเศษ?</summary>
+    <p>กัน brute force — ไม่จำกัด = ลองรหัสได้ไม่จำกัด (พัน/วินาที) จนเดารหัสถูก · /login, /register, /reset ต้องเข้ม (เช่น 5 ครั้ง/15 นาที) ·
+    production เก็บ counter ใน Redis (ข้าม instance) · คุณเคย brute force รู้ว่าสำคัญ</p></details>
+  <details><summary>ข้อ 3: CSP เป็น XSS defense "ชั้นสอง" ยังไง?</summary>
+    <p>แม้ผู้โจมตีฉีด script ได้ (output encoding พลาด) — CSP บอก browser "รัน script จาก 'self' เท่านั้น" → inline/external script ของผู้โจมตีไม่ถูกรัน ·
+    defense in depth: encode (ชั้น 1) + CSP (ชั้น 2) — พลาดชั้นหนึ่งยังมีอีกชั้น</p></details>
+  <details><summary>ข้อ 4 (security): <code>cors({ origin: "*", credentials: true })</code> อันตรายยังไง?</summary>
+    <p>เว็บใดก็ได้เรียก API เราพร้อม cookie ผู้ใช้ → ขโมยข้อมูล/ทำ action แทนผู้ใช้ · ต้อง allow เฉพาะ origin ที่รู้จัก (frontend เราเท่านั้น) ·
+    secure by default: ปิดก่อน เปิดเฉพาะที่จำเป็น ไม่ใช่ * เพื่อให้มันทำงาน</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>helmet (security headers) ครอบทั้งแอป</li>
+    <li>rate limiting (ทั่วไป + /login เข้ม)</li>
+    <li>CSP (XSS defense ชั้นสอง)</li>
+    <li>CORS allowlist (ไม่ใช่ *)</li>
+    <li>Quiz + โน้ต <code>notes/hardening.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-owasp-defense.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-harden-owasp.html">Mission ใหญ่: Harden →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 17 บทที่ 2</footer>
+</div>
+</body>
+</html>

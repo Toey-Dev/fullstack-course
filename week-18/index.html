@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 18 — OAuth 2.0 / OIDC + Token Storage</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 3 (Security-First)</div>
+    <h1>Week 18 — OAuth 2.0 / OIDC + Token Storage</h1>
+    <p>"Login with Google" ทำงานยังไง — และเก็บ token ให้ปลอดภัยจริง (ปิดประเด็นค้างจาก Week 1)</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>Week 5 คุณทำ login เอง (email+password+JWT) — Week 18 เรียน <strong>OAuth 2.0 / OIDC</strong>: ให้ผู้ใช้ login ด้วย Google/GitHub
+    (ไม่ต้องจัดการ password เอง) · และปิดประเด็น <strong>"token เก็บที่ไหน"</strong> ที่คุยมาตั้งแต่ Week 1 ให้จบ — access token, refresh token,
+    rotation, storage ที่ถูกต้อง · นี่คือความรู้ auth ระดับลึกที่ตำแหน่ง security ถามแน่นอน</p>
+    <ul class="check">
+      <li>OAuth 2.0 flow (Authorization Code + PKCE) — "Login with Google" ทำงานยังไง</li>
+      <li>OIDC = OAuth + identity (id_token) ต่างจาก OAuth ยังไง</li>
+      <li>access token vs refresh token + rotation</li>
+      <li>token storage ที่ถูกต้อง (สรุปจบจาก Week 1+5+8)</li>
+      <li>🔐 ช่องโหว่ OAuth ที่พบบ่อย (redirect_uri, state/CSRF, token leak)</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้สำคัญต่อสาย security:</strong> OAuth/OIDC เป็นมาตรฐาน auth ของทุกระบบใหญ่ —
+    และมีช่องโหว่เฉพาะที่ pentester ต้องรู้ (open redirect, CSRF ผ่าน state, token in URL) · เข้าใจลึก = โดดเด่นใน interview AppSec</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-oauth-oidc.html">OAuth 2.0 + OIDC — flow และทำไม</a></strong>
+    <p style="margin:6px 0 0">ปัญหาที่ OAuth แก้ · Authorization Code flow + PKCE · OIDC (id_token) · roles (client/auth server/resource) · ช่องโหว่</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-token-storage.html">Token Storage + Refresh + Rotation</a></strong>
+    <p style="margin:6px 0 0">access vs refresh token · rotation · เก็บที่ไหน (สรุปจบ) · token revocation · session vs JWT เลือกเมื่อไหร่</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-oauth.html">เพิ่ม "Login with Google" + Token Strategy</a></strong>
+    <p style="margin:6px 0 0">OAuth login (Google/GitHub) · access+refresh + rotation · token storage ปลอดภัย · ป้องกัน state/CSRF · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (OAuth flow + OIDC)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>ลงทะเบียน OAuth app (Google/GitHub) + ทดลอง flow</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (token storage + refresh + rotation)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 18.1-18.2 (OAuth login)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (OAuth flow diagram จากความจำ) + 🤖 AI Drill #17</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 18.3-18.4 (refresh + security) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 18</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. ใช้ library OAuth ที่ผ่านการตรวจ — ไม่เขียน flow เอง</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ implement OAuth เองทั้งหมด</h4>
+<pre><code>// จัดการ exchange code, verify token เอง
+// → พลาดเรื่อง security ง่าย (state, PKCE, verify)</code></pre></div>
+      <div class="good"><h4>✅ ใช้ lib มาตรฐาน (passport/arctic/auth.js)</h4>
+<pre><code>// lib จัดการ flow + security ที่ตรวจแล้ว
+// เราโฟกัส business logic
+// (แต่ต้องเข้าใจว่ามันทำอะไร — บทนี้)</code></pre></div>
+    </div>
+
+    <h3>2. แยก auth provider config (เพิ่ม provider ง่าย)</h3>
+    <p class="muted">Google/GitHub/Line config แยกชัด — เพิ่ม provider ใหม่ไม่กระทบของเดิม (adapter pattern เหมือน W16)</p>
+    <div class="warn"><strong>กฎทอง:</strong> ใช้ OAuth library ที่ผ่านการตรวจ (ไม่เขียน flow เอง) · ใช้ state param เสมอ (กัน CSRF) · verify token signature ·
+    เก็บ refresh token ปลอดภัย (HttpOnly/encrypted) · client secret ใน env</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #17 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI implement OAuth callback แล้ว<strong>หาช่องโหว่ OAuth</strong>
+  (ไม่ verify state (CSRF)? redirect_uri ไม่ validate (open redirect)? token in URL? ไม่ verify id_token signature?
+  client secret hardcode?) — ช่องโหว่ OAuth เป็นหัวข้อ AppSec ขั้นสูง จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 18 (เฟส 3)</footer>
+</div>
+</body>
+</html>

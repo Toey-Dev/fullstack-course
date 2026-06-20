@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: สร้าง Automation Report Service</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 16</a> · Mission ใหญ่</div>
+    <h1>📊 สร้าง Automation Report Service</h1>
+    <p>เอางานจริงมาทำเป็น service ที่ใช้ทุกอย่างจาก 15 สัปดาห์ — portfolio ที่แก้ปัญหาจริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือ portfolio ที่ดีที่สุดของเฟส 2</h3>
+    <p>service นี้รวมทุกอย่าง: TypeScript (W6-7) · resilience/async (W1) · Redis cache (W11) · Docker (W11-12) · CI/CD (W13-14) ·
+    logging/Sentry (W15) · security (ทั้งคอร์ส) — และที่สำคัญ <strong>แก้ปัญหาจริงในงานคุณ</strong> · เล่า interview ได้ว่า
+    "automate งานที่ทำมือทุกเดือน ลดเวลาจาก X เหลือ Y" — impact ที่วัดได้</p>
+    <div class="danger"><strong>⚠️ ทำเวอร์ชัน portfolio (generic):</strong> ใช้ mock API / sample data — ไม่ใส่ key จริง, ข้อมูลลูกค้าจริง, business logic ลับ ·
+    ของจริงในงานเก็บ private repo แยก</div>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 16.1 — Typed Clients (mock) <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li><code>MetricsClient</code> interface + clients 2-3 ตัว (mock API ที่ return sample data)</li>
+      <li>retry + backoff + timeout ใน client</li>
+      <li>normalize: แต่ละ mock คืน format ต่างกัน → แปลงเป็น Metrics รูปเดียว</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> client ดึง mock ได้ · ทำให้ mock fail → retry ทำงาน · เพิ่ม client ใหม่ไม่แตะของเดิม</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 16.2 — Aggregate + Cache <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>buildReport ด้วย Promise.allSettled (ทนแหล่งล่ม + บันทึก failedPlatforms)</li>
+      <li>cache external (Redis) — ไม่ยิง mock ซ้ำ</li>
+      <li>transformer แยก: รวม/สรุป metrics เป็น report object</li>
+    </ol>
+    <div class="warn"><strong>เทสต์ resilience:</strong> ทำให้ 1 client fail → report ยังออก (มี failedPlatforms) ไม่พังหมด</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 16.3 — Scheduled + Export + วัดผล <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>scheduled job (node-cron) — รันตามเวลา + log เวลาที่ใช้</li>
+      <li>exporter แยก: JSON + CSV (อย่างน้อย 2)</li>
+      <li>log metric: "ทำ N report ใน X วินาที" (เทียบทำมือ)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> trigger job → ได้ไฟล์ JSON+CSV · log บอกเวลาที่ใช้</li></div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 16.4 — Dockerize + Document + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>Dockerfile multi-stage (W11-12) + non-root + .env (key ไม่ commit)</li>
+      <li>logging (pino) + Sentry-ready (W15) · ตรวจไม่ log key</li>
+      <li>README: ปัญหาที่แก้ + architecture + metric (เวลาที่ประหยัด) + AI Usage · push + pin</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> README เล่าได้ว่า "แก้ปัญหาอะไร ประหยัดเวลาเท่าไหร่" — เหมือน case study</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Architecture</td><td>30%</td><td>client interface (adapter) · แยก fetch/transform/export · TS type ครบ</td></tr>
+      <tr><td>Resilience</td><td>25%</td><td>retry/backoff/timeout · allSettled (partial failure) · cache</td></tr>
+      <tr><td>Security</td><td>20%</td><td>key ใน env (ไม่ commit/log) · scheduled ปลอดภัย · Docker non-root</td></tr>
+      <tr><td>Impact + Git</td><td>25%</td><td>วัดผลเป็นตัวเลข · README case study · pin repo · AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์ + จบเฟส 2 (Production) 🎉🎉</h2>
+  <ul class="check">
+    <li>typed clients (adapter) + retry/timeout + cache</li>
+    <li>aggregate resilient (allSettled) + transform แยก</li>
+    <li>scheduled + export (JSON/CSV) + วัดผลเป็นตัวเลข</li>
+    <li>Dockerize + logging + key ปลอดภัย</li>
+    <li>README case study (ปัญหา→แก้→impact) + pin</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #15 ใน chat</li>
+    <li><strong>🎉 จบเฟส 2 ทั้งหมด!</strong> มี 2 portfolio: library-system (production-grade) + automation-report (แก้งานจริง)</li>
+  </ul>
+
+  <div class="card" style="background:#eff6ff;border-color:#2563eb">
+    <h3 style="margin-top:0">🏆 หลังจบเฟส 2 — สิ่งที่คุณมี</h3>
+    <p><strong>2 portfolio pieces ระดับ production:</strong><br>
+    ① <strong>library-system</strong> — full-stack + Docker + CI/CD + observability + security<br>
+    ② <strong>automation-report</strong> — แก้ปัญหาจริงในงาน + วัดผลได้ (impact)<br>
+    + commit history 16 สัปดาห์ · ทักษะครบ dev + DevOps + security · <strong>โค้ดไล่ทันและเกิน resume แล้ว</strong></p>
+    <p style="margin-top:8px">ถัดไป: <strong>เฟส 3 (Week 17-20) Security-First</strong> — OWASP ฝั่งป้องกัน, pentest โปรเจกต์ตัวเอง, รายงาน attack→fix ·
+    <strong>นี่คือเฟสที่จุดแข็งอดีต pentester ของคุณเปล่งประกายที่สุด</strong></p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-scheduled-resilient.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 16</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 16 Mission ใหญ่ · จบเฟส 2</footer>
+</div>
+</body>
+</html>

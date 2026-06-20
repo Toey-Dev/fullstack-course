@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: Security Pipeline ให้ library-system</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 19</a> · Mission ใหญ่</div>
+    <h1>🔒 Security Pipeline ให้ library-system</h1>
+    <p>ฝัง security scanning เข้า CI — ทุก PR ถูกตรวจอัตโนมัติ (DevSecOps จริง)</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้คือ portfolio DevSecOps</h3>
+    <p>หลังจบ library-system จะมี security pipeline (dependency + secret + SAST) เป็น gate ใน CI · นี่คือหลักฐานว่าคุณ
+    "ฝัง security เข้า CI/CD เป็น" — ทักษะที่ JD DevSecOps ขอตรง ๆ · บวกกับ pentest background ของคุณ = โปรไฟล์ AppSec/DevSecOps ที่สมบูรณ์</p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 19.1 — Dependency + Secret Scan <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>เพิ่ม <code>npm audit --audit-level=high</code> ใน CI (W13) + Dependabot config</li>
+      <li>gitleaks-action ใน CI + pre-commit hook (husky + gitleaks protect)</li>
+      <li>รัน → ดูผล → แก้/rotate ถ้าเจอ</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> ลอง commit secret ปลอม → pre-commit/CI จับได้ · npm audit เขียว (หรือแก้จนเขียว)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 19.2 — Semgrep SAST <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>semgrep-action ใน CI (config: p/owasp-top-ten p/javascript)</li>
+      <li>รัน → อ่านผล → แก้ที่เจอจริง</li>
+      <li>(challenge) เขียน custom rule 1 ข้อ (เช่น บังคับ parameterized query)</li>
+    </ol>
+    <div class="warn"><strong>มุม pentester:</strong> ลองใส่โค้ดมีช่องโหว่ (SQL ต่อ string) → Semgrep จับได้ → แก้</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 19.3 — Security Gate + False Positive <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>รวม 3 scan เป็น security workflow + เป็น required check (branch protection)</li>
+      <li>ทดสอบ: PR ที่มีช่องโหว่ → ถูกบล็อก merge</li>
+      <li>จัดการ false positive ที่เจอ (ignore เฉพาะจุด + comment เหตุผล)</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> PR ช่องโหว่ → check แดง merge ไม่ได้ · false positive ถูก ignore อย่างมีเหตุผล</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 19.4 — Report + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>อัปเดต SECURITY.md: security tooling (audit/gitleaks/Semgrep) + ผลที่เจอ/แก้</li>
+      <li>เพิ่ม security badge (ถ้ามี) · README อธิบาย DevSecOps setup</li>
+      <li>push + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> SECURITY.md อ่านแล้วเห็น "ระบบมี security scanning อะไรบ้าง ทำงานยังไง"</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Scanning ครบ</td><td>35%</td><td>dependency (audit/Dependabot) + secret (gitleaks) + SAST (Semgrep) ใน CI</td></tr>
+      <tr><td>Gate ทำงาน</td><td>25%</td><td>required check · PR ช่องโหว่ถูกบล็อก · fail บน High</td></tr>
+      <tr><td>จัดการผล</td><td>20%</td><td>แก้ที่เจอจริง · false positive ignore เฉพาะจุด + เหตุผล</td></tr>
+      <tr><td>Report + Git</td><td>20%</td><td>SECURITY.md (tooling+ผล) · pre-commit hook · AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>security pipeline ใน CI (audit + gitleaks + Semgrep)</li>
+    <li>security gate (required check, บล็อก PR ช่องโหว่)</li>
+    <li>pre-commit hook (secret/lint ก่อน commit)</li>
+    <li>จัดการ false positive + SECURITY.md อัปเดต</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #18 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 20 (Pentest โปรเจกต์ตัวเอง — ไฮไลต์!)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-sast-pipeline.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 19</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 19 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

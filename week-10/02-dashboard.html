@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Dashboard — รวมสถิติ + การ์ดสรุป</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 10</a> · บทที่ 2</div>
+    <h1>Dashboard — รวมสถิติ + การ์ดสรุป</h1>
+    <p>หน้าภาพรวมที่เปลี่ยนข้อมูลดิบเป็นสิ่งที่ผู้ใช้ตัดสินใจได้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">📊 สรุปที่ server = aggregate (COUNT/SUM)</span>
+      <span class="kw">🃏 ตัวเลขสำคัญ = stat card</span>
+      <span class="kw">🚀 ยิงพร้อมกัน = Promise.all</span>
+      <span class="kw">📉 ข้อมูลน้อยก็ต้องสวย = empty state</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "สรุปที่ server ไม่ใช่ที่ client"</h3>
+    <p>อยากนับ "หนังสือที่ยืมอยู่" — อย่าดึงทั้งหมดมานับที่ frontend (ช้า, โหลดข้อมูลเยอะ) · ให้ DB นับด้วย <code>COUNT</code>
+    แล้วส่งแค่ตัวเลข · aggregate ที่ใกล้ข้อมูล (DB) เร็วกว่าและประหยัด bandwidth มาก · นี่คือหลักการ dashboard ที่ scale ได้</p>
+    <h3>หลักการ 2: "Dashboard ต้องตอบคำถาม ไม่ใช่โชว์ข้อมูล"</h3>
+    <p>การ์ดสถิติที่ดีตอบ "อะไรสำคัญตอนนี้" (หนังสือเหลือกี่เล่ม, ค้างคืนกี่เล่ม) ไม่ใช่ dump ทุกตัวเลข ·
+    ออกแบบจากคำถามที่ผู้ใช้อยากรู้ → เลือกแสดงเฉพาะนั้น · dashboard ที่รก = ไม่มีใครดู</p>
+    <h3>หลักการ 3: "ดึงหลายแหล่งขนานกัน (Promise.all จาก Week 1)"</h3>
+    <p>dashboard มักรวมข้อมูลหลายอย่าง (จำนวนหนังสือ + สมาชิก + ที่ยืม) · ยิงพร้อมกันด้วย Promise.all เร็วกว่ารอทีละอัน ·
+    ความรู้ async จาก Week 1 ใช้จริงตรงนี้</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Aggregate ที่ Backend</h2>
+  <div class="card">
+<pre><code>// backend: endpoint สรุป — ให้ DB นับ ไม่ดึงมานับเอง
+// GET /api/dashboard
+const stats = await pool.query(`
+  SELECT
+    (SELECT COUNT(*) FROM books) AS total_books,
+    (SELECT COUNT(*) FROM books WHERE available = false) AS borrowed,
+    (SELECT COUNT(*) FROM members) AS total_members
+`);
+res.json({ ok: true, data: stats.rows[0] });</code></pre>
+    <p class="muted">DB นับให้ → ส่งแค่ตัวเลขไม่กี่ค่า · ต่างจากดึงหนังสือพันเล่มมานับที่ frontend (ช้า เปลือง) — aggregate ใกล้ข้อมูลเสมอ</p>
+  </div>
+
+  <h2>ส่วนที่ 2: Stat Cards (Tailwind)</h2>
+  <div class="card">
+<pre><code>// การ์ดสถิติ — reusable component
+function StatCard({ label, value, icon }: {
+  label: string; value: number; icon: string;
+}) {
+  return (
+    &lt;div className="p-5 rounded-xl bg-white shadow flex items-center gap-4"&gt;
+      &lt;div className="text-3xl"&gt;{icon}&lt;/div&gt;
+      &lt;div&gt;
+        &lt;p className="text-sm text-gray-500"&gt;{label}&lt;/p&gt;
+        &lt;p className="text-2xl font-bold"&gt;{value.toLocaleString()}&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+
+// dashboard grid (responsive)
+&lt;div className="grid grid-cols-1 md:grid-cols-3 gap-4"&gt;
+  &lt;StatCard label="หนังสือทั้งหมด" value={stats.total_books} icon="📚" /&gt;
+  &lt;StatCard label="ถูกยืมอยู่" value={stats.borrowed} icon="📖" /&gt;
+  &lt;StatCard label="สมาชิก" value={stats.total_members} icon="👥" /&gt;
+&lt;/div&gt;</code></pre>
+    <p class="muted"><code>toLocaleString()</code> = ใส่ comma (1,234) อ่านง่าย · grid responsive (1 คอลัมน์มือถือ, 3 จอใหญ่)</p>
+  </div>
+
+  <h2>ส่วนที่ 3: ดึงหลายแหล่งขนานกัน</h2>
+  <div class="card">
+<pre><code>// ถ้า dashboard ต้องรวมจากหลาย endpoint — ยิงพร้อมกัน (Week 1)
+async function loadDashboard() {
+  const [stats, recent, overdue] = await Promise.all([
+    fetch("/api/dashboard").then(r =&gt; r.json()),
+    fetch("/api/borrows/recent").then(r =&gt; r.json()),
+    fetch("/api/borrows/overdue").then(r =&gt; r.json()),
+  ]);
+  // เร็วกว่ารอทีละอัน ~3 เท่า
+}</code></pre>
+    <div class="tip"><strong>production:</strong> ถ้าบางแหล่งอาจล่ม ใช้ <code>Promise.allSettled</code> (Week 1) — dashboard ยังแสดงส่วนที่ได้ ไม่พังทั้งหน้า</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Chart เบื้องต้น (optional)</h2>
+  <div class="card">
+    <p>ถ้าอยากมีกราฟ — ใช้ library สำเร็จรูป (Recharts/Chart.js) ไม่ต้องวาดเอง:</p>
+<pre><code>npm install recharts
+// &lt;BarChart data={monthlyBorrows}&gt; ... — ใส่ข้อมูล library วาดให้</code></pre>
+    <p class="muted">อย่าวาดกราฟเองตั้งแต่แรก (เสียเวลา) — ใช้ library · เลือกแสดงกราฟที่ "ตอบคำถาม" (แนวโน้มการยืมรายเดือน) ไม่ใช่กราฟเพื่อความสวย</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> นี่คือหัวใจงานคุณเลย — dashboard การตลาดที่รวม Meta/LINE/IG/GA4 · aggregate ที่ server (สรุป engagement, reach),
+    ยิงหลายแหล่งด้วย Promise.allSettled (บางแพลตฟอร์มล่มก็ยังแสดงที่เหลือ), stat cards + กราฟแนวโน้ม · Week 10 = ซ้อมใหญ่ของงานจริงคุณ</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> ทุก SaaS/B2B มี dashboard · aggregate ที่ DB, ดึงขนาน, stat card + chart เป็น pattern มาตรฐาน ·
+    dashboard ที่ออกแบบดี (ตอบคำถาม ไม่รก) คือสิ่งที่ลูกค้าจ่ายเงิน</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: นับ "หนังสือที่ยืมอยู่" ควรทำที่ server หรือ client เพราะอะไร?</summary>
+    <p>Server — ให้ DB นับด้วย COUNT แล้วส่งแค่ตัวเลข · ดึงทั้งหมดมานับที่ client = โหลดข้อมูลเยอะ ช้า เปลือง bandwidth ·
+    aggregate ใกล้ข้อมูล (DB) เร็วและ scale ได้</p></details>
+  <details><summary>ข้อ 2: dashboard ที่ดีต่างจาก "dump ทุกตัวเลข" ยังไง?</summary>
+    <p>ดี = ตอบคำถามที่ผู้ใช้อยากรู้ (อะไรสำคัญตอนนี้) แสดงเฉพาะนั้น · dump = โชว์ทุกอย่างจนรก ไม่มีใครดู ·
+    ออกแบบจากคำถาม → เลือกแสดง</p></details>
+  <details><summary>ข้อ 3: dashboard ดึง 3 แหล่ง ทำยังไงให้เร็ว? ถ้าบางแหล่งอาจล่ม?</summary>
+    <p>ยิงพร้อมกันด้วย <code>Promise.all</code> (เร็วกว่ารอทีละอัน) · ถ้าบางแหล่งอาจล่ม ใช้ <code>Promise.allSettled</code> —
+    แสดงส่วนที่ได้ ไม่พังทั้ง dashboard (ความรู้ Week 1)</p></details>
+  <details><summary>ข้อ 4: อยากมีกราฟใน dashboard ควรวาดเองไหม?</summary>
+    <p>ไม่ — ใช้ library (Recharts/Chart.js) ใส่ข้อมูลแล้วมันวาดให้ · วาดเองเสียเวลามากและทำได้ไม่ดีเท่า ·
+    เลือกกราฟที่ตอบคำถาม (แนวโน้ม) ไม่ใช่เพื่อความสวย</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>aggregate endpoint (DB COUNT/SUM) ไม่นับที่ client</li>
+    <li>stat cards (reusable, responsive grid)</li>
+    <li>ดึงหลายแหล่งด้วย Promise.all/allSettled</li>
+    <li>(optional) chart ด้วย library</li>
+    <li>Quiz + โน้ต <code>notes/dashboard.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-crud-pages.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-crud-dashboard.html">Mission ใหญ่: CRUD + Dashboard →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 10 บทที่ 2</footer>
+</div>
+</body>
+</html>

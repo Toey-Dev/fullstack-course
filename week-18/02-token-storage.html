@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Token Storage + Refresh + Rotation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 18</a> · บทที่ 2</div>
+    <h1>Token Storage + Refresh + Rotation</h1>
+    <p>ปิดประเด็น "token เก็บที่ไหน" ให้จบ — ตั้งแต่ Week 1 จนถึงตอนนี้</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🎫 access token = อายุสั้น ใช้บ่อย</span>
+      <span class="kw">🔄 refresh token = อายุยาว ขอ access ใหม่</span>
+      <span class="kw">♻️ ใช้แล้วเปลี่ยน = rotation</span>
+      <span class="kw">🔒 refresh ใน HttpOnly cookie</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Access สั้น + Refresh ยาว = สมดุล security กับ UX"</h3>
+    <p>access token อายุสั้น (15 นาที) — ถ้าหลุด ผู้โจมตีใช้ได้แค่สั้น ๆ · แต่ถ้าให้ user login ใหม่ทุก 15 นาที = UX แย่ ·
+    refresh token (อายุยาว) ขอ access token ใหม่ได้เงียบ ๆ · สมดุล: เสียหายจำกัด (access สั้น) + ไม่ต้อง login บ่อย (refresh)</p>
+    <h3>หลักการ 2: "Refresh rotation — ใช้แล้วเปลี่ยน ตรวจการขโมย"</h3>
+    <p>ทุกครั้งที่ใช้ refresh token ขอ access ใหม่ → ออก refresh token ใหม่ด้วย (ตัวเก่าใช้ไม่ได้) · ถ้าผู้โจมตีขโมย refresh ไปใช้
+    เจ้าของใช้ตัวเดิม (ที่ถูก rotate ไปแล้ว) → ระบบจับได้ว่า "มีคนใช้ token เก่า" → revoke ทั้งหมด · rotation = ตรวจจับการขโมย</p>
+    <h3>หลักการ 3: "ไม่มี storage ที่สมบูรณ์แบบ — เลือกตาม threat (ปิดประเด็น W1)"</h3>
+    <p>localStorage (XSS เสี่ยง) · HttpOnly cookie (XSS ปลอดภัยกว่า แต่ CSRF เสี่ยง — แก้ด้วย SameSite + CSRF token) ·
+    คำตอบสุดท้าย: refresh token ใน HttpOnly cookie (SameSite=Strict), access token ใน memory (ไม่เก็บถาวร) — สมดุลที่ดีสุดสำหรับเว็บส่วนใหญ่</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Access vs Refresh Token</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>Access Token</th><th>Refresh Token</th></tr>
+      <tr><td>อายุ</td><td>สั้น (5-15 นาที)</td><td>ยาว (วัน-สัปดาห์)</td></tr>
+      <tr><td>ใช้ทำ</td><td>เรียก API ทุกครั้ง</td><td>ขอ access token ใหม่</td></tr>
+      <tr><td>ถ้าหลุด</td><td>เสียหายสั้น ๆ</td><td>เสียหายยาว → ต้อง rotate/revoke</td></tr>
+      <tr><td>เก็บที่</td><td>memory (ตัวแปร JS)</td><td>HttpOnly cookie (SameSite)</td></tr>
+    </table>
+<pre><code>// flow: access หมดอายุ → ใช้ refresh ขอใหม่ (เงียบ ๆ ไม่ต้อง login)
+// 1. API call → 401 (access หมด)
+// 2. เรียก POST /auth/refresh (refresh token ใน cookie แนบอัตโนมัติ)
+// 3. ได้ access ใหม่ → retry API call
+// 4. ถ้า refresh ก็หมด → ค่อย login ใหม่</code></pre>
+  </div>
+
+  <h2>ส่วนที่ 2: Refresh Token Rotation</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="30" y="30" width="150" height="40" rx="6" fill="#dcfce7"/><text x="105" y="48" font-size="10" fill="#065f46" text-anchor="middle">ใช้ refresh R1</text><text x="105" y="62" font-size="9" fill="#047857" text-anchor="middle">ขอ access ใหม่</text>
+        <path d="M 182 50 L 230 50" stroke="#059669" stroke-width="2" marker-end="url(#rt1)"/>
+        <rect x="235" y="30" width="180" height="40" rx="6" fill="#dbeafe"/><text x="325" y="48" font-size="10" fill="#1e3a8a" text-anchor="middle">ได้ access ใหม่ + R2</text><text x="325" y="62" font-size="9" fill="#1e40af" text-anchor="middle">R1 ใช้ไม่ได้แล้ว</text>
+        <text x="105" y="105" font-size="10" fill="#dc2626">ถ้าผู้โจมตีขโมย R1 ไปใช้:</text>
+        <rect x="235" y="90" width="350" height="40" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+        <text x="410" y="108" font-size="10" fill="#991b1b" text-anchor="middle">ระบบเห็น R1 ถูกใช้ซ้ำ (rotate ไปแล้ว) →</text>
+        <text x="410" y="122" font-size="10" fill="#991b1b" text-anchor="middle">revoke ทั้ง family → ทั้งคู่ต้อง login ใหม่</text>
+        <defs><marker id="rt1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#059669"/></marker></defs>
+      </svg>
+      <figcaption>ภาพที่ 1: rotation — refresh ใช้แล้วเปลี่ยนใหม่ · ใช้ตัวเก่าซ้ำ = สัญญาณถูกขโมย → revoke</figcaption>
+    </figure>
+    <p class="muted">เก็บ refresh token ใน DB (hashed) พร้อม "family" — ใช้ตัวเก่าที่ rotate ไปแล้ว = จับได้ว่ามีการขโมย → revoke ทั้ง family · นี่คือ best practice ปัจจุบัน</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Token Storage — คำตอบสุดท้าย (ปิดประเด็น W1)</h2>
+  <div class="card">
+    <table>
+      <tr><th>เก็บที่</th><th>XSS</th><th>CSRF</th><th>คำแนะนำ</th></tr>
+      <tr><td>localStorage</td><td>🔴 เสี่ยง (JS อ่านได้)</td><td>🟢 ปลอดภัย</td><td>เลี่ยงสำหรับ token สำคัญ</td></tr>
+      <tr><td>HttpOnly Cookie</td><td>🟢 ปลอดภัย (JS อ่านไม่ได้)</td><td>🟡 เสี่ยง (แก้ด้วย SameSite+CSRF token)</td><td>⭐ refresh token</td></tr>
+      <tr><td>Memory (JS variable)</td><td>🟡 (หายเมื่อ refresh หน้า)</td><td>🟢</td><td>⭐ access token</td></tr>
+    </table>
+    <div class="tip"><strong>สูตรที่แนะนำสำหรับเว็บส่วนใหญ่ (สรุปจบ):</strong><br>
+    • <strong>access token → memory</strong> (ตัวแปร JS — หายเมื่อ refresh หน้า, ขอใหม่จาก refresh) — โดน XSS ก็ได้แค่อายุสั้น<br>
+    • <strong>refresh token → HttpOnly cookie + SameSite=Strict</strong> — JS อ่านไม่ได้ (กัน XSS) + SameSite กัน CSRF<br>
+    นี่คือคำตอบของ "token เก็บที่ไหน" ที่เราคุยมาตั้งแต่ Week 1 — ขึ้นกับ threat แต่สูตรนี้สมดุลที่สุด</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Session vs JWT — เลือกเมื่อไหร่</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>JWT (stateless)</th><th>Session (stateful)</th></tr>
+      <tr><td>เก็บ state</td><td>ใน token (server ไม่จำ)</td><td>server จำ (DB/Redis)</td></tr>
+      <tr><td>revoke ทันที</td><td>ยาก (token valid จนหมดอายุ)</td><td>ง่าย (ลบ session)</td></tr>
+      <tr><td>scale</td><td>ง่าย (ไม่ต้องแชร์ state)</td><td>ต้องแชร์ session store</td></tr>
+      <tr><td>เหมาะกับ</td><td>API, microservice</td><td>app ที่ต้อง revoke ทันที (banking)</td></tr>
+    </table>
+    <p class="muted">ไม่มีถูกผิดเด็ดขาด — fintech/banking มัก session (revoke ทันทีสำคัญกว่า scale) · API/SPA มัก JWT + refresh · เข้าใจ trade-off = ตอบ interview ได้</p>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation service เก็บ OAuth refresh token ของลูกค้า (เพื่อดึงข้อมูลต่อเนื่องโดยไม่ต้องให้ลูกค้า login ทุกครั้ง) —
+    ต้องเก็บ encrypted ใน DB, rotate, revoke ได้ถ้าลูกค้ายกเลิก · นี่คือ token management ระดับ production จริง</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> access+refresh+rotation เป็นมาตรฐาน auth ของ API สมัยใหม่ · token storage strategy เป็นคำถาม interview security ที่พบบ่อยสุด ·
+    "ตอบได้ว่าเก็บที่ไหนเพราะอะไร (threat model)" = แสดงความเข้าใจลึก ไม่ใช่ท่องจำ · session vs JWT trade-off เป็นหัวข้อ system design ด้วย</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไมแยก access (สั้น) กับ refresh (ยาว) token?</summary>
+    <p>access สั้น = หลุดแล้วเสียหายจำกัด · แต่ถ้า user ต้อง login ใหม่ทุก 15 นาที = UX แย่ · refresh (ยาว) ขอ access ใหม่เงียบ ๆ ·
+    สมดุล: security (access สั้น) + UX (ไม่ login บ่อย)</p></details>
+  <details><summary>ข้อ 2: refresh token rotation ตรวจจับการขโมยยังไง?</summary>
+    <p>ใช้ refresh แล้วออกตัวใหม่ (ตัวเก่าใช้ไม่ได้) · ถ้าผู้โจมตีขโมยตัวเก่าไปใช้ — เจ้าของใช้ตัวที่ rotate แล้ว → ระบบเห็น "token เก่าถูกใช้ซ้ำ"
+    = สัญญาณขโมย → revoke ทั้ง family · rotation เปลี่ยน refresh จาก "static" เป็น "ตรวจสอบได้"</p></details>
+  <details><summary>ข้อ 3: สูตร token storage ที่แนะนำสำหรับเว็บคืออะไร (ปิดประเด็น W1)?</summary>
+    <p>access token → memory (JS variable, หายเมื่อ refresh, โดน XSS ได้แค่สั้น) · refresh token → HttpOnly cookie + SameSite=Strict
+    (JS อ่านไม่ได้ กัน XSS + SameSite กัน CSRF) · สมดุล XSS+CSRF ดีสุดสำหรับเว็บส่วนใหญ่</p></details>
+  <details><summary>ข้อ 4: JWT vs Session — banking ควรใช้อันไหน เพราะอะไร?</summary>
+    <p>Session (stateful) — เพราะ revoke ทันทีสำคัญกว่า scale (user โดนแบน/logout ต้องตัดทันที) · JWT valid จนหมดอายุ revoke ยาก ·
+    banking ยอมแลก scale เพื่อ control · API/SPA ทั่วไปใช้ JWT+refresh (scale ง่ายกว่า) · เลือกตาม priority</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>เข้าใจ access (สั้น) + refresh (ยาว) + flow ขอ access ใหม่</li>
+    <li>refresh rotation (ตรวจจับการขโมย)</li>
+    <li>token storage strategy (access→memory, refresh→HttpOnly cookie)</li>
+    <li>session vs JWT trade-off</li>
+    <li>Quiz + โน้ต <code>notes/token-storage.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-oauth-oidc.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-oauth.html">Mission ใหญ่: OAuth Login →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 18 บทที่ 2</footer>
+</div>
+</body>
+</html>

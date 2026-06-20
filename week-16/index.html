@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 16 — Automation Report เป็น TS Service (โปรเจกต์เสริม)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 2 (โปรเจกต์เสริม)</div>
+    <h1>Week 16 — Automation Report เป็น TS Service</h1>
+    <p>เอางานจริงที่คุณทำมือทุกเดือนที่ media-presto มาทำเป็น service — portfolio ที่ "ใช้งานจริงในบริษัท"</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้ (portfolio พิเศษ)</h3>
+    <p>สัปดาห์นี้ต่างจากที่ผ่านมา — แทนที่จะทำ library-system (โจทย์เรียน) คุณจะ <strong>rebuild งานจริงของคุณเอง</strong>:
+    automation report ที่ดึง Meta/LINE/IG/GA4 มาสรุป ที่ตอนนี้ทำมือทุกเดือน · ทำเป็น TypeScript service ที่รันอัตโนมัติ
+    โดยใช้ <strong>ทุกอย่างที่เรียนมา 15 สัปดาห์</strong> · นี่คือ portfolio piece ที่ทรงพลังที่สุด เพราะเล่า interview ได้ว่า
+    "แก้ปัญหาจริงในบริษัท + ลดเวลาทำงานจาก X ชม. เหลือ Y นาที"</p>
+    <ul class="check">
+      <li>ออกแบบ integration service: ดึงข้อมูลจากหลาย API ภายนอก (typed client)</li>
+      <li>Resilience: retry + backoff, timeout, Promise.allSettled (บางแหล่งล่มก็ยังออก report)</li>
+      <li>Rate limiting + caching (Redis) — ไม่ชน rate limit ของ API ภายนอก</li>
+      <li>Scheduled jobs (รันเองรายเดือน/วัน) + report export (JSON/CSV)</li>
+      <li>🔐 จัดการ API key ปลอดภัย (ไม่ commit, ไม่ log) — มุม pentester</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้คือ portfolio ที่ดีที่สุด:</strong> "ผลงานที่ใช้จริงในบริษัท" หนักกว่าโปรเจกต์เรียนหลายเท่า ·
+    และคุณวัดผลเป็นตัวเลขได้ (เวลาที่ประหยัด) ซึ่งเป็นภาษาที่ interviewer และ resume ชอบที่สุด</p></div>
+  </div>
+
+  <div class="danger" style="margin-bottom:16px"><strong>⚠️ เรื่อง confidential:</strong> ใช้ข้อมูล/โครงสร้างจริงเป็นแรงบันดาลใจได้
+  แต่ <strong>repo นี้ต้องไม่มี:</strong> API key จริงของลูกค้า, ข้อมูลลูกค้าจริง, business logic ลับของ media-presto ·
+  ทำเป็นเวอร์ชัน generic (mock data / sample) สำหรับ portfolio · ถ้าจะใช้ของจริงในงาน เก็บเป็น private repo แยก</div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-integration-design.html">ออกแบบ Integration Service + API Client</a></strong>
+    <p style="margin:6px 0 0">consume external API · typed API client · retry + backoff · timeout · rate limit · cache external response</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-scheduled-resilient.html">Scheduled Jobs + Resilience + Export</a></strong>
+    <p style="margin:6px 0 0">scheduled job (cron/BullMQ) · Promise.allSettled (partial failure) · aggregate + transform · export (JSON/CSV) · alert</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-report-service.html">สร้าง Automation Report Service</a></strong>
+    <p style="margin:6px 0 0">typed clients (mock) · scheduled aggregate · resilience · export · Docker + วัดผล (เวลาที่ประหยัด) · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (integration design + API client)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>เขียน typed client + retry (mock API)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (scheduled + resilience + export)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 16.1-16.2 (clients + aggregate)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (retry+backoff จากความจำ) + 🤖 AI Drill #15</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 16.3-16.4 (schedule + export + วัดผล) + push · 🎉 จบเฟส 2</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 16</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. แต่ละ API = client แยก (interface เดียวกัน)</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ fetch ทุก API ปนใน 1 ฟังก์ชัน</h4>
+<pre><code>async function getReport() {
+  const meta = await fetch(metaUrl)...
+  const ga4 = await fetch(ga4Url)...
+  // 200 บรรทัด ปนกันหมด แก้ยาก
+}</code></pre></div>
+      <div class="good"><h4>✅ client แยก + interface เดียว</h4>
+<pre><code>interface MetricsClient {
+  fetch(clientId: string): Promise&lt;Metrics&gt;;
+}
+class MetaClient implements MetricsClient { ... }
+class GA4Client implements MetricsClient { ... }
+// เพิ่มแพลตฟอร์มใหม่ = client ใหม่ ไม่แตะของเดิม</code></pre></div>
+    </div>
+
+    <h3>2. แยก fetch / transform / export (3 ชั้น)</h3>
+    <p class="muted">ดึงข้อมูล (client) → แปลง/สรุป (transformer) → ส่งออก (exporter) — แยกหน้าที่ test/แก้ง่าย (เหมือน layered architecture ฝั่ง API)</p>
+    <div class="warn"><strong>กฎทอง:</strong> client แยกต่อ API (interface เดียว, เพิ่มง่าย) · resilient (retry/timeout/allSettled) · cache external · ไม่ commit/log API key ·
+    วัดผลได้ (log เวลาที่ใช้ vs ทำมือ)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #15 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน function ดึงข้อมูลจาก external API แล้ว<strong>หาจุดที่ไม่ resilient/ไม่ปลอดภัย</strong>
+  (ไม่มี retry? ไม่มี timeout (ค้างตลอดกาล)? 1 แหล่งล่ม = พังหมด (ไม่ใช้ allSettled)? log/commit API key? ไม่ handle rate limit?)
+  จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 16 (โปรเจกต์เสริม · ปิดเฟส 2)</footer>
+</div>
+</body>
+</html>

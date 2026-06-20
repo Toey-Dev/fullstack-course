@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: CI + GitHub Actions พื้นฐาน</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 13</a> · บทที่ 1</div>
+    <h1>CI + GitHub Actions พื้นฐาน</h1>
+    <p>หุ่นยนต์ที่ตรวจโค้ดให้ทุกครั้ง — เข้าใจกลไกก่อนเขียน pipeline</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🤖 ตรวจอัตโนมัติทุก push = CI</span>
+      <span class="kw">📋 สูตรงาน = workflow (yaml)</span>
+      <span class="kw">🏃 เครื่องที่รัน = runner</span>
+      <span class="kw">⚡ พังเร็ว = fail fast</span>
+      <span class="kw">🚦 เขียวค่อย merge = required check</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Integrate บ่อย หาบั๊กเร็ว — ฆ่า merge hell"</h3>
+    <p>ถ้าทุกคนเขียนแยกกันนาน ๆ แล้วค่อย merge ทีเดียว = ชนกันยับ (merge hell) · CI ให้ "รวมโค้ดบ่อย + ตรวจทุกครั้ง" —
+    push ปุ๊บ หุ่นยนต์รัน test ทันที เจอปัญหาตอนเล็ก ๆ แก้ง่าย · ยิ่ง integrate บ่อย ยิ่ง conflict น้อย</p>
+    <h3>หลักการ 2: "Automate the boring — คนลืม เครื่องไม่ลืม"</h3>
+    <p>"ลืมรัน test ก่อน push", "ลืม lint", "เครื่องผมผ่านแต่ของเพื่อนพัง" — ปัญหาเพราะพึ่งคน · CI ทำให้เป็นมาตรฐานเดียว
+    รันบนเครื่องกลาง (runner สะอาด) ทุกครั้งเหมือนกัน · "works on my machine" หายไปเพราะตรวจบนเครื่องกลาง</p>
+    <h3>หลักการ 3: "Quality gate — เขียวค่อยผ่าน"</h3>
+    <p>CI ไม่ใช่แค่ "รัน test" — เป็น "ประตูคุณภาพ" ที่ PR ต้องผ่านก่อน merge · lint แดง/test แดง = merge ไม่ได้ ·
+    บังคับให้โค้ดที่เข้า main มีคุณภาพขั้นต่ำเสมอ · นี่คือเหตุผลที่ทีมจริงเชื่อใจ main branch ได้</p>
+  </div>
+
+  <h2>ส่วนที่ 1: โครงสร้าง GitHub Actions</h2>
+  <div class="card">
+    <p>ไฟล์ workflow อยู่ใน <code>.github/workflows/ci.yml</code> — โครงมี 4 ระดับ:</p>
+    <figure class="figure">
+      <svg viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="30" y="20" width="640" height="135" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+        <text x="45" y="40" font-size="12" font-weight="700" fill="#1e40af">Workflow (ci.yml) — on: push/PR</text>
+        <rect x="50" y="50" width="290" height="95" rx="8" fill="#dbeafe"/>
+        <text x="195" y="70" font-size="11" font-weight="700" fill="#1e3a8a" text-anchor="middle">Job: test (รันบน runner)</text>
+        <rect x="65" y="80" width="260" height="18" rx="3" fill="#93c5fd"/><text x="195" y="93" font-size="9" fill="#1e3a8a" text-anchor="middle">Step: checkout code</text>
+        <rect x="65" y="102" width="260" height="18" rx="3" fill="#93c5fd"/><text x="195" y="115" font-size="9" fill="#1e3a8a" text-anchor="middle">Step: setup node + install</text>
+        <rect x="65" y="124" width="260" height="18" rx="3" fill="#93c5fd"/><text x="195" y="137" font-size="9" fill="#1e3a8a" text-anchor="middle">Step: run lint/test</text>
+        <rect x="360" y="50" width="290" height="95" rx="8" fill="#dbeafe"/>
+        <text x="505" y="70" font-size="11" font-weight="700" fill="#1e3a8a" text-anchor="middle">Job: build (ขนานได้)</text>
+        <rect x="375" y="80" width="260" height="18" rx="3" fill="#93c5fd"/><text x="505" y="93" font-size="9" fill="#1e3a8a" text-anchor="middle">Step: checkout + setup</text>
+        <rect x="375" y="102" width="260" height="18" rx="3" fill="#93c5fd"/><text x="505" y="115" font-size="9" fill="#1e3a8a" text-anchor="middle">Step: npm run build</text>
+      </svg>
+      <figcaption>ภาพที่ 1: workflow → jobs (รันขนาน/ลำดับได้) → steps (รันตามลำดับใน job)</figcaption>
+    </figure>
+    <table>
+      <tr><th>ระดับ</th><th>คือ</th></tr>
+      <tr><td>Workflow</td><td>ไฟล์ทั้งหมด + trigger (เมื่อไหร่รัน)</td></tr>
+      <tr><td>Job</td><td>กลุ่มงานที่รันบน runner หนึ่ง (test, build — ขนานหรือลำดับ)</td></tr>
+      <tr><td>Step</td><td>คำสั่งย่อยใน job (รันตามลำดับ)</td></tr>
+      <tr><td>Runner</td><td>เครื่อง (VM) ที่ GitHub ให้รัน (ubuntu-latest)</td></tr>
+    </table>
+  </div>
+
+  <h2>ส่วนที่ 2: Workflow แรก</h2>
+  <div class="card">
+<pre><code># .github/workflows/ci.yml
+name: CI
+
+on:                          # trigger — เมื่อไหร่รัน
+  push:
+    branches: [main]
+  pull_request:              # รันทุก PR (สำคัญสุด — ตรวจก่อน merge)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest   # runner
+    steps:
+      - uses: actions/checkout@v4         # 1. ดึงโค้ดมา
+      - uses: actions/setup-node@v4       # 2. ติดตั้ง Node
+        with:
+          node-version: 20
+          cache: npm                       # cache deps (เร็วขึ้น)
+      - run: npm ci                        # 3. install
+      - run: npm run lint                  # 4. lint
+      - run: npm test                      # 5. test
+      - run: npm run build                 # 6. build</code></pre>
+    <table>
+      <tr><th>ส่วน</th><th>ความหมาย</th></tr>
+      <tr><td><code>on</code></td><td>trigger — push main + ทุก PR (PR สำคัญสุด: ตรวจก่อน merge)</td></tr>
+      <tr><td><code>uses</code></td><td>เรียก action สำเร็จรูป (checkout, setup-node) — <strong>pin version @v4</strong> ไม่ใช่ @main</td></tr>
+      <tr><td><code>run</code></td><td>รันคำสั่ง shell (npm ...)</td></tr>
+    </table>
+    <div class="warn"><strong>🔐 จุด security:</strong> <code>uses: action@v4</code> — pin version เสมอ ไม่ใช้ <code>@main</code>
+    (action ที่ชี้ main อาจถูกเปลี่ยนโค้ดเป็นมัลแวร์ได้ = supply chain attack) · pin tag/SHA ปลอดภัยกว่า</div>
+  </div>
+
+  <h2>ส่วนที่ 3: อ่าน Log + Status</h2>
+  <div class="card">
+    <p>push แล้วไปแท็บ <strong>Actions</strong> ใน GitHub — เห็น workflow รัน, แต่ละ step เขียว/แดง · คลิกดู log ที่พัง ·
+    PR จะโชว์ status check (✅/❌) ก่อน merge</p>
+    <div class="tip"><strong>วิธี debug CI ที่พัง:</strong> อ่าน log step ที่แดง (มักบอกชัด) · เคสคลาสสิก: "ผ่านในเครื่องแต่ CI แดง" =
+    มักเพราะ runner สะอาด (ไม่มีไฟล์ที่ลืม commit, env ต่าง, หรือ test พึ่งสิ่งที่มีแค่ในเครื่อง) — CI จับเจอสิ่งที่เครื่องเราซ่อน</div>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> ถ้าทำ automation report เป็นทีม — CI รัน test ทุก PR กันคนแก้ logic สรุปแล้วตัวเลขเพี้ยนโดยไม่รู้ตัว ·
+    lint บังคับ style เดียวกันทั้งทีม (ไม่ทะเลาะเรื่อง format) · main branch เชื่อใจได้ว่าไม่พัง</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> ทุกบริษัทจริงจังมี CI — PR ที่ check แดง merge ไม่ได้ · GitHub Actions เป็นตัวเลือกอันดับต้น
+    (ฟรีสำหรับ public repo) · "เขียน CI เป็น" คือทักษะพื้นฐานที่ JD ขอ และทำให้ repo portfolio ดูมืออาชีพ (มี badge เขียว)</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: CI แก้ปัญหา "merge hell" และ "works on my machine" ยังไง?</summary>
+    <p>merge hell: integrate บ่อย + ตรวจทุก push → conflict เล็กลง เจอเร็ว · works on my machine: รันบน runner กลางสะอาด
+    ทุกครั้งเหมือนกัน → จับสิ่งที่เครื่อง dev ซ่อน (ไฟล์ลืม commit, env ต่าง) · มาตรฐานเดียวไม่พึ่งคน</p></details>
+  <details><summary>ข้อ 2: workflow/job/step/runner คืออะไร ความสัมพันธ์?</summary>
+    <p>workflow = ไฟล์ทั้งหมด + trigger · job = กลุ่มงานบน runner หนึ่ง (ขนาน/ลำดับได้) · step = คำสั่งย่อยใน job (ตามลำดับ) ·
+    runner = เครื่อง VM ที่ GitHub ให้รัน · workflow → jobs → steps</p></details>
+  <details><summary>ข้อ 3 (security): ทำไม <code>uses: action@v4</code> ดีกว่า <code>@main</code>?</summary>
+    <p>@main ชี้ branch ที่เปลี่ยนได้ — เจ้าของ action (หรือคนแฮก) เปลี่ยนโค้ดเป็นมัลแวร์ได้ = supply chain attack (มัลแวร์เข้า CI ที่มี secret) ·
+    pin @v4/SHA = โค้ดคงที่ ตรวจสอบได้ ปลอดภัยกว่า</p></details>
+  <details><summary>ข้อ 4: "ผ่านในเครื่องแต่ CI แดง" มักเพราะอะไร?</summary>
+    <p>runner สะอาด (ไม่มีของที่เครื่องเรามี): ไฟล์ที่ลืม commit, env var ที่มีแค่ในเครื่อง, dependency ที่ลงเองไม่ได้อยู่ใน package,
+    test ที่พึ่ง state เครื่อง · CI จับเจอสิ่งที่เครื่อง dev ซ่อนไว้ = เป็นเรื่องดี (เจอก่อน production)</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>เข้าใจ CI (merge hell, fail fast, quality gate)</li>
+    <li>workflow แรก (on push/PR, checkout, setup-node, test)</li>
+    <li>เข้าใจ workflow/job/step/runner · pin action version</li>
+    <li>อ่าน log + status ใน Actions tab</li>
+    <li>Quiz + โน้ต <code>notes/ci-actions.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 13</a>
+    <a class="btn" href="02-ci-pipeline.html">บทที่ 2: CI Pipeline จริง →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 13 บทที่ 1</footer>
+</div>
+</body>
+</html>

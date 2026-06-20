@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: Login with Google + Token Strategy</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 18</a> · Mission ใหญ่</div>
+    <h1>🔑 Login with Google + Token Strategy</h1>
+    <p>เพิ่ม social login ที่ปลอดภัย + จัดการ token แบบ production — ยกระดับ auth ของ library-system</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">ทำไม Mission นี้ยกระดับ portfolio สาย security</h3>
+    <p>หลังจบ library-system จะมี "Login with Google" (OAuth/OIDC) + token strategy ระดับ production (access+refresh+rotation,
+    storage ปลอดภัย, ป้องกัน state/CSRF) · OAuth ที่ implement ปลอดภัย (ไม่ใช่แค่ copy ให้ทำงาน) คือสิ่งที่ AppSec interview เจาะ —
+    และคุณตอบได้เพราะเข้าใจช่องโหว่จากฝั่งโจมตี</p>
+  </div>
+
+  <h2>🪜 แบ่งเป็น 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 18.1 — OAuth App + Login Flow <span class="badge orange">90 นาที</span></h3>
+    <ol>
+      <li>ลงทะเบียน OAuth app (Google หรือ GitHub) — ได้ client id/secret (ใน .env)</li>
+      <li>ใช้ library (passport/arctic/auth.js) ทำ Authorization Code flow + PKCE</li>
+      <li>callback: verify id_token (signature/iss/aud) → สร้าง/หา user ในระบบ</li>
+    </ol>
+    <div class="warn"><strong>security:</strong> ใช้ state param (verify ตอน callback) · redirect_uri allowlist · client secret ใน env</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 18.2 — Access + Refresh Token <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>ออก access token (สั้น 15 นาที) + refresh token (ยาว)</li>
+      <li>access → response (frontend เก็บใน memory) · refresh → HttpOnly cookie (SameSite)</li>
+      <li><code>POST /auth/refresh</code> — ขอ access ใหม่จาก refresh</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> access หมดอายุ → frontend ขอใหม่อัตโนมัติ (ไม่ต้อง login) · refresh ใน cookie อ่านจาก JS ไม่ได้</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 18.3 — Refresh Rotation + Revoke <span class="badge orange">60 นาที</span></h3>
+    <ol>
+      <li>rotation: ใช้ refresh แล้วออกตัวใหม่ (เก็บ hashed ใน DB + family)</li>
+      <li>ตรวจใช้ token เก่าซ้ำ → revoke ทั้ง family (จับการขโมย)</li>
+      <li>logout → revoke refresh + ลบ cookie</li>
+    </ol>
+    <div class="warn"><strong>เทสต์ security:</strong> ลองใช้ refresh เก่า (ที่ rotate แล้ว) → ถูก revoke ทั้งหมด (จับการขโมย)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 18.4 — Security audit + push <span class="badge orange">45 นาที</span></h3>
+    <ol>
+      <li>ตรวจ OAuth security: state verify, redirect_uri, id_token verify, no token in URL</li>
+      <li>อัปเดต SECURITY.md: auth strategy + token storage + OAuth hardening</li>
+      <li>push — README + AI Usage</li>
+    </ol>
+    <div class="tip"><strong>✅ เทสต์:</strong> SECURITY.md อธิบาย token strategy ชัด · ลอง attack (CSRF login, token เก่า) ถูกบล็อก</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>OAuth implementation</td><td>30%</td><td>flow ถูก (code+PKCE) · verify id_token · ใช้ lib มาตรฐาน</td></tr>
+      <tr><td>Token strategy</td><td>30%</td><td>access+refresh · storage ถูก (memory/HttpOnly) · rotation + revoke</td></tr>
+      <tr><td>Security</td><td>25%</td><td>state/CSRF · redirect_uri allowlist · client secret env · no token in URL</td></tr>
+      <tr><td>Doc + Git</td><td>15%</td><td>SECURITY.md (auth/token) · README · AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>Login with Google/GitHub (OAuth/OIDC + verify id_token)</li>
+    <li>access (memory) + refresh (HttpOnly cookie) + rotation + revoke</li>
+    <li>ป้องกัน state/CSRF, redirect_uri, token in URL</li>
+    <li>SECURITY.md อัปเดต (auth/token strategy)</li>
+    <li>push + ส่งลิงก์ + AI Review Drill #17 ใน chat</li>
+    <li>บอกผม 1 อย่างที่ติดนานสุด → ปรับ Week 19 (Security ใน CI)</li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-token-storage.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 18</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 18 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

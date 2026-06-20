@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 17 — OWASP Top 10 ฝั่งป้องกัน + Hardening</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 3 (Security-First)</div>
+    <h1>Week 17 — OWASP Top 10 ฝั่งป้องกัน + Hardening</h1>
+    <p>เฟสที่คุณรอ — เอาความรู้ pentester มาสร้างกำแพง แทนปีนข้าม</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้ (เริ่มเฟส 3 — จุดแข็งคุณ)</h3>
+    <p>คุณเคยเจาะระบบตาม OWASP Top 10 มาแล้วในกองทัพ — Week 17 พลิกมุม: <strong>ทำให้ library-system ทนต่อ OWASP Top 10</strong> ·
+    คุณได้เปรียบ dev ทั่วไปมหาศาล เพราะ "รู้ว่าผู้โจมตีคิดยังไง" → ป้องกันได้ตรงจุด · จบสัปดาห์นี้ระบบจะ hardened ครบทุกชั้น
+    และคุณจะเล่า interview สาย security ได้ว่า "เข้าใจทั้งฝั่งโจมตีและป้องกัน"</p>
+    <ul class="check">
+      <li>OWASP Top 10 (2021) ฝั่งป้องกัน — ทบของที่เรียนแล้ว + เติมที่ขาด</li>
+      <li>Security headers ด้วย helmet (CSP, HSTS, X-Frame-Options ฯลฯ)</li>
+      <li>Rate limiting — กัน brute force, DoS, abuse</li>
+      <li>Input sanitization + output encoding (กัน XSS, injection)</li>
+      <li>CORS ที่ถูกต้อง + security misconfiguration</li>
+    </ul>
+    <div class="warn"><strong>ทำไมเฟสนี้คือ moat ของคุณ:</strong> dev ที่ "เขียน secure code เป็น + เคย pentest จริง" หายากมากในไทย ·
+    นี่คือสิ่งที่ทำให้คุณสมัคร Product Security/AppSec ได้ (สาย B เงินเดือนสูง) และโดดเด่นแม้ในตำแหน่ง dev ทั่วไป</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-owasp-defense.html">OWASP Top 10 — มุมมองผู้สร้างกำแพง</a></strong>
+    <p style="margin:6px 0 0">เดิน OWASP Top 10 ทีละข้อ (ป้องกัน) · เชื่อมกับสิ่งที่เรียนแล้ว (access control, injection, crypto, auth) + ที่ขาด (SSRF, misconfig)</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-hardening.html">Hardening — Helmet, Rate Limit, CSP, CORS</a></strong>
+    <p style="margin:6px 0 0">security headers (helmet) · CSP · rate limiting (brute force/DoS) · CORS ถูกต้อง · input sanitization</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-harden-owasp.html">Harden library-system + Defense Report</a></strong>
+    <p style="margin:6px 0 0">helmet + rate limit + CSP + CORS · ปิดช่องตาม OWASP · เขียน defense report (OWASP checklist) · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (OWASP Top 10 ฝั่งป้องกัน)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>map OWASP กับ library-system (เจออะไรที่ยังไม่ปิด)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (helmet + rate limit + CSP + CORS)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 17.1-17.2 (hardening)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (rate limit middleware จากความจำ) + 🤖 AI Drill #16</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 17.3-17.4 (defense report + ทดสอบ) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 17</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Security เป็น middleware กลาง ไม่กระจาย</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ เช็ค security ทีละ route</h4>
+<pre><code>app.get("/a", (req,res)=&gt;{ /* เช็คเอง */ });
+app.get("/b", (req,res)=&gt;{ /* เช็คเอง ลืมบ้าง */ });</code></pre></div>
+      <div class="good"><h4>✅ middleware ครอบทั้งแอป</h4>
+<pre><code>app.use(helmet());           // headers ทุก response
+app.use(rateLimit({...}));    // จำกัดทุก request
+app.use(cors({...}));         // CORS policy เดียว
+// ครอบทั้งระบบ ลืมไม่ได้</code></pre></div>
+    </div>
+
+    <h3>2. Secure by default — default คือ "ปิด" แล้วเปิดเท่าที่จำเป็น</h3>
+    <p class="muted">CORS allow เฉพาะ origin ที่รู้จัก (ไม่ใช่ *) · rate limit ทุก endpoint · CSP จำกัด source · default ปลอดภัยก่อน ค่อยผ่อน</p>
+    <div class="warn"><strong>กฎทอง:</strong> security เป็น middleware กลาง · secure by default (ปิดก่อน เปิดเท่าจำเป็น) · ป้องกันหลายชั้น (defense in depth) ·
+    validate input + encode output · ไม่เชื่อ input ทุกแหล่ง</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #16 (ศุกร์ 30 นาที):</strong>
+  คราวนี้กลับด้าน — ขอให้ AI เขียน Express app "แบบไม่ใส่ security" แล้ว<strong>คุณทำ pentest report</strong>:
+  หาช่องโหว่ตาม OWASP ให้ครบ (ไม่มี helmet? CORS *? ไม่มี rate limit? SQL ต่อ string? error รั่ว? ไม่ validate?)
+  แล้วเขียนวิธีแก้แต่ละข้อ · นี่คือ <strong>ซ้อมงาน AppSec จริง</strong> — จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 17 (เฟส 3)</footer>
+</div>
+</body>
+</html>

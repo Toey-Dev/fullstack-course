@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: OAuth 2.0 + OIDC — flow และทำไม</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 18</a> · บทที่ 1</div>
+    <h1>OAuth 2.0 + OIDC — flow และทำไม</h1>
+    <p>เข้าใจ "Login with Google" ถึงแก่น — ทั้งฝั่งใช้งานและฝั่งช่องโหว่</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🎟 ให้สิทธิ์โดยไม่ให้รหัส = OAuth</span>
+      <span class="kw">🪪 OAuth + บอกว่าเป็นใคร = OIDC (id_token)</span>
+      <span class="kw">🎫 code → แลก token = Authorization Code flow</span>
+      <span class="kw">🔐 กันขโมย code = PKCE</span>
+      <span class="kw">🛡 state = กัน CSRF</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "OAuth = ให้สิทธิ์ โดยไม่ต้องให้รหัสผ่าน"</h3>
+    <p>"Login with Google" — คุณไม่ได้ให้รหัส Google กับเว็บนั้น · OAuth ให้เว็บได้ "token" ที่ Google ออกให้ (แทนรหัส) ·
+    เว็บใช้ token เข้าถึงข้อมูลที่คุณอนุญาต โดยไม่เคยเห็นรหัสคุณ · นี่คือ "delegated authorization" — มอบสิทธิ์บางส่วนอย่างปลอดภัย</p>
+    <h3>หลักการ 2: "OAuth = authorization, OIDC = authentication"</h3>
+    <p>OAuth เดิมตอบ "เว็บนี้ทำอะไรแทนคุณได้บ้าง" (สิทธิ์) — ไม่ได้ตอบ "คุณเป็นใคร" · OIDC (OpenID Connect) สร้างบน OAuth เพิ่ม
+    <code>id_token</code> ที่บอก identity (ชื่อ, email, sub) · "login ด้วย Google" จริง ๆ คือ OIDC (ต้องรู้ว่าเป็นใคร) ·
+    คนสับสน 2 อันนี้บ่อย — แยกได้ = เข้าใจลึก</p>
+    <h3>หลักการ 3: "อย่าเขียน OAuth เอง — แต่ต้องเข้าใจว่ามันทำอะไร"</h3>
+    <p>OAuth มีรายละเอียด security เยอะ (PKCE, state, token verify) — เขียนเองพลาดง่าย ใช้ library ที่ตรวจแล้ว ·
+    แต่ต้องเข้าใจ flow เพื่อ debug + รู้ว่าช่องโหว่อยู่ไหน · pentester ที่เข้าใจ OAuth flow หาช่องโหว่ (open redirect, CSRF) ได้</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Authorization Code Flow (+ PKCE)</h2>
+  <div class="card">
+    <figure class="figure">
+      <svg viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg" font-family="Sarabun,sans-serif">
+        <rect x="20" y="20" width="120" height="40" rx="6" fill="#dbeafe"/><text x="80" y="44" font-size="11" fill="#1e3a8a" text-anchor="middle">👤 User</text>
+        <rect x="290" y="20" width="120" height="40" rx="6" fill="#dcfce7"/><text x="350" y="44" font-size="11" fill="#065f46" text-anchor="middle">🌐 เว็บเรา (client)</text>
+        <rect x="560" y="20" width="120" height="40" rx="6" fill="#fef3c7"/><text x="620" y="40" font-size="10" fill="#92400e" text-anchor="middle">🔑 Google</text><text x="620" y="54" font-size="8" fill="#78350f" text-anchor="middle">(auth server)</text>
+        <text x="30" y="90" font-size="10" fill="#1f2937">① คลิก "Login with Google"</text>
+        <path d="M 140 95 L 285 95" stroke="#6b7280" stroke-width="1.5" marker-end="url(#o1)"/>
+        <text x="200" y="115" font-size="10" fill="#1f2937">② redirect ไป Google (+ state, PKCE)</text>
+        <path d="M 410 120 L 555 120" stroke="#6b7280" stroke-width="1.5" marker-end="url(#o1)"/>
+        <text x="420" y="145" font-size="10" fill="#1f2937">③ User อนุมัติที่ Google</text>
+        <path d="M 555 150 L 145 150" stroke="#6b7280" stroke-width="1.5" marker-end="url(#o1)"/>
+        <text x="200" y="170" font-size="10" fill="#dc2626">④ redirect กลับ + code (ชั่วคราว)</text>
+        <path d="M 410 185 L 555 185" stroke="#059669" stroke-width="2" marker-end="url(#og)"/>
+        <text x="420" y="205" font-size="10" fill="#047857">⑤ เว็บแลก code → token (หลังบ้าน + verify)</text>
+        <path d="M 555 205 L 415 205" stroke="#059669" stroke-width="2" marker-end="url(#og)"/>
+        <text x="430" y="223" font-size="9" fill="#047857">⑥ ได้ access + id_token</text>
+        <defs>
+          <marker id="o1" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#6b7280"/></marker>
+          <marker id="og" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#059669"/></marker>
+        </defs>
+      </svg>
+      <figcaption>ภาพที่ 1: Authorization Code Flow — code (ชั่วคราว, ผ่าน browser) แลกเป็น token (หลังบ้าน, ปลอดภัย)</figcaption>
+    </figure>
+    <p><strong>ทำไมต้อง "code" ก่อน "token" (ไม่ส่ง token ตรง):</strong> code ผ่าน browser (เห็นได้) แต่ใช้ครั้งเดียว+อายุสั้น ·
+    การแลก code→token ทำหลังบ้าน (server-to-server) ที่ token ไม่ผ่าน browser → token ไม่รั่ว · <strong>PKCE</strong> เพิ่มการพิสูจน์ว่า
+    "คนที่แลก code = คนที่เริ่ม flow" (กันขโมย code ไปแลก) — จำเป็นสำหรับ SPA/mobile</p>
+  </div>
+
+  <h2>ส่วนที่ 2: OIDC — เพิ่ม Identity</h2>
+  <div class="card">
+<pre><code>// OAuth คืน: access_token (ใช้เรียก API ของ Google แทนผู้ใช้)
+// OIDC เพิ่ม: id_token (JWT ที่บอกว่าผู้ใช้เป็นใคร)
+// id_token decoded:
+{
+  "sub": "google-user-id-123",   // unique id ของผู้ใช้
+  "email": "vee@gmail.com",
+  "name": "Vee",
+  "iss": "https://accounts.google.com",   // ใครออก token
+  "aud": "our-client-id",                  // ออกให้ใคร (เรา)
+  "exp": ...
+}</code></pre>
+    <table>
+      <tr><th></th><th>OAuth 2.0</th><th>OIDC</th></tr>
+      <tr><td>ตอบคำถาม</td><td>"ทำอะไรแทนได้" (authz)</td><td>"เป็นใคร" (authn) + authz</td></tr>
+      <tr><td>คืน</td><td>access_token</td><td>access_token + <strong>id_token</strong></td></tr>
+      <tr><td>ใช้ทำ</td><td>เข้าถึง API (เช่น อ่าน calendar)</td><td>login (รู้ว่าใคร)</td></tr>
+    </table>
+    <div class="danger"><strong>🔐 verify id_token เสมอ:</strong> ก่อนเชื่อ id_token ต้อง verify signature (จาก Google), เช็ค <code>iss</code>
+    (ออกจาก Google จริง), <code>aud</code> (ออกให้เราจริง ไม่ใช่เว็บอื่น), <code>exp</code> (ไม่หมดอายุ) · ไม่ verify = ผู้โจมตีปลอม id_token สวมรอยได้</div>
+  </div>
+
+  <h2>ส่วนที่ 3: 🔐 ช่องโหว่ OAuth ที่พบบ่อย (มุม pentester)</h2>
+  <div class="card">
+    <table>
+      <tr><th>ช่องโหว่</th><th>คือ</th><th>ป้องกัน</th></tr>
+      <tr><td><strong>CSRF (no state)</strong></td><td>ผู้โจมตีหลอกให้เหยื่อ login ด้วย account ผู้โจมตี</td><td>ใช้ <code>state</code> param (สุ่ม) + verify ตอน callback</td></tr>
+      <tr><td><strong>Open Redirect</strong></td><td>redirect_uri ไม่ validate → ส่ง code ไปเว็บผู้โจมตี</td><td>allowlist redirect_uri (exact match)</td></tr>
+      <tr><td><strong>Token in URL</strong></td><td>token หลุดใน browser history/log/referer</td><td>ใช้ Authorization Code (ไม่ใช่ Implicit), token ไม่ผ่าน URL</td></tr>
+      <tr><td><strong>ไม่ verify id_token</strong></td><td>เชื่อ token ปลอม</td><td>verify signature + iss/aud/exp</td></tr>
+    </table>
+    <div class="danger"><strong>จุดแข็งของคุณ:</strong> ช่องโหว่เหล่านี้คือสิ่งที่ pentester หาใน OAuth implementation จริง ·
+    เช่น state ไม่ verify = CSRF login, redirect_uri หลวม = ขโมย code · คุณเข้าใจเพราะคิดแบบผู้โจมตี → implement ได้ปลอดภัยกว่าคนทั่วไป
+    นี่คือหัวข้อที่ทำให้ interview AppSec ประทับใจ</div>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation service ที่ดึง GA4/Meta — จริง ๆ ใช้ OAuth! (ลูกค้าอนุญาตให้เราเข้าถึงข้อมูล GA4 ผ่าน OAuth) ·
+    เข้าใจ flow ทำให้ debug การเชื่อม (token หมดอายุ → refresh), จัดการ scope (ขอสิทธิ์เท่าที่จำเป็น), เก็บ refresh token ปลอดภัย ·
+    Week 18 คือทฤษฎีเบื้องหลังการต่อ API ที่ต้อง authorize</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> OAuth/OIDC เป็นมาตรฐาน auth ของทุกระบบ (login social, API access, SSO องค์กร) ·
+    ช่องโหว่ OAuth เป็นหัวข้อ pentest/bug bounty ยอดนิยม (จ่ายสูง) · dev ที่เข้าใจ OAuth ลึก + เห็นช่องโหว่ = AppSec ที่หายาก</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: OAuth ต่างจาก OIDC ยังไง?</summary>
+    <p>OAuth = authorization (ทำอะไรแทนได้ — access_token) · OIDC = OAuth + authentication (เป็นใคร — เพิ่ม id_token) ·
+    "Login with Google" จริง ๆ คือ OIDC (ต้องรู้ว่าใคร) · OAuth เดิมแค่ให้สิทธิ์ ไม่บอก identity</p></details>
+  <details><summary>ข้อ 2: ทำไม Authorization Code flow ใช้ "code" ก่อน "token" ไม่ส่ง token ตรง?</summary>
+    <p>code ผ่าน browser (เห็นได้) แต่ใช้ครั้งเดียว+อายุสั้น · แลก code→token ทำหลังบ้าน (server-to-server) ที่ token ไม่ผ่าน browser → token ไม่รั่ว ·
+    PKCE เพิ่มพิสูจน์ว่าคนแลก code = คนเริ่ม flow (กันขโมย code)</p></details>
+  <details><summary>ข้อ 3 (security): state param กันอะไร ไม่มีเกิดอะไร?</summary>
+    <p>กัน CSRF — state สุ่มตอนเริ่ม flow + verify ตอน callback · ไม่มี = ผู้โจมตีหลอกให้เหยื่อ login ด้วย account ผู้โจมตี (login CSRF)
+    → เหยื่อใช้งานในบัญชีผู้โจมตีโดยไม่รู้ตัว · state ผูก request กับ session ของผู้ใช้จริง</p></details>
+  <details><summary>ข้อ 4 (security): ทำไมต้อง verify id_token (iss/aud/signature)?</summary>
+    <p>ไม่ verify = ผู้โจมตีปลอม id_token สวมรอยเป็นใครก็ได้ · verify: signature (Google ออกจริง), iss (จาก Google), aud (ออกให้เรา ไม่ใช่เว็บอื่น),
+    exp (ไม่หมดอายุ) · เหมือน JWT verify (W5) แต่ token มาจาก provider ภายนอก ยิ่งต้องเช็คครบ</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>เข้าใจ Authorization Code flow + PKCE (code→token หลังบ้าน)</li>
+    <li>แยก OAuth (authz) vs OIDC (authn + id_token)</li>
+    <li>verify id_token (signature/iss/aud/exp)</li>
+    <li>รู้ช่องโหว่ OAuth (state/CSRF, open redirect, token in URL)</li>
+    <li>Quiz + โน้ต <code>notes/oauth-oidc.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 18</a>
+    <a class="btn" href="02-token-storage.html">บทที่ 2: Token Storage →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 18 บทที่ 1</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: ออกแบบ Integration Service + API Client</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 16</a> · บทที่ 1</div>
+    <h1>ออกแบบ Integration Service + API Client</h1>
+    <p>ดึงข้อมูลจากโลกภายนอกอย่างเป็นระบบ — typed, resilient, ปลอดภัย</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">🔌 ตัวห่อ API = client (interface เดียว)</span>
+      <span class="kw">🔁 ลองใหม่+รอนานขึ้น = retry + backoff</span>
+      <span class="kw">⏱ ไม่รอตลอดกาล = timeout</span>
+      <span class="kw">🚦 อย่ายิงเกินโควต้า = rate limit</span>
+      <span class="kw">💾 จำคำตอบ = cache external</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "ห่อ API ภายนอกด้วย client — อย่าให้ทั่วทั้งระบบรู้จัก vendor"</h3>
+    <p>ถ้าเรียก fetch ไป Meta API ตรง ๆ ทั่วโค้ด — วันที่ Meta เปลี่ยน API ต้องแก้ทุกที่ · ห่อด้วย "client" (interface เดียว
+    <code>fetch(): Promise&lt;Metrics&gt;</code>) → ข้างในเปลี่ยนได้ ข้างนอกไม่กระทบ · เพิ่มแพลตฟอร์มใหม่ = client ใหม่ที่ implement interface เดิม ·
+    นี่คือ adapter pattern — แยก "ระบบเรา" จาก "vendor ภายนอก"</p>
+    <h3>หลักการ 2: "External call จะพังเสมอ — ออกแบบเผื่อ"</h3>
+    <p>API ภายนอกควบคุมไม่ได้: ล่ม, ช้า, rate limit, เปลี่ยน format · ต้องมี timeout (ไม่ค้างตลอดกาล), retry + backoff (ลองใหม่ แต่รอนานขึ้นแต่ละครั้ง
+    ไม่กระหน่ำ), และยอมรับว่าบางครั้งล้มเหลว · "never trust the network" (Week 1) ที่ scale ขึ้น</p>
+    <h3>หลักการ 3: "เคารพ rate limit + cache — เป็น API citizen ที่ดี"</h3>
+    <p>API ภายนอกมี rate limit (เรียกได้กี่ครั้ง/นาที) · ยิงเกิน = โดน block · cache คำตอบที่ไม่ค่อยเปลี่ยน (Redis Week 11)
+    → ลดจำนวน call, ไม่ชน limit, เร็วขึ้น · dashboard ที่ลูกค้าเปิดบ่อยไม่ควรยิง Meta API ทุกครั้ง</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Typed API Client (Adapter Pattern)</h2>
+  <div class="card">
+<pre><code>// interface เดียวสำหรับทุกแพลตฟอร์ม (TS จาก Week 6-7)
+interface MetricsClient {
+  platform: string;
+  fetchMetrics(clientId: string, period: DateRange): Promise&lt;Metrics&gt;;
+}
+
+// แต่ละแพลตฟอร์ม implement interface เดียวกัน
+class MetaClient implements MetricsClient {
+  platform = "meta";
+  async fetchMetrics(clientId: string, period: DateRange): Promise&lt;Metrics&gt; {
+    const res = await this.http.get(`/insights`, { params: {...} });
+    return this.normalize(res.data);     // แปลงเป็น Metrics รูปเดียวกัน
+  }
+  private normalize(raw: unknown): Metrics { ... }   // vendor format → ของเรา
+}
+
+// ใช้ — ระบบรู้จักแค่ interface ไม่รู้จัก vendor
+const clients: MetricsClient[] = [new MetaClient(), new GA4Client(), ...];</code></pre>
+    <div class="tip"><strong>พลังของ pattern นี้:</strong> เพิ่ม TikTok? เขียน <code>TikTokClient implements MetricsClient</code> ตัวเดียว —
+    โค้ดสรุป report ไม่ต้องแก้ (มันวน clients ทั้งหมดด้วย interface เดียว) · และ <code>normalize</code> แปลง format vendor ที่ต่างกันเป็นรูปเดียว
+    → โค้ดสรุปจัดการ Metrics รูปเดียว ไม่ต้องรู้ว่ามาจากไหน</div>
+  </div>
+
+  <h2>ส่วนที่ 2: Retry + Backoff + Timeout</h2>
+  <div class="card">
+<pre><code>// retry with exponential backoff — ลองใหม่ รอนานขึ้นแต่ละครั้ง
+async function withRetry&lt;T&gt;(fn: () =&gt; Promise&lt;T&gt;, max = 3): Promise&lt;T&gt; {
+  for (let attempt = 1; attempt &lt;= max; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === max) throw err;              // ครบแล้วยอมแพ้
+      const delay = 2 ** attempt * 1000;           // 2s, 4s, 8s (backoff)
+      await new Promise(r =&gt; setTimeout(r, delay));
+    }
+  }
+  throw new Error("unreachable");
+}
+
+// timeout — ไม่รอตลอดกาล (AbortController)
+const controller = new AbortController();
+const timer = setTimeout(() =&gt; controller.abort(), 10_000);  // 10 วิ
+const res = await fetch(url, { signal: controller.signal });
+clearTimeout(timer);</code></pre>
+    <div class="warn"><strong>ทำไม backoff ไม่ใช่ retry รัว ๆ:</strong> ถ้า API ล่มชั่วคราว retry ทันทีรัว ๆ = ยิ่งกระหน่ำ (ทำให้แย่ลง + อาจโดน rate limit) ·
+    backoff (รอนานขึ้น) ให้ API เวลาฟื้น · timeout กัน request ค้าง (ถ้าไม่มี API ที่ไม่ตอบจะทำให้ทั้ง job ค้าง)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Rate Limiting + Cache</h2>
+  <div class="card">
+<pre><code>// cache external response (Redis จาก Week 11) — ลด call
+async function getMetrics(clientId: string): Promise&lt;Metrics&gt; {
+  const key = `metrics:meta:${clientId}:${today}`;
+  const cached = await redis.get(key);
+  if (cached) return JSON.parse(cached);            // ไม่ยิง API ซ้ำวันเดียวกัน
+
+  const data = await withRetry(() =&gt; metaClient.fetchMetrics(clientId, period));
+  await redis.set(key, JSON.stringify(data), "EX", 3600);  // cache 1 ชม.
+  return data;
+}</code></pre>
+    <div class="tip"><strong>rate limit:</strong> ถ้าต้องดึงหลายลูกค้า อย่ายิงพร้อมกันหมด — จำกัด concurrency (เช่น p-limit ทีละ 5 ตัว)
+    หรือใส่ delay ระหว่าง call · เคารพ <code>Retry-After</code> header ถ้า API ส่งมา (บอกว่าให้รอกี่วิ) · เป็น API citizen ที่ดี</div>
+  </div>
+
+  <h2>ส่วนที่ 4: 🔐 จัดการ API Key</h2>
+  <div class="card">
+<pre><code>// API key อยู่ใน env เท่านั้น (Week 4) — ไม่ commit, ไม่ log
+const metaToken = process.env.META_ACCESS_TOKEN;
+// ❌ logger.info({ token: metaToken })  — รั่ว! (Week 15)
+// ❌ commit .env  — bot สแกนเจอ (Week 4)
+// ✅ .env + .gitignore + log แค่ "fetching meta for client X" (ไม่มี token)</code></pre>
+    <div class="danger"><strong>มุม pentester ของคุณ:</strong> API key ของ Meta/GA4 มีมูลค่าสูง (เข้าถึงข้อมูลลูกค้า, อาจมีค่าใช้จ่าย) ·
+    คุณเคยเจอ key หลุดใน repo/log ตอน pentest มาแล้ว · ระบบนี้ต้อง: key ใน env/secret manager, ไม่ log, ไม่ส่งเข้า Sentry (beforeSend),
+    rotate ได้ถ้าหลุด · นี่คือจุดที่ทำให้ service ของคุณ "ปลอดภัยพอใช้กับลูกค้าจริง"</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี (โดยตรง):</strong> นี่คืองานคุณเป๊ะ — MetaClient/GA4Client/LineClient/IGClient ที่ implement interface เดียว,
+    retry เมื่อ API ล่มชั่วคราว, cache ไม่ให้ยิงซ้ำ, key ปลอดภัย · เปลี่ยนจาก "นั่งดึงมือทีละแพลตฟอร์ม" เป็น "service ดึงให้อัตโนมัติ"</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> integration service (ต่อ API ภายนอกหลายเจ้า) เป็นงานพบบ่อยมาก (payment, shipping, social, analytics) ·
+    adapter pattern + retry/backoff + rate limit + cache เป็น pattern มาตรฐาน · "ต่อ third-party API อย่าง resilient เป็น" คือทักษะ backend ที่มีค่า</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไมห่อ external API ด้วย client (interface) ดีกว่า fetch ตรง ๆ ทั่วโค้ด?</summary>
+    <p>vendor เปลี่ยน API → แก้แค่ใน client ที่เดียว (ข้างนอกไม่กระทบ) · เพิ่มแพลตฟอร์มใหม่ = client ใหม่ที่ implement interface เดิม ·
+    normalize แปลง format vendor ต่างกันเป็นรูปเดียว → โค้ดสรุปจัดการรูปเดียว · adapter pattern แยกระบบเราจาก vendor</p></details>
+  <details><summary>ข้อ 2: ทำไม retry ต้องมี backoff ไม่ใช่ลองใหม่รัว ๆ?</summary>
+    <p>API ล่มแล้ว retry รัว ๆ = กระหน่ำซ้ำ (ทำให้แย่ลง + โดน rate limit) · backoff (รอนานขึ้นแต่ละครั้ง: 2s,4s,8s) ให้ API เวลาฟื้น ·
+    + timeout กัน request ค้าง (API ไม่ตอบ = job ค้างทั้งตัวถ้าไม่มี timeout)</p></details>
+  <details><summary>ข้อ 3: ทำไมต้อง cache external API response?</summary>
+    <p>ลดจำนวน call → ไม่ชน rate limit + เร็วขึ้น + ลดภาระ API ภายนอก · ข้อมูลที่ไม่ค่อยเปลี่ยน (สถิติเมื่อวาน) ไม่ต้องยิงซ้ำทุกครั้ง ·
+    dashboard ที่เปิดบ่อยไม่ควรยิง Meta ทุกครั้ง · เป็น API citizen ที่ดี</p></details>
+  <details><summary>ข้อ 4 (security): API key ของ Meta/GA4 ต้องจัดการยังไง ทำไมสำคัญ?</summary>
+    <p>key มีมูลค่าสูง (เข้าถึงข้อมูลลูกค้า, มีค่าใช้จ่าย) — เก็บใน env/secret manager (ไม่ commit), ไม่ log, ไม่ส่งเข้า Sentry (beforeSend),
+    rotate ได้ถ้าหลุด · key หลุด = ข้อมูลลูกค้ารั่ว/ค่าใช้จ่ายบาน · จุดที่ pentester ต้องระวังสุด</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>typed API client (interface เดียว + normalize) — adapter pattern</li>
+    <li>retry + backoff + timeout (resilient)</li>
+    <li>cache external (Redis) + เคารพ rate limit</li>
+    <li>API key ปลอดภัย (env, ไม่ log/commit)</li>
+    <li>Quiz + โน้ต <code>notes/integration-client.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 16</a>
+    <a class="btn" href="02-scheduled-resilient.html">บทที่ 2: Scheduled + Resilience →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 16 บทที่ 1</footer>
+</div>
+</body>
+</html>

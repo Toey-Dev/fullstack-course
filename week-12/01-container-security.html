@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1: Container Security + Hardening</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 12</a> · บทที่ 1</div>
+    <h1>Container Security + Hardening</h1>
+    <p>ทำให้ container ปลอดภัย — หัวข้อที่อดีต pentester อย่างคุณได้เปรียบที่สุด</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">👑 root ใน container = อันตราย</span>
+      <span class="kw">👤 USER node = สิทธิ์จำกัด</span>
+      <span class="kw">🪶 image เล็ก = ผิวโจมตีน้อย</span>
+      <span class="kw">🔍 scan = หา CVE ก่อน deploy</span>
+      <span class="kw">🔑 secret runtime ≠ build-time</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Least privilege — container ก็ต้องสิทธิ์น้อยที่สุด"</h3>
+    <p>default container รันด้วย root · ถ้าแอปโดนเจาะ (RCE) ผู้โจมตีได้ root ใน container — และถ้า container escape ได้ก็คุม host
+    · รัน non-root (<code>USER node</code>) จำกัดความเสียหาย: โดนเจาะก็ทำได้แค่สิทธิ์ user · หลัก least privilege เดียวกับ auth (Week 5/9) แต่ระดับ infra</p>
+    <h3>หลักการ 2: "ผิวการโจมตีน้อย = ปลอดภัยกว่า (minimal image)"</h3>
+    <p>image ที่มี shell, package manager, build tools เยอะ = เครื่องมือให้ผู้โจมตีใช้ต่อ · minimal image (slim/distroless)
+    มีแค่สิ่งที่ app ต้องใช้ → ผู้โจมตีเจาะเข้าไปก็ไม่มีเครื่องมือ · นี่คือ "attack surface reduction" ที่คุณคุ้นจาก pentest</p>
+    <h3>หลักการ 3: "Shift left — หาช่องโหว่ก่อน deploy ไม่ใช่หลังโดน"</h3>
+    <p>scan image หา CVE (ช่องโหว่ที่รู้แล้ว) ตอน build ก่อนขึ้น production · ถูกกว่าและปลอดภัยกว่ารอให้โดนเจาะแล้วค่อยแก้ ·
+    นี่คือ DevSecOps: ฝัง security เข้า pipeline (จะทำใน CI Week 13) แทนตรวจทีหลัง</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Non-root User</h2>
+  <div class="card">
+<pre><code># stage run — รัน non-root
+FROM node:20-slim AS run
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=build /app/dist ./dist
+USER node                          # ⭐ node image มี user "node" ให้แล้ว
+CMD ["node", "dist/server.js"]</code></pre>
+    <div class="danger"><strong>🔐 มุม pentester:</strong> คุณเคยเจาะระบบที่ container รัน root แล้ว escape ไปคุม host ได้ — ตอนนี้รู้วิธีปิด ·
+    ถ้าต้อง custom user: <code>RUN addgroup app &amp;&amp; adduser -S -G app app</code> แล้ว <code>USER app</code> ·
+    ระวัง: ไฟล์ที่ COPY มาต้องให้ user ใหม่อ่านได้ (chown ถ้าจำเป็น)</div>
+  </div>
+
+  <h2>ส่วนที่ 2: Minimal Image — เลือก base ให้เล็ก</h2>
+  <div class="card">
+    <table>
+      <tr><th>base image</th><th>ขนาด (โดยประมาณ)</th><th>มีอะไร</th></tr>
+      <tr><td><code>node:20</code></td><td>~1GB</td><td>เต็ม (มี build tools, shell, ฯลฯ)</td></tr>
+      <tr><td><code>node:20-slim</code></td><td>~200MB</td><td>เล็กลง (Debian slim)</td></tr>
+      <tr><td><code>node:20-alpine</code></td><td>~130MB</td><td>เล็กสุด (Alpine Linux) ⚠️ บาง native module มีปัญหา</td></tr>
+      <tr><td>distroless</td><td>~120MB</td><td>ไม่มี shell เลย (ปลอดภัยสุด แต่ debug ยาก)</td></tr>
+    </table>
+    <p class="muted">เลือก: slim เป็น default ปลอดภัย · alpine เล็กสุดแต่ระวัง native deps · distroless สำหรับ production ที่เน้น security สูงสุด (ไม่มี shell ให้ผู้โจมตีใช้)</p>
+  </div>
+
+  <h2>ส่วนที่ 3: Image Scanning — หา CVE</h2>
+  <div class="card">
+<pre><code># docker scout (built-in ใน Docker Desktop ใหม่)
+docker scout cves library-api
+
+# หรือ trivy (นิยมในวงการ security)
+trivy image library-api</code></pre>
+    <p>ผลที่ได้: list ช่องโหว่ (CVE) ใน image — เวอร์ชัน base image / dependency ที่มีช่องโหว่ที่รู้แล้ว · พร้อมระดับความรุนแรง (Critical/High/...):</p>
+    <div class="tip"><strong>วิธีแก้ CVE ที่เจอ:</strong> ① อัปเดต base image เป็นเวอร์ชันใหม่ (<code>node:20.x</code> ล่าสุด)
+    ② อัปเดต dependency (<code>npm audit fix</code>) ③ ถ้าแก้ไม่ได้ตอนนี้ — ประเมินว่า exploitable จริงไหม (context) ·
+    Critical/High ควรแก้ก่อน deploy · นี่คือ workflow ที่ DevSecOps ทำจริงทุกวัน</div>
+    <div class="danger"><strong>🔐 จุดแข็งของคุณ:</strong> dev ทั่วไปเห็น list CVE แล้วงง — คุณในฐานะ pentester อ่านได้ว่าตัวไหน exploitable จริง
+    ตัวไหน false alarm (context) · ความสามารถ "ประเมินความเสี่ยงจริง" คือสิ่งที่ทำให้ AppSec engineer มีค่ากว่า scanner</div>
+  </div>
+
+  <h2>ส่วนที่ 4: Secret Management — build vs runtime</h2>
+  <div class="card">
+<pre><code># ❌ ผิด — secret ใน Dockerfile (ติดใน image layer ถาวร!)
+ENV JWT_SECRET=mysecret123       # ใครได้ image ก็ docker history เห็น
+ARG DB_PASSWORD=secret           # ARG ก็ยังเห็นใน history
+
+# ✅ ถูก — secret ตอน runtime (ไม่อยู่ใน image)
+# ส่งผ่าน compose env / docker run -e / secret manager
+# Dockerfile ไม่รู้ค่า secret เลย</code></pre>
+    <div class="danger"><strong>🔐 มุม pentester:</strong> <code>docker history &lt;image&gt;</code> โชว์ทุก layer รวม ENV/ARG —
+    secret ที่ใส่ตอน build ติดอยู่ใน image ถาวร แม้ลบ ENV ทีหลัง (อยู่ใน layer เก่า) · ใครได้ image (เช่น registry รั่ว) ขุดเจอ ·
+    กฎ: secret ส่งตอน run เท่านั้น (env/docker secret/vault) Dockerfile ไม่ควรรู้ค่า secret ใด ๆ</div>
+  </div>
+
+  <h2>ส่วนที่ 5: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> automation report service deploy เป็น container — non-root + scan + secret runtime
+    ทำให้ปลอดภัยพอขึ้น production ได้ · ถ้า credential ของ GA4/Meta (มูลค่าสูง) อยู่ใน secret runtime ไม่ใช่ image = ปลอดภัยจริง</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> container security เป็นหัวข้อหลักของ DevSecOps — non-root, image scanning, secret management
+    เป็น checklist ที่ทีม security ตรวจทุก image ก่อน production · เครื่องมือ (Trivy, Snyk, docker scout) อยู่ใน CI ของบริษัทใหญ่ ·
+    คุณทำเป็น = พร้อมสาย B (Product Security) จริง</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: ทำไมรัน container ด้วย root อันตราย แก้ยังไง?</summary>
+    <p>ถ้าแอปโดนเจาะ (RCE) ผู้โจมตีได้ root ใน container + ถ้า escape ได้คุม host · แก้: <code>USER node</code> (non-root) —
+    โดนเจาะก็ได้แค่สิทธิ์ user จำกัด · หลัก least privilege ระดับ infra</p></details>
+  <details><summary>ข้อ 2: minimal image (distroless/slim) ปลอดภัยกว่ายังไง?</summary>
+    <p>มีแค่สิ่งที่ app ต้องใช้ ไม่มี shell/build tools/package manager — ผู้โจมตีเจาะเข้าไปก็ไม่มีเครื่องมือใช้ต่อ ·
+    "attack surface reduction" + image เล็ก deploy เร็ว · distroless ไม่มี shell เลย = ปลอดภัยสุด</p></details>
+  <details><summary>ข้อ 3 (security): ใส่ <code>ENV JWT_SECRET=x</code> ใน Dockerfile อันตรายยังไง?</summary>
+    <p>secret ติดอยู่ใน image layer ถาวร — <code>docker history</code> โชว์ได้ แม้ลบ ENV ทีหลัง (อยู่ใน layer เก่า) ·
+    ใครได้ image (registry รั่ว) ขุดเจอ · กฎ: secret ส่งตอน runtime (env/secret manager) เท่านั้น Dockerfile ไม่รู้ค่า</p></details>
+  <details><summary>ข้อ 4: image scan เจอ CVE Critical ควรทำยังไง (workflow)?</summary>
+    <p>① อัปเดต base image เป็นเวอร์ชันล่าสุด ② npm audit fix (dependency) ③ ถ้าแก้ไม่ได้ — ประเมิน exploitable จริงไหมตาม context ·
+    Critical/High แก้ก่อน deploy · "shift left" หาก่อนขึ้น production ถูกกว่าโดนแล้วแก้</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>Dockerfile รัน non-root (USER node)</li>
+    <li>เลือก minimal image (slim/distroless) เหมาะสม</li>
+    <li>scan image (docker scout/trivy) + เข้าใจ CVE</li>
+    <li>secret runtime ไม่ฝัง image</li>
+    <li>Quiz + โน้ต <code>notes/container-security.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 12</a>
+    <a class="btn" href="02-production-compose.html">บทที่ 2: Production Compose →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 12 บทที่ 1</footer>
+</div>
+</body>
+</html>

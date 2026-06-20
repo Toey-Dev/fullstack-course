@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2: Production Compose + Dockerize Frontend</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 12</a> · บทที่ 2</div>
+    <h1>Production Compose + Dockerize Frontend</h1>
+    <p>ทำให้ระบบทนทานพอ production — และแพ็ค frontend ลง container ด้วย</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🔑 คีย์เวิร์ดภาพจำประจำบท</h3>
+    <div class="kw-row">
+      <span class="kw">❤️ ตรวจชีพจร = healthcheck</span>
+      <span class="kw">🔄 ล้มแล้วลุก = restart policy</span>
+      <span class="kw">🚧 จำกัดโควต้า = resource limits</span>
+      <span class="kw">📦 standalone = Next.js image เล็ก</span>
+    </div>
+  </div>
+
+  <h2>🧠 แนวคิด &amp; หลักการของ Dev ประจำบทนี้</h2>
+  <div class="card">
+    <h3>หลักการ 1: "Production ต้อง self-healing — ล้มแล้วต้องลุกเอง"</h3>
+    <p>ตอน dev container ล้มก็ start เอง · production ต้องมี restart policy (ล้ม = start ใหม่อัตโนมัติ) + healthcheck
+    (ระบบรู้ว่า container "ป่วย" แม้ยังไม่ตาย เช่นค้าง) → restart/ดึงออกจาก traffic · ระบบที่ดูแลตัวเองได้ = uptime สูง</p>
+    <h3>หลักการ 2: "Resource limit — กัน 1 service ทำพังทั้งเครื่อง"</h3>
+    <p>ไม่จำกัด resource → service ที่ memory leak กิน RAM หมด → ทุก service บนเครื่องตาย (noisy neighbor) ·
+    ตั้ง limit (CPU/RAM) ให้แต่ละ service → service พังจำกัดความเสียหายแค่ตัวมัน · production มาตรฐาน</p>
+    <h3>หลักการ 3: "แยก config dev กับ prod — ไม่ใช้ไฟล์เดียว"</h3>
+    <p>dev ต้องการ hot reload, expose port debug · prod ต้องการ restart, limit, secret · แยกด้วย
+    <code>compose.yml</code> (base) + <code>compose.prod.yml</code> (override) · run prod ด้วย <code>-f</code> ทั้งสอง ·
+    ไม่เอา config dev (เช่น expose DB port) ขึ้น prod (= ช่องโหว่)</p>
+  </div>
+
+  <h2>ส่วนที่ 1: Healthcheck + Restart + Limits</h2>
+  <div class="card">
+<pre><code>services:
+  app:
+    build: .
+    restart: unless-stopped          # ล้ม = start ใหม่ (ยกเว้นสั่งหยุดเอง)
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s              # รอ app warm up ก่อนเริ่มเช็ค
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"                # ใช้ได้ครึ่ง core
+          memory: 512M               # ใช้ได้ 512MB</code></pre>
+    <p class="muted">healthcheck ใช้ /api/health (ที่เราทำตั้งแต่ Week 2!) — ระบบ orchestrator (compose/k8s) ใช้รู้ว่า container พร้อมรับ traffic ไหม · restart + limit = ทนทาน + ไม่ล่มลามกัน</p>
+  </div>
+
+  <h2>ส่วนที่ 2: แยก dev / prod compose</h2>
+  <div class="card">
+<pre><code># compose.yml (base — ใช้ร่วม)
+services:
+  app:
+    build: .
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+
+# compose.override.yml (dev — auto โหลดตอน dev)
+services:
+  app:
+    volumes: [".:/app"]          # hot reload
+    ports: ["3000:3000"]
+
+# compose.prod.yml (prod — override ด้วย -f)
+services:
+  app:
+    restart: unless-stopped
+    deploy: { resources: { limits: { memory: 512M } } }
+
+# รัน prod:
+docker compose -f compose.yml -f compose.prod.yml up -d</code></pre>
+    <div class="warn"><strong>🔐 จุด security:</strong> ใน prod อย่า expose port ของ db/redis ออกนอก (dev อาจ expose เพื่อ debug ด้วย DBeaver) —
+    prod ให้ app คุยกับ db ผ่าน network ภายในเท่านั้น ไม่เปิด 5432 ออกโลกภายนอก (ไม่งั้นใครก็ลองต่อ DB ได้)</div>
+  </div>
+
+  <h2>ส่วนที่ 3: Dockerize Next.js Frontend</h2>
+  <div class="card">
+<pre><code>// next.config.js — เปิด standalone output (image เล็ก)
+module.exports = { output: "standalone" };</code></pre>
+<pre><code># Dockerfile.frontend (multi-stage)
+FROM node:20-slim AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build                  # Next build → .next/standalone
+
+FROM node:20-slim AS run
+WORKDIR /app
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+USER node
+EXPOSE 3000
+CMD ["node", "server.js"]          # standalone มี server.js ให้</code></pre>
+    <p class="muted"><code>output: "standalone"</code> = Next.js แพ็คเฉพาะไฟล์ที่ต้องรัน (ไม่เอา node_modules ทั้งก้อน) → image เล็กมาก · เพิ่ม frontend เข้า compose เป็น service ที่ 4</p>
+  </div>
+
+  <h2>ส่วนที่ 4: ตัวอย่างประยุกต์</h2>
+  <div class="card">
+    <p><strong>🏢 งานวี:</strong> ถ้า deploy full-stack (frontend + backend) ของลูกค้า — compose prod ที่มี healthcheck/restart
+    ทำให้ระบบ uptime สูง (ล่มกลางคืน start เอง) · resource limit กันไม่ให้ลูกค้ารายหนึ่งกิน resource ของรายอื่น (ถ้า shared host)</p>
+    <p><strong>🌏 อุตสาหกรรม:</strong> healthcheck + restart + resource limit เป็นพื้นฐานก่อนขึ้น orchestrator จริง (Kubernetes) ·
+    แยก dev/prod config + ไม่ expose internal service เป็นหลัก security ที่ทีมตรวจ · standalone output เป็นวิธี dockerize Next.js มาตรฐาน</p>
+  </div>
+
+  <h2>📝 Quiz ท้ายบท</h2>
+  <details><summary>ข้อ 1: restart policy + healthcheck ทำให้ระบบ "self-healing" ยังไง?</summary>
+    <p>restart: ล้ม → start ใหม่อัตโนมัติ · healthcheck: รู้ว่า container "ป่วย" (ค้าง แม้ยังไม่ตาย) → restart/ดึงออกจาก traffic ·
+    รวมกัน = ระบบดูแลตัวเอง uptime สูงโดยไม่ต้องคนเฝ้า · healthcheck ใช้ /api/health ที่ทำไว้ตั้งแต่ Week 2</p></details>
+  <details><summary>ข้อ 2: ไม่ตั้ง resource limit แล้ว 1 service memory leak เกิดอะไร?</summary>
+    <p>service นั้นกิน RAM เรื่อย ๆ จนหมด → ทุก service บนเครื่องเดียวกันตายตาม (noisy neighbor) · ตั้ง limit (memory/cpu)
+    → service พังจำกัดความเสียหายแค่ตัวมัน ไม่ลามทั้งเครื่อง</p></details>
+  <details><summary>ข้อ 3 (security): ทำไม prod ไม่ควร expose port ของ db/redis ออกนอก?</summary>
+    <p>expose = ใครก็ลองต่อ DB/redis จากภายนอกได้ (brute-force, เจาะ) · prod ให้ app คุย db ผ่าน network ภายใน compose เท่านั้น
+    ไม่เปิด 5432/6379 ออกโลก · dev อาจ expose เพื่อ debug แต่ prod ต้องปิด (แยก compose dev/prod)</p></details>
+  <details><summary>ข้อ 4: ทำไมแยก compose dev กับ prod ดีกว่าไฟล์เดียว?</summary>
+    <p>dev ต้องการ hot reload + expose port debug · prod ต้องการ restart + limit + ปิด port internal + secret · ความต้องการต่างกัน ·
+    ไฟล์เดียว = เผลอเอา config dev (expose DB) ขึ้น prod = ช่องโหว่ · แยก base + override ชัดเจน ปลอดภัย</p></details>
+
+  <h2>✅ Checkpoint</h2>
+  <ul class="check">
+    <li>healthcheck (/api/health) + restart policy + resource limits</li>
+    <li>แยก compose dev/prod + ไม่ expose internal service ใน prod</li>
+    <li>dockerize Next.js (standalone output)</li>
+    <li>Quiz + โน้ต <code>notes/production-compose.md</code></li>
+  </ul>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-container-security.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-harden.html">Mission ใหญ่: Harden →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 12 บทที่ 2</footer>
+</div>
+</body>
+</html>

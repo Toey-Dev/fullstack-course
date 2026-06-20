@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 14 — CD: Build Image + Deploy (Registry + SSH)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 2 (Production)</div>
+    <h1>Week 14 — CD: Build Image + Deploy</h1>
+    <p>ปิดวงจร: push code → build image → deploy ขึ้น server อัตโนมัติ — ไม่ต้อง deploy มือ</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>Week 13 ทำ CI (ตรวจโค้ด) — Week 14 ทำ <strong>CD (Continuous Deployment)</strong>: หลัง test ผ่าน → build Docker image →
+    push ขึ้น registry → deploy ขึ้น server อัตโนมัติ · push code เข้า main แล้วของขึ้น production เองภายในไม่กี่นาที ·
+    นี่คือทักษะที่แยก "เขียนโค้ดได้" จาก "ส่งของถึงผู้ใช้ได้เอง" — สิ่งที่ทำให้ resume คุณพูดว่า "deploy ได้ทั้ง pipeline"</p>
+    <ul class="check">
+      <li>CD concept: pipeline เต็ม (source→build→test→deploy) · delivery vs deployment</li>
+      <li>build & push Docker image ขึ้น registry (GHCR) ใน Actions</li>
+      <li>deploy ขึ้น server ผ่าน SSH (pull image + compose up)</li>
+      <li>secrets flow: SSH key, registry token (ปลอดภัย)</li>
+      <li>deployment strategy + rollback (กลับเวอร์ชันเก่าเมื่อพัง)</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้คือ checkpoint เฟส 2:</strong> "push → deploy อัตโนมัติ" คือเป้าหมายของเฟส 2 ทั้งหมด ·
+    การ deploy ที่ปลอดภัย (จัดการ SSH key, secret, least privilege) คือจุดที่ pentester ของคุณได้เปรียบ</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-build-push.html">Build & Push Image ขึ้น Registry</a></strong>
+    <p style="margin:6px 0 0">CD concept · registry (GHCR/Docker Hub) · build-push-action · image tagging · login ปลอดภัย</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-deploy-ssh.html">Deploy ผ่าน SSH + Strategy + Rollback</a></strong>
+    <p style="margin:6px 0 0">deploy via SSH (pull+compose up) · secrets (SSH key) · deployment strategy · rollback · zero-downtime intro</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-cd.html">CI/CD เต็มวงจร — Deploy library-system</a></strong>
+    <p style="margin:6px 0 0">workflow build→push→deploy · GHCR · SSH deploy · rollback plan · push แล้วของขึ้นจริง</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (CD + build/push image)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>build+push image ขึ้น GHCR ใน Actions</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (deploy SSH + rollback)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 14.1-14.2 (build/push + deploy)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (deploy workflow จากความจำ) + 🤖 AI Drill #13</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 14.3-14.4 (rollback + deploy จริง) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 14</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Tag image ด้วย commit SHA ไม่ใช่แค่ latest</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ latest อย่างเดียว (rollback ยาก)</h4>
+<pre><code>tags: myapp:latest
+# deploy พัง — ไม่รู้ version ก่อนหน้าคืออะไร
+# rollback ลำบาก</code></pre></div>
+      <div class="good"><h4>✅ tag ด้วย SHA + latest</h4>
+<pre><code>tags: |
+  myapp:latest
+  myapp:${{ github.sha }}
+# พัง → deploy SHA เก่า = rollback ได้ทันที</code></pre></div>
+    </div>
+
+    <h3>2. Deploy ต้อง rollback ได้เสมอ</h3>
+    <p class="muted">เก็บ image หลาย version (tag SHA) → deploy พัง pull version เก่ากลับ · ไม่มีทาง rollback = deploy แล้วภาวนา (อันตราย)</p>
+    <div class="warn"><strong>กฎทอง:</strong> tag image ด้วย SHA (rollback ได้) · deploy หลัง test เขียวเท่านั้น · SSH key ใน secrets (ไม่ commit) ·
+    deploy user สิทธิ์จำกัด (ไม่ใช่ root) · มี rollback plan ก่อน deploy ทุกครั้ง</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #13 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน deploy workflow (SSH) แล้ว<strong>หาช่องโหว่ security</strong>
+  (SSH key hardcode? deploy ด้วย root? ไม่ verify host key? registry token กว้างเกิน? deploy ทุก branch ไม่ใช่แค่ main?
+  ไม่มี rollback?) จดลง <code>notes/ai-review-log.md</code> — security ของ deployment คือจุดแข็งคุณ</div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 14 (เฟส 2)</footer>
+</div>
+</body>
+</html>

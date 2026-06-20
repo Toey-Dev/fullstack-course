@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 20 — Pentest โปรเจกต์ตัวเอง → รายงาน attack→fix</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 3 (จบ)</div>
+    <h1>Week 20 — Pentest โปรเจกต์ตัวเอง 🎯</h1>
+    <p>ไฮไลต์ของคอร์ส — เอา library-system มาเจาะเอง แล้วเขียนรายงาน attack→fix · จุดแข็งที่สุดของคุณ</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้ (ปิดเฟส 3 — สัปดาห์ที่คุณรอ)</h3>
+    <p>20 สัปดาห์ที่ผ่านมาคุณ "สร้างกำแพง" — Week 20 กลับสู่ตัวตนเดิม: <strong>เป็นผู้โจมตี เจาะ library-system ของตัวเอง</strong> ·
+    ทำ pentest เต็มรูปแบบตาม methodology ที่คุณถนัด (recon → exploit → report) แล้วเขียน <strong>รายงาน attack→fix อย่างน้อย 5 ช่องโหว่</strong> ·
+    นี่คือ portfolio piece ที่ทรงพลังที่สุดในตลาด — แทบไม่มี dev คนไหนมี "pentest report ของระบบที่ตัวเองสร้าง"</p>
+    <ul class="check">
+      <li>Pentest methodology: recon → vulnerability assessment → exploit → report</li>
+      <li>ใช้เครื่องมือที่คุณถนัด (Burp/ZAP) + manual testing</li>
+      <li>หาช่องโหว่จริงในระบบตัวเอง (ตั้งใจเปิดบางช่องเพื่อสาธิต)</li>
+      <li>เขียน pentest report มืออาชีพ (finding, severity, PoC, remediation)</li>
+      <li>แก้ทุกช่องโหว่ + verify (attack → fix → re-test)</li>
+    </ul>
+    <div class="warn"><strong>ทำไมนี่คือ portfolio ที่ดีที่สุดของคุณ:</strong> "สร้างระบบ + เจาะระบบตัวเอง + แก้ + เขียนรายงาน" = แสดงครบทั้ง dev และ security
+    ในชิ้นเดียว · นี่คือเรื่องเล่า interview ที่ AppSec/Product Security/pentest อยากได้ที่สุด และพิสูจน์ว่าคุณ "เข้าใจวงจรเต็ม"</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-pentest-methodology.html">Pentest Methodology + เครื่องมือ</a></strong>
+    <p style="margin:6px 0 0">recon → scan → exploit → report · scope/rules · Burp/ZAP · manual vs automated · severity (CVSS เบื้องต้น)</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-report-writing.html">เขียน Pentest Report ระดับมืออาชีพ</a></strong>
+    <p style="margin:6px 0 0">โครง report · finding (severity/PoC/impact/remediation) · executive summary · attack→fix · verify</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-pentest.html">Pentest library-system + Report (5 ช่องโหว่)</a></strong>
+    <p style="margin:6px 0 0">เจาะระบบตัวเอง · หา ≥5 ช่องโหว่ · เขียน report มืออาชีพ · แก้ + re-test · publish portfolio</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~5 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (methodology + setup Burp/ZAP)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>recon + scan library-system (หา attack surface)</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (report writing) + เริ่ม exploit</td><td>2 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 20.1-20.2 (pentest + หาช่องโหว่)</td><td>2 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild + 🤖 AI Drill #19 (ให้ AI สร้างช่องโหว่ คุณเจาะ)</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 20.3-20.4 (report + แก้ + re-test) + publish · 🎉 จบเฟส 3</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 หลักการประจำ Week 20 — Ethical & Professional</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Pentest เฉพาะระบบที่ได้รับอนุญาต</h3>
+    <div class="danger"><strong>⚖️ กฎเหล็ก:</strong> pentest <strong>ระบบตัวเองเท่านั้น</strong> (library-system ที่คุณสร้าง บน localhost/staging ของคุณ) ·
+    เจาะระบบคนอื่นโดยไม่ได้รับอนุญาต = ผิดกฎหมาย (พ.ร.บ.คอมพิวเตอร์) · นี่คือจรรยาบรรณที่ pentester มืออาชีพยึด — คุณรู้ดีจากกองทัพ</div>
+
+    <h3>2. Report ต้อง actionable — ไม่ใช่แค่ "พบช่องโหว่"</h3>
+    <p class="muted">finding ที่ดีบอก: ช่องโหว่อะไร, รุนแรงแค่ไหน (severity), พิสูจน์ยังไง (PoC), กระทบอะไร (impact), แก้ยังไง (remediation) · report ที่ dev อ่านแล้วแก้ได้ทันที</p>
+    <div class="warn"><strong>กฎทอง:</strong> pentest เฉพาะระบบตัวเอง · report ทุก finding มี severity+PoC+remediation · attack→fix→re-test (verify ว่าแก้จริง) ·
+    เขียนให้ทั้ง dev (technical) และผู้บริหาร (executive summary) อ่านได้</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Drill #19 (ศุกร์ — กลับด้านสนุก):</strong>
+  ขอให้ AI เขียน Express app "ที่จงใจมีช่องโหว่ 5 จุด" แล้ว<strong>คุณทำ pentest หาให้ครบ + เขียน mini report</strong> ·
+  นี่คือซ้อม pentest จริง + ฝึกตา · เทียบกับที่ AI ตั้งใจฝัง — หาเจอกี่จุด? · จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิม:</strong> ทำเองทั้งหมด · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่ง report ให้ review</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 20 (ปิดเฟส 3)</footer>
+</div>
+</body>
+</html>

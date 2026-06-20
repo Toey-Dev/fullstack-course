@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 15 — Staging/Prod + Logging (pino) + Sentry</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 2 (จบ)</div>
+    <h1>Week 15 — Observability: Logging + Error Tracking</h1>
+    <p>ทำให้รู้ว่าเกิดอะไรขึ้นใน production — logging, error tracking, staging environment</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้ (ปิดเฟส 2)</h3>
+    <p>deploy ขึ้น production แล้ว (Week 14) — แต่ถ้าพังกลางดึก คุณรู้ได้ยังไง? ผู้ใช้คนไหนเจอ error? · Week 15 เพิ่ม
+    <strong>"ตา" ให้ระบบ</strong>: structured logging (pino) ที่ค้นได้, error tracking (Sentry) ที่แจ้งเตือนทันทีพร้อม stack trace,
+    และ staging environment สำหรับทดสอบก่อนขึ้น production · นี่คือ <strong>observability</strong> ที่แยกระบบ "เล่น ๆ" จาก "production จริง"</p>
+    <ul class="check">
+      <li>Structured logging (pino) — log เป็น JSON ค้นได้ ไม่ใช่ console.log มั่ว</li>
+      <li>log levels + request logging + correlation ID (ตามรอย request เดียวได้)</li>
+      <li>Error tracking (Sentry) — รู้ทันทีเมื่อพัง + stack trace + ผู้ใช้ที่เจอ</li>
+      <li>Staging vs Production environment — ทดสอบก่อนของจริง</li>
+      <li>🔐 ไม่ log secret/PII (มุม pentester) + monitoring/uptime เบื้องต้น</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้ปิดเฟส 2 ได้สมบูรณ์:</strong> "deploy ได้" ไม่พอ — ต้อง "รู้ว่าระบบสุขภาพดีไหม" ·
+    observability คือสิ่งที่ทำให้ระบบดูแลได้จริง · และ "logging ที่ไม่รั่ว secret/PII" คือจุดที่ pentester ของคุณได้เปรียบ</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-logging.html">Structured Logging ด้วย pino</a></strong>
+    <p style="margin:6px 0 0">ทำไม console.log ไม่พอ · structured (JSON) · log levels · request logging · correlation ID · ไม่ log secret/PII</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-sentry-staging.html">Error Tracking (Sentry) + Staging Environment</a></strong>
+    <p style="margin:6px 0 0">Sentry setup · capture error + context · release tracking · staging vs prod env · monitoring/uptime เบื้องต้น</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-observability.html">เพิ่ม Observability ให้ library-system</a></strong>
+    <p style="margin:6px 0 0">pino logging + request ID · Sentry · staging env · ตรวจไม่ log secret · monitoring · push · 🎉 ปิดเฟส 2</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (pino + structured logging)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>เพิ่ม logging + request ID ใน library-system</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (Sentry + staging)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 15.1-15.2 (logging + Sentry)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (logger middleware จากความจำ) + 🤖 AI Drill #14</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 15.3-15.4 (staging + ตรวจ log security) + push · 🎉 ปิดเฟส 2</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 15</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Structured log ไม่ใช่ string มั่ว</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ console.log string (ค้นไม่ได้)</h4>
+<pre><code>console.log("user " + id + " borrowed " + bookId);
+// ค้นหา/filter ใน production ลำบาก
+// ไม่รู้ level, timestamp, context</code></pre></div>
+      <div class="good"><h4>✅ structured (JSON ค้นได้)</h4>
+<pre><code>logger.info({ userId: id, bookId, action: "borrow" },
+  "book borrowed");
+// {"level":"info","userId":7,"bookId":3,...}
+// filter ด้วย userId/action ได้ใน log system</code></pre></div>
+    </div>
+
+    <h3>2. ไม่ log secret/PII</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ log ข้อมูลอ่อนไหว</h4>
+<pre><code>logger.info({ user });  // มี password hash, email เต็ม
+logger.info("token: " + jwt);  // 💀</code></pre></div>
+      <div class="good"><h4>✅ redact / เลือก field</h4>
+<pre><code>logger.info({ userId: user.id });  // แค่ id
+// pino redact: paths: ["password","token"]</code></pre></div>
+    </div>
+    <div class="warn"><strong>กฎทอง:</strong> structured log (JSON) เสมอ · ใส่ context (userId, requestId) · ไม่ log secret/PII/password/token ·
+    log level เหมาะสม (error/warn/info/debug) · error ส่ง Sentry, log ปกติไป stdout</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Code Review Drill #14 (ศุกร์ 30 นาที):</strong>
+  ขอให้ AI เขียน logging ให้ login endpoint แล้ว<strong>หาว่า log อะไรที่ไม่ควร log</strong>
+  (password? token? email เต็ม? credit card? — PII/secret ที่รั่วผ่าน log) — log leak คือช่องโหว่ที่ pentester เจอบ่อย
+  (log ไปอยู่ใน log system ที่อาจเข้าถึงได้กว้าง) จดลง <code>notes/ai-review-log.md</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 15 (ปิดเฟส 2)</footer>
+</div>
+</body>
+</html>
