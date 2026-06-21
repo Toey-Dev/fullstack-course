@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 23 — Capstone: Complete + Harden</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 4 (Capstone)</div>
+    <h1>Week 23 — Capstone: Complete + Harden</h1>
+    <p>ทำโปรเจกต์ให้เสร็จสมบูรณ์ — ครบ feature, ปลอดภัย, เร็ว, พร้อมโชว์</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>Week 22 คุณวางรากฐาน (design + scaffold + 1 vertical slice) · สัปดาห์นี้ทำให้<strong>เสร็จสมบูรณ์และคมพอจะโชว์ interview</strong> ·
+    เพิ่ม should-have features, ยกระดับ test coverage, ทำ security pass สุดท้าย (apply W18-20), perf pass (apply W21),
+    แล้ว polish UI + เขียน case study · จบสัปดาห์นี้คุณมี portfolio piece ที่เล่าได้ 30 นาที</p>
+    <ul class="check">
+      <li>เพิ่ม should-have features ให้ครบ user journey</li>
+      <li>Test coverage ขึ้น (unit + integration จุดสำคัญ + happy/edge/error)</li>
+      <li>Security pass — self-pentest + แก้ (apply Week 18-20)</li>
+      <li>Performance pass — index/N+1/cache/pagination (apply Week 21)</li>
+      <li>Polish UI + README/case study + demo flow</li>
+    </ul>
+    <div class="warn"><strong>หลักของสัปดาห์ "เสร็จ":</strong> "done" หมายถึงใช้งานได้จริง + test ครอบคลุม + ไม่มีช่องโหว่ชัด + เร็วพอ + อธิบายได้ —
+    ไม่ใช่แค่ "feature ขึ้นครบ" · นี่คือความต่างระหว่าง project เรียน กับ portfolio piece</div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-complete-test.html">ทำ Feature ให้ครบ + ยกระดับ Test</a></strong>
+    <p style="margin:6px 0 0">should-have features · definition of done · test coverage ที่มีความหมาย (ไม่ใช่ไล่ % ) · test pyramid · edge/error cases</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-harden-perf.html">Security Pass + Performance Pass</a></strong>
+    <p style="margin:6px 0 0">self-pentest checklist (OWASP) · แก้ช่องโหว่ · perf pass (index/N+1/cache) · polish + README/case study</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-capstone-done.html">Capstone เสร็จสมบูรณ์ + Demo-ready</a></strong>
+    <p style="margin:6px 0 0">features ครบ + test + security/perf pass + polish + case study + demo flow · push + tag v1.0</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 + เพิ่ม should-have feature</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>Mission 23.1-23.2 (features + test coverage)</td><td>2 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (security + perf pass)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 23.3 (self-pentest + แก้ + perf)</td><td>2 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild + 🤖 AI Drill #22 + system design ฝึก</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 23.4 (polish + case study + demo) + tag v1.0</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 หลักการประจำ Week 23</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. "Done" มีนิยาม — Definition of Done</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ "done = ฉันเขียนเสร็จแล้ว"</h4>
+<pre><code>// feature ขึ้นแล้ว แต่:
+// ไม่มี test · error case พัง
+// ไม่มี loading/empty state
+// README ว่าง · ยังไม่ deploy</code></pre></div>
+      <div class="good"><h4>✅ done = ผ่าน checklist</h4>
+<pre><code>// ✓ happy + edge + error case
+// ✓ test ผ่าน · validate input
+// ✓ loading/empty/error UI
+// ✓ deploy ได้ · doc อัปเดต</code></pre></div>
+    </div>
+
+    <h3>2. Polish คือสิ่งที่คนจำได้ — แต่ทำหลัง core เสร็จ</h3>
+    <p class="muted">empty state, loading spinner, error message ที่เป็นมิตร, responsive — สิ่งเล็ก ๆ ที่ทำให้ดู "เสร็จจริง" ·
+    แต่ทำ<em>หลัง</em> core feature + security เสถียรแล้ว ไม่ใช่ polish ก่อนระบบทำงาน</p>
+    <div class="warn"><strong>กฎทอง:</strong> ทุก feature มี Definition of Done · test ครอบคลุม happy+edge+error · security/perf pass ก่อนเรียกว่าเสร็จ ·
+    polish UI หลัง core นิ่ง · case study เล่าเป็นเรื่อง (ปัญหา→ออกแบบ→trade-off→ผล)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Drill #22 + System Design (ศุกร์ 30 นาที):</strong>
+  ① ให้ AI ทำ security + code review ทั้ง capstone (รับ feedback → แก้ของจริง) · ② ฝึก system design 1 ข้อเป็นอังกฤษ (Agoda Track — เริ่มซ้อมเล่าออกเสียง) ·
+  จดลง <code>notes/system-design/</code></div>
+
+  <div class="warn"><strong>กติกาเดิม:</strong> core logic เขียนเอง · AI ช่วยตามกฎ ai-workflow (review/explain/boilerplate) · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์โชว์ demo + case study</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 23 (เฟส 4)</footer>
+</div>
+</body>
+</html>

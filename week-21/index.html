@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 21 — System Design: Performance &amp; Scalability</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 4 (System Design + Capstone)</div>
+    <h1>Week 21 — Performance &amp; Scalability</h1>
+    <p>คิดแบบ senior — ทำให้ระบบเร็วและรองรับโตได้ · ทักษะที่ Agoda/top-tier interview ถาม</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้ (เริ่มเฟส 4)</h3>
+    <p>20 สัปดาห์ที่ผ่านมาทำให้ระบบ "ทำงานถูกและปลอดภัย" — เฟส 4 ทำให้ "เร็วและโตได้" (think like senior) ·
+    Week 21 เรียน 5 เรื่องหลักที่แยก mid จาก senior: database indexing, N+1 problem, pagination, caching, queue ·
+    ทั้งหมดคือหัวข้อที่ <strong>system design interview ของ Agoda/top-tier ถามจริง</strong> (ตรงกับ Agoda Track ปี 2)</p>
+    <ul class="check">
+      <li>Database indexing — ทำไม query ช้า/เร็ว, เมื่อไหร่ index, EXPLAIN</li>
+      <li>N+1 problem — bug performance ที่พบบ่อยสุด + วิธีแก้</li>
+      <li>Pagination — offset vs cursor (ทำไม offset พังที่ scale)</li>
+      <li>Caching strategies — cache-aside, invalidation, layers (ต่อจาก W11)</li>
+      <li>Queue (BullMQ) — งานหนัก/ช้าทำเบื้องหลัง ไม่ block request</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้เปลี่ยนระดับคุณ:</strong> "ทำให้ทำงานได้" = mid · "ทำให้เร็วและ scale ได้ + อธิบาย trade-off" = senior ·
+    เนื้อหานี้คือสิ่งที่ Agoda interview เจาะ และทำให้คุณเลื่อนเป็น Senior ได้ (เป้า 100k+ ปี 3)</p></div>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-db-performance.html">Database Performance — Index, N+1, Pagination</a></strong>
+    <p style="margin:6px 0 0">ทำไม query ช้า · index (B-tree, composite, EXPLAIN) · N+1 problem + แก้ · pagination (offset vs cursor)</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-caching-queue.html">Caching Strategies + Queue (BullMQ)</a></strong>
+    <p style="margin:6px 0 0">cache patterns + invalidation + layers · queue ทำไม · BullMQ (background job, retry, worker) · async architecture</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-optimize.html">Optimize library-system + วัดผล</a></strong>
+    <p style="margin:6px 0 0">เพิ่ม index · แก้ N+1 · pagination · cache · queue (เช่น ส่ง email) · วัด before/after · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (index + N+1 + pagination)</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>EXPLAIN query ใน library-system + หา N+1</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (caching + BullMQ)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 21.1-21.2 (index + N+1 + pagination)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild (cache pattern จากความจำ) + 🤖 AI Drill #20 + ฝึก system design 1 ข้อ</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 21.3-21.4 (cache + queue + วัดผล) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 Clean Code ประจำ Week 21</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. วัดก่อน optimize — อย่าเดา</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ optimize ตามความรู้สึก</h4>
+<pre><code>// "น่าจะช้าตรงนี้" → ใส่ cache มั่ว
+// อาจ optimize ผิดจุด เสียเวลา</code></pre></div>
+      <div class="good"><h4>✅ measure → optimize จุดที่ช้าจริง</h4>
+<pre><code>// EXPLAIN ANALYZE หา query ช้า
+// log เวลา → หา bottleneck จริง
+// optimize → วัดซ้ำ (พิสูจน์เร็วขึ้น)</code></pre></div>
+    </div>
+
+    <h3>2. อย่า premature optimization</h3>
+    <p class="muted">"premature optimization is the root of all evil" — optimize เมื่อมีปัญหาจริง (วัดแล้วช้า) ไม่ใช่ทุกที่ตั้งแต่แรก · code ที่อ่านง่าย &gt; เร็วแต่ซับซ้อนโดยไม่จำเป็น</p>
+    <div class="warn"><strong>กฎทอง:</strong> measure ก่อน optimize (EXPLAIN/profiling) · index เฉพาะ query ที่ใช้จริง · cache มี invalidation เสมอ ·
+    งานหนัก→queue (ไม่ block request) · อธิบาย trade-off ได้ (ไม่มี free lunch)</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Drill #20 + System Design ฝึก (ศุกร์ 30 นาที):</strong>
+  ① ให้ AI เขียน endpoint ที่มี N+1 problem แล้วคุณหา+แก้ · ② <strong>ฝึก system design 1 ข้อ</strong> (เช่น "ออกแบบ URL shortener" หรือ
+  "library ที่รับล้านผู้ใช้") พูด/เขียนเป็นอังกฤษ 15 นาที — ปูทาง Agoda Track · จดลง <code>notes/ai-review-log.md</code> + <code>notes/system-design/</code></div>
+
+  <div class="warn"><strong>กติกาเดิมทุกข้อยังอยู่:</strong> Mission เขียนมือล้วน ปิด AI · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 21 (เฟส 4)</footer>
+</div>
+</body>
+</html>

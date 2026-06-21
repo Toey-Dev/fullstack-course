@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: Capstone เสร็จสมบูรณ์ + Demo-ready</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 23</a> · Mission ใหญ่</div>
+    <h1>🎯 Capstone เสร็จสมบูรณ์ + Demo-ready</h1>
+    <p>ปิดโปรเจกต์ให้คม — ครบ, ปลอดภัย, เร็ว, เล่าได้, tag v1.0</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">เป้าหมาย Mission สัปดาห์นี้</h3>
+    <p>จบสัปดาห์นี้ capstone ของคุณ = portfolio piece สมบูรณ์: feature ครบ user journey, test ครอบคลุม, ผ่าน self-pentest,
+    เร็วพอ (มีตัวเลข), polish แล้ว, มี case study เล่าได้ 5 นาที, tag <code>v1.0</code> · พร้อมใส่ resume + โชว์ interview</p>
+    <div class="warn"><strong>หลักประจำสัปดาห์:</strong> Definition of Done ทุก feature · เทสต์ 3 มิติ (happy/edge/error) · self-pentest OWASP · measure ก่อน optimize · polish หลัง core นิ่ง · case study เป็นเรื่องเล่า</div>
+  </div>
+
+  <h2>🪜 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 23.1 — Should-have Features ครบ user journey <span class="badge orange">2 ชม.</span></h3>
+    <ol>
+      <li>เพิ่ม features ที่ขาดให้ user journey ครบ (เช่น VulnTracker: audit log view, filter, export, assign)</li>
+      <li>ทุก feature ผ่าน Definition of Done (happy/edge/error + validate + RBAC + UI state)</li>
+      <li>UI มี loading / empty / error state ครบ</li>
+    </ol>
+    <div class="tip"><strong>✅ เช็ก:</strong> user ทำ flow หลักได้ครบตั้งแต่ต้นจนจบ · ทุก feature มี error handling</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 23.2 — Test Coverage มีความหมาย <span class="badge orange">90 นาที</span></h3>
+    <ol>
+      <li>เพิ่ม test ครอบคลุม logic สำคัญ (RBAC, validation, status transition, business rule)</li>
+      <li>ทุก endpoint สำคัญมี integration test (happy + 403 + 400/404)</li>
+      <li>1-2 E2E flow หลัก (login → action → เห็นผล) · CI ยังเขียว</li>
+    </ol>
+    <div class="warn"><strong>เช็ก:</strong> test จับจุดเสี่ยงจริง (ไม่ใช่ไล่ %) · CI เขียว · พังโค้ดดู test แดงจริง</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 23.3 — Security + Performance Pass <span class="badge orange">2 ชม.</span></h3>
+    <ol>
+      <li>self-pentest ตาม OWASP checklist → เขียน <code>docs/SECURITY-AUDIT.md</code> (เจออะไร แก้ยังไง)</li>
+      <li>แก้ช่องโหว่ที่เจอ (IDOR/injection/misconfig) + npm audit/gitleaks/Semgrep ผ่าน</li>
+      <li>perf pass: index/N+1/cache/pagination → <code>docs/PERFORMANCE.md</code> (before/after)</li>
+    </ol>
+    <div class="tip"><strong>✅ เช็ก:</strong> ไม่มีช่องโหว่ critical · มีตัวเลข perf พิสูจน์ · scan อัตโนมัติเขียว</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 23.4 — Polish + Case Study + Demo + v1.0 <span class="badge orange">90 นาที</span></h3>
+    <ol>
+      <li>polish UI (responsive, empty/loading/error, ขัดเงา) + screenshot</li>
+      <li>เขียน <code>docs/CASE-STUDY.md</code> (Problem→Approach→Security→Perf→Result) + อัปเดต README</li>
+      <li>ซ้อมเล่า demo 5 นาทีออกเสียง · push · <code>git tag v1.0</code> · AI Drill #22</li>
+    </ol>
+    <div class="tip"><strong>✅ เช็ก:</strong> live URL ใช้ได้ · README+case study ครบ · เล่า demo ได้ลื่น · tag v1.0 บน GitHub</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Features ครบ + DoD</td><td>25%</td><td>user journey ครบ · ทุก feature happy/edge/error + UI state</td></tr>
+      <tr><td>Test</td><td>20%</td><td>ครอบคลุม logic สำคัญ · integration RBAC · CI เขียว</td></tr>
+      <tr><td>Security pass</td><td>25%</td><td>SECURITY-AUDIT.md · แก้ช่องโหว่จริง · scan เขียว (จุดเด่น)</td></tr>
+      <tr><td>Performance</td><td>15%</td><td>PERFORMANCE.md (before/after) · apply W21</td></tr>
+      <tr><td>Polish + Case Study + Git</td><td>15%</td><td>UI ขัดเงา · case study เล่าได้ · README+screenshot · tag v1.0 · AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์ (Capstone เสร็จ!)</h2>
+  <ul class="check">
+    <li>features ครบ user journey + ทุกอันผ่าน DoD</li>
+    <li>test ครอบคลุม (3 มิติ) + CI เขียว</li>
+    <li>SECURITY-AUDIT.md + แก้ช่องโหว่ + scan เขียว</li>
+    <li>PERFORMANCE.md (before/after) + apply W21</li>
+    <li>polish UI + CASE-STUDY.md + README + screenshot</li>
+    <li>live demo + tag v1.0 + AI Drill #22 + ซ้อมเล่า 5 นาที</li>
+    <li>บอกผม: capstone ทำอะไรได้ + ช่องโหว่ที่เจอ+แก้ + ตัวเลข perf → เตรียม Week 24 (resume + mock interview)</li>
+  </ul>
+
+  <div class="danger"><strong>🎓 มองภาพ Week 24 (สัปดาห์สุดท้าย!):</strong> อัปเดต resume ให้ตรงกับ capstone (bullet ที่วัดผลได้),
+  ปรับ portfolio/GitHub, ทำ mock interview (technical + system design + เล่า capstone) → จบคอร์ส 24 สัปดาห์ พร้อมสมัครงาน 100k</div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-harden-perf.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 23</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 23 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

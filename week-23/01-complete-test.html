@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1 — ทำ Feature ให้ครบ + ยกระดับ Test</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 23</a> · บทที่ 1</div>
+    <h1>✅ ทำ Feature ให้ครบ + ยกระดับ Test</h1>
+    <p>จาก "เขียนเสร็จ" สู่ "เสร็จจริง" — Definition of Done + test ที่มีความหมาย</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <!-- PART 1 -->
+  <h2>1 · Definition of Done — "เสร็จ" คืออะไรกันแน่</h2>
+  <div class="card">
+    <p><strong>Definition of Done (DoD)</strong> = เกณฑ์ที่ feature ต้องผ่าน<em>ทั้งหมด</em>ก่อนเรียกว่าเสร็จ ·
+    ทีมมืออาชีพมี DoD เป็นข้อตกลงร่วม ป้องกัน "เสร็จแบบครึ่ง ๆ" ที่กลับมาหลอกหลอน</p>
+
+    <p>DoD ของ feature ใน capstone คุณ ควรเป็น:</p>
+    <ul class="check">
+      <li>ทำงานครบ happy path (เคสปกติ)</li>
+      <li>จัดการ edge case + error case (input ผิด, ไม่มีสิทธิ์, ไม่เจอข้อมูล)</li>
+      <li>มี test ครอบคลุม (unit logic สำคัญ + integration endpoint)</li>
+      <li>validate input (Zod) + auth/RBAC ครบ</li>
+      <li>UI มี loading / empty / error state</li>
+      <li>deploy แล้วใช้งานบน production ได้</li>
+      <li>doc/README อัปเดต</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสำคัญกับ interview:</strong> เมื่อ interviewer ถาม "เล่า project หน่อย" แล้วคุณพูดถึง DoD + edge case ที่จัดการ =
+    คุณคิดแบบ engineer ที่ส่งของขึ้น production จริง ไม่ใช่นักเรียนที่ทำให้ demo ผ่าน</div>
+  </div>
+
+  <!-- PART 2 -->
+  <h2>2 · ทำไม coverage % ไม่ใช่เป้าหมาย — test ที่มีความหมายต่างหาก</h2>
+  <div class="card">
+    <p>มือใหม่มักไล่ตาม "coverage 100%" · แต่ 100% ที่เทสต์แต่ getter/setter ไร้ค่า ส่วน logic สำคัญที่พังกลับไม่ได้เทสต์ ·
+    เป้าหมายจริงคือ <strong>เทสต์สิ่งที่ถ้าพังแล้วเจ็บ</strong></p>
+
+    <div class="clean">
+      <div class="bad"><h4>❌ ไล่ % — เทสต์ผิดจุด</h4>
+        <p style="font-size:.9rem">เทสต์ getter, constant, mapping ตรง ๆ ให้ % สวย · แต่ business logic (คำนวณ CVSS, RBAC, status transition) ไม่ถูกแตะ</p>
+      </div>
+      <div class="good"><h4>✅ เทสต์จุดเสี่ยง</h4>
+        <p style="font-size:.9rem">เทสต์ logic ที่ซับซ้อน/สำคัญ: RBAC (ใครทำอะไรได้), validation, status transition, edge case ที่เคยพัง · % ตามมาเอง</p>
+      </div>
+    </div>
+
+    <div class="danger"><strong>⚠️ counter-example:</strong> ทีมที่บังคับ "coverage ต้อง 90%" มักได้ test ขยะที่เขียนเอาผ่านเกณฑ์ — assert น้อย mock มั่ว ·
+    coverage เป็น<em>สัญญาณ</em>ว่าตรงไหนยังไม่แตะ ไม่ใช่<em>เป้าหมาย</em>ในตัวเอง · ดูคุณภาพ test ไม่ใช่ตัวเลข</div>
+  </div>
+
+  <!-- PART 3 -->
+  <h2>3 · Test Pyramid — เทสต์ระดับไหน เท่าไหร่</h2>
+  <div class="card">
+    <p>กรอบจัดสัดส่วน test ที่คุ้มค่าสุด (apply กับ capstone):</p>
+    <svg viewBox="0 0 560 230" style="width:100%;max-width:560px;background:#0f172a;border-radius:8px">
+      <polygon points="280,25 340,75 220,75" fill="#3b1e2e" stroke="#ef4444"/>
+      <text x="280" y="60" fill="#fecaca" font-size="11" text-anchor="middle">E2E (น้อย)</text>
+
+      <polygon points="220,80 340,80 400,150 160,150" fill="#3a2e1e" stroke="#f59e0b"/>
+      <text x="280" y="120" fill="#fef3c7" font-size="12" text-anchor="middle">Integration (กลาง)</text>
+
+      <polygon points="160,155 400,155 460,220 100,220" fill="#1e3a2e" stroke="#10b981"/>
+      <text x="280" y="195" fill="#d1fae5" font-size="13" text-anchor="middle">Unit (เยอะ เร็ว)</text>
+
+      <text x="490" y="55" fill="#fca5a5" font-size="9">ช้า/แพง</text>
+      <text x="490" y="195" fill="#6ee7b7" font-size="9">เร็ว/ถูก</text>
+    </svg>
+    <table>
+      <tr><th>ระดับ</th><th>เทสต์อะไร</th><th>VulnTracker</th></tr>
+      <tr><td><strong>Unit</strong> (เยอะ)</td><td>logic ฟังก์ชันเดี่ยว เร็วมาก</td><td>คำนวณ severity, validate, RBAC helper</td></tr>
+      <tr><td><strong>Integration</strong> (กลาง)</td><td>endpoint + DB จริง (Supertest)</td><td>POST /findings → 201, client → 403</td></tr>
+      <tr><td><strong>E2E</strong> (น้อย)</td><td>flow ผู้ใช้ทั้งเส้น</td><td>login → สร้าง finding → เห็นใน dashboard</td></tr>
+    </table>
+    <p class="muted">เน้น unit + integration (คุ้มสุด) · E2E แค่ flow สำคัญ 2-3 เส้น (ช้า/เปราะ)</p>
+  </div>
+
+  <!-- PART 4 -->
+  <h2>4 · ตัวอย่าง — เทสต์ครบ happy + edge + error</h2>
+  <div class="card">
+    <p>feature "เปลี่ยน status ของ finding" — เทสต์ให้ครบมิติ ไม่ใช่แค่ happy path:</p>
+<pre><code>describe('PATCH /findings/:id/status', () =&gt; {
+  // ✅ happy
+  it('lead เปลี่ยน open→fixed ได้', async () =&gt; {
+    const res = await request(app).patch(`/findings/${id}/status`)
+      .set('Authorization', leadToken).send({ status: 'fixed' });
+    expect(res.status).toBe(200);
+  });
+
+  // ⚠️ edge — transition ที่ไม่ถูกต้อง
+  it('ห้ามข้าม open→verified (ต้อง fixed ก่อน)', async () =&gt; {
+    const res = await request(app).patch(`/findings/${id}/status`)
+      .set('Authorization', leadToken).send({ status: 'verified' });
+    expect(res.status).toBe(422);          // business rule
+  });
+
+  // 🔒 error — สิทธิ์ไม่พอ (RBAC)
+  it('client เปลี่ยน status ไม่ได้ (403)', async () =&gt; {
+    const res = await request(app).patch(`/findings/${id}/status`)
+      .set('Authorization', clientToken).send({ status: 'fixed' });
+    expect(res.status).toBe(403);
+  });
+
+  // 🔒 error — ไม่ login (401) / ไม่เจอ (404) / input ผิด (400)
+  it('input ผิด → 400', async () =&gt; { /* status: 'banana' → Zod reject */ });
+});</code></pre>
+    <p class="muted">มิติที่ต้องครบ: <strong>happy</strong> (ปกติ), <strong>edge</strong> (business rule/ขอบเขต), <strong>error</strong> (401/403/404/400/422) ·
+    เทสต์ error case คือที่ที่ bug ซ่อนอยู่จริง</p>
+  </div>
+
+  <!-- PART 5 -->
+  <h2>5 · ภาพรวม + คำช่วยจำ</h2>
+  <div class="card" style="text-align:center">
+    <p><span class="badge">Definition of Done</span> → <span class="badge green">Unit (เยอะ)</span>
+    <span class="badge orange">Integration (กลาง)</span> <span class="badge">E2E (น้อย)</span></p>
+    <p><strong>ทุก feature เทสต์ 3 มิติ:</strong> <span class="badge green">Happy</span> <span class="badge orange">Edge</span> <span class="badge">Error</span></p>
+    <p class="muted">"done = ผ่าน checklist ไม่ใช่เขียนเสร็จ · เทสต์จุดที่ถ้าพังแล้วเจ็บ ไม่ใช่ไล่ %"</p>
+  </div>
+
+  <!-- PART 6: QUIZ -->
+  <h2>6 · Quiz</h2>
+  <div class="card">
+    <div class="mission"><strong>Q1.</strong> ทำไม coverage 100% อาจยังเป็น test ที่แย่?
+      <details><summary>เฉลย</summary>เพราะอาจเทสต์โค้ดไร้ความเสี่ยง (getter/constant) ให้ % สวย แต่ logic สำคัญที่ซับซ้อนกลับ assert น้อย/mock มั่ว · coverage วัด "รันถึง" ไม่ได้วัด "เทสต์ถูกต้อง" · ดูคุณภาพ ไม่ใช่ตัวเลข</details>
+    </div>
+    <div class="mission"><strong>Q2.</strong> ทำไมควรมี unit เยอะ E2E น้อย (test pyramid)?
+      <details><summary>เฉลย</summary>unit เร็ว/ถูก/ชี้จุดพังตรง · E2E ช้า/เปราะ/แพงดูแล · เน้น unit+integration ให้ครอบคลุม logic แล้วใช้ E2E แค่ flow สำคัญ 2-3 เส้น — ได้ความมั่นใจคุ้มเวลา</details>
+    </div>
+    <div class="mission"><strong>Q3.</strong> 🔐 ในตัวอย่าง status — ทำไม "client → 403" ถึงเป็น test สำคัญที่ห้ามขาด?
+      <details><summary>เฉลย</summary>เพราะมันเทสต์ access control (OWASP A01) — ป้องกัน privilege escalation · ถ้า RBAC พังเงียบ ๆ client แก้ข้อมูลได้ = ช่องโหว่ร้ายแรง · test นี้คือ regression guard ว่าสิทธิ์ไม่หลุดเมื่อแก้โค้ดภายหลัง</details>
+    </div>
+    <div class="mission"><strong>Q4.</strong> 3 มิติที่ทุก feature ควรเทสต์คืออะไร?
+      <details><summary>เฉลย</summary><strong>Happy</strong> (เคสปกติทำงาน) · <strong>Edge</strong> (ขอบเขต/business rule เช่นห้ามข้าม status) · <strong>Error</strong> (401/403/404/400/422 — input ผิด/ไม่มีสิทธิ์/ไม่เจอ) · bug ส่วนใหญ่ซ่อนใน edge+error</details>
+    </div>
+  </div>
+
+  <!-- PART 7 -->
+  <h2>7 · 🧹 Clean Code: test ที่อ่านเป็นเอกสาร</h2>
+  <div class="card">
+    <div class="clean">
+      <div class="bad"><h4>❌ test ชื่อกำกวม assert เยอะมั่ว</h4>
+<pre><code>it('test1', async () =&gt; {
+  // setup 50 บรรทัด, assert 10 อย่าง
+  // พังแล้วไม่รู้พังเพราะอะไร
+});</code></pre></div>
+      <div class="good"><h4>✅ ชื่อบอกพฤติกรรม · AAA</h4>
+<pre><code>it('client เปลี่ยน status ไม่ได้ (403)', () =&gt; {
+  // Arrange → Act → Assert
+  // 1 test = 1 พฤติกรรม
+});</code></pre></div>
+    </div>
+    <p class="muted"><strong>เคล็ด:</strong> ชื่อ test = สเปกที่อ่านได้ ("ใคร ทำอะไร ได้ผลอะไร") · ใช้ AAA (Arrange-Act-Assert) · 1 test เทสต์ 1 พฤติกรรม ·
+    ใช้ factory/helper สร้าง test data ลด setup ซ้ำ · test suite ที่ดี = เอกสารที่มีชีวิตว่าระบบทำอะไรได้บ้าง</p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 23</a>
+    <a class="btn" href="02-harden-perf.html">บทที่ 2: Security + Perf Pass →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 23 บทที่ 1</footer>
+</div>
+</body>
+</html>

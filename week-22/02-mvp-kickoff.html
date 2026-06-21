@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2 — MVP Scoping + Project Kickoff</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 22</a> · บทที่ 2</div>
+    <h1>🚀 MVP Scoping + Project Kickoff</h1>
+    <p>ตัดให้เหลือสิ่งที่สำคัญสุด แล้วสร้าง vertical slice แรกให้ทำงานได้จริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <!-- PART 1 -->
+  <h2>1 · MVP คืออะไร — และทำไมต้อง scope</h2>
+  <div class="card">
+    <p><strong>MVP (Minimum Viable Product)</strong> = เวอร์ชันเล็กสุดที่ยัง<em>ใช้งานได้จริง</em>และพิสูจน์คุณค่าหลัก ·
+    ไม่ใช่ครึ่ง ๆ กลาง ๆ — แต่คือ "feature หลักที่ทำงานครบ" โดยตัด nice-to-have ออกไปก่อน</p>
+
+    <p>สำหรับ capstone 2 สัปดาห์ คุณ<em>ต้อง</em> scope ให้ดี ไม่งั้นทำไม่เสร็จ · หลักคือแยก 3 กอง:</p>
+    <table>
+      <tr><th>กอง</th><th>หมายถึง</th><th>VulnTracker</th></tr>
+      <tr><td><strong>MVP (ทำก่อน)</strong></td><td>ขาดไม่ได้ ระบบไร้ความหมายถ้าไม่มี</td><td>auth + CRUD finding + RBAC + dashboard นับเลข</td></tr>
+      <tr><td><strong>Should-have</strong></td><td>ดีมากแต่รอได้</td><td>audit log, export PDF, filter ละเอียด</td></tr>
+      <tr><td><strong>Nice (ตัดก่อน)</strong></td><td>หรู ไม่จำเป็นตอนนี้</td><td>email noti, theme, comment, real-time</td></tr>
+    </table>
+    <div class="warn"><strong>กฎ scope:</strong> ทำ MVP ให้ <em>เสร็จและดี</em> ก่อน แล้วค่อยไต่ขึ้น should-have · capstone ที่ทำ MVP เสร็จ-polished
+    ดีกว่าทำ 10 feature ครึ่ง ๆ ที่ไม่มีอันไหนใช้ได้จริง</div>
+  </div>
+
+  <!-- PART 2 -->
+  <h2>2 · ทำไม vertical slice ก่อน — ไม่ใช่ layer by layer</h2>
+  <div class="card">
+    <p>มี 2 วิธีสร้างระบบ:</p>
+    <div class="clean">
+      <div class="bad"><h4>❌ Horizontal (layer by layer)</h4>
+        <p style="font-size:.9rem">ทำ DB ทุกตารางก่อน → ทำ API ทุก endpoint → ทำ UI ทุกหน้า · เพิ่งเห็นระบบทำงานจริงตอนท้ายสุด · integration พังตอนสาย</p>
+      </div>
+      <div class="good"><h4>✅ Vertical slice (feature by feature)</h4>
+        <p style="font-size:.9rem">"สร้าง finding" ครบทั้ง stack (UI→API→DB→test→deploy) ให้ทำงาน end-to-end ก่อน → แล้วเพิ่ม feature ถัดไป</p>
+      </div>
+    </div>
+
+    <svg viewBox="0 0 640 170" style="width:100%;max-width:640px;background:#0f172a;border-radius:8px">
+      <text x="160" y="24" fill="#fca5a5" font-size="12" text-anchor="middle" font-weight="bold">❌ Horizontal</text>
+      <g font-size="9" text-anchor="middle">
+        <rect x="40" y="40" width="240" height="26" fill="#3b1e2e" stroke="#ef4444"/><text x="160" y="57" fill="#fecaca">UI ทุกหน้า (ทำทีหลังสุด)</text>
+        <rect x="40" y="70" width="240" height="26" fill="#3b1e2e" stroke="#ef4444"/><text x="160" y="87" fill="#fecaca">API ทุก endpoint</text>
+        <rect x="40" y="100" width="240" height="26" fill="#3b1e2e" stroke="#ef4444"/><text x="160" y="117" fill="#fecaca">DB ทุกตาราง (ทำก่อน)</text>
+      </g>
+      <text x="160" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">เห็นระบบทำงาน = ตอนจบเท่านั้น</text>
+
+      <text x="480" y="24" fill="#6ee7b7" font-size="12" text-anchor="middle" font-weight="bold">✅ Vertical slice</text>
+      <g font-size="8" text-anchor="middle">
+        <rect x="360" y="40" width="55" height="86" fill="#1e3a2e" stroke="#10b981"/><text x="387" y="58" fill="#d1fae5">UI</text><text x="387" y="78" fill="#d1fae5">API</text><text x="387" y="98" fill="#d1fae5">DB</text><text x="387" y="118" fill="#6ee7b7" font-size="7">finding</text>
+        <rect x="425" y="40" width="55" height="86" fill="#1e3a4f" stroke="#3b82f6"/><text x="452" y="58" fill="#dbeafe">UI</text><text x="452" y="78" fill="#dbeafe">API</text><text x="452" y="98" fill="#dbeafe">DB</text><text x="452" y="118" fill="#93c5fd" font-size="7">dashboard</text>
+        <rect x="490" y="40" width="55" height="86" fill="#3a2e1e" stroke="#f59e0b"/><text x="517" y="58" fill="#fef3c7">UI</text><text x="517" y="78" fill="#fef3c7">API</text><text x="517" y="98" fill="#fef3c7">DB</text><text x="517" y="118" fill="#fcd34d" font-size="7">assign</text>
+      </g>
+      <text x="480" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">แต่ละแท่งทำงานจบในตัว — เพิ่มทีละแท่ง</text>
+    </svg>
+    <div class="danger"><strong>⚠️ gotcha:</strong> vertical slice แรก<em>ต้องผ่านทุกชั้น</em>รวม deploy — ถ้าทำ "สร้าง finding" แล้ว deploy ขึ้น Vercel/Railway ได้เลย
+    คุณพิสูจน์ว่า pipeline ทั้งหมดทำงาน ก่อนจะลงทุนกับ feature อื่น (เจอปัญหา env/CORS/migration ตั้งแต่ feature แรก ไม่ใช่ feature ที่ 10)</div>
+  </div>
+
+  <!-- PART 3 -->
+  <h2>3 · Project Kickoff — scaffold ที่ apply ทุกอย่างที่เรียน</h2>
+  <div class="card">
+    <p>21 สัปดาห์คุณเรียนเครื่องมือมาเยอะ · kickoff คือโอกาส apply ทั้งหมด<strong>ตั้งแต่ commit แรก</strong> ไม่ใช่ค่อยเพิ่มทีหลัง
+    (เพิ่มทีหลังเจ็บกว่ามาก):</p>
+    <table>
+      <tr><th>เซ็ตอัปตั้งแต่ต้น</th><th>มาจาก Week</th></tr>
+      <tr><td>TypeScript strict + tsconfig</td><td>W8</td></tr>
+      <tr><td>โครง monorepo / แยก api + web</td><td>W9-10</td></tr>
+      <tr><td>ESLint + Prettier + Husky pre-commit</td><td>W7, W17</td></tr>
+      <tr><td>Vitest setup + 1 test ผ่าน</td><td>W6</td></tr>
+      <tr><td>Dockerfile + docker-compose (db, redis)</td><td>W12-13</td></tr>
+      <tr><td>GitHub Actions CI (lint+test+build)</td><td>W14</td></tr>
+      <tr><td>helmet + rate-limit + CORS + Zod</td><td>W15, W18</td></tr>
+      <tr><td>pino logging + .env (ไม่ commit secret)</td><td>W16</td></tr>
+      <tr><td>gitleaks + npm audit ใน CI</td><td>W19</td></tr>
+    </table>
+
+    <p>โครง repo ที่แนะนำ:</p>
+<pre><code>vulntracker/
+├─ docs/         DESIGN.md, THREAT-MODEL.md, DECISIONS.md
+├─ apps/
+│  ├─ api/       Express + TS (routes, services, db, tests)
+│  └─ web/       Next.js + Tailwind
+├─ docker-compose.yml      (api, web, postgres, redis)
+├─ .github/workflows/ci.yml
+└─ README.md     (วิธีรัน + architecture + screenshot)</code></pre>
+
+    <div class="warn"><strong>เคล็ด kickoff:</strong> commit แรกคือ "scaffold + CI เขียว + 1 test ผ่าน + deploy ได้" ·
+    เริ่มจากฐานที่แข็งแรง แล้วทุก feature หลังจากนั้นวิ่งบนรางที่ดี · README ที่มี screenshot + วิธีรัน = ด่านแรกที่ recruiter เห็น</div>
+  </div>
+
+  <!-- PART 4: first slice code -->
+  <h2>4 · ตัวอย่าง — vertical slice "สร้าง finding"</h2>
+  <div class="card">
+    <p>slice แรกครบทุกชั้น (ย่อ) — auth ไว้ก่อนแล้ว เพิ่ม feature นี้:</p>
+<pre><code>// 1) DB migration
+CREATE TABLE findings (
+  id SERIAL PRIMARY KEY, title TEXT NOT NULL,
+  severity TEXT NOT NULL, status TEXT DEFAULT 'open',
+  created_by INT REFERENCES users(id), created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_findings_status ON findings(status);   -- จาก W21
+
+// 2) Zod schema (validate input — W18)
+const CreateFinding = z.object({
+  title: z.string().min(3).max(200),
+  severity: z.enum(['low','medium','high','critical']),
+});
+
+// 3) Route + RBAC (server เช็ค role เสมอ — threat model)
+router.post('/findings', auth, requireRole('pentester','lead'), async (req, res) =&gt; {
+  const data = CreateFinding.parse(req.body);             // throw → 400
+  const f = await findingService.create(data, req.user.id);
+  await audit(req.user.id, 'create', 'finding', f.id);   // repudiation defense
+  res.status(201).json(f);
+});
+
+// 4) Test (W6) — ต้องผ่านใน CI
+it('creates finding when pentester', async () =&gt; {
+  const res = await request(app).post('/findings')
+    .set('Authorization', pentesterToken)
+    .send({ title: 'SQLi in login', severity: 'high' });
+  expect(res.status).toBe(201);
+});
+it('rejects client (403)', async () =&gt; { /* RBAC */ });</code></pre>
+    <p class="muted">slice เดียวนี้แตะ: migration+index (W21), Zod (W18), JWT+RBAC (W15/threat), audit (threat), test (W6) — ครบ stack + ปลอดภัย</p>
+  </div>
+
+  <!-- PART 5 -->
+  <h2>5 · ภาพรวม + คำช่วยจำ</h2>
+  <div class="card" style="text-align:center">
+    <p><strong>ลำดับ kickoff:</strong></p>
+    <p><span class="badge">Scope (3 กอง)</span> → <span class="badge">Scaffold + CI เขียว</span> →
+    <span class="badge orange">Vertical slice แรก (ครบชั้น)</span> → <span class="badge green">Deploy</span> → <span class="badge">feature ถัดไป</span></p>
+    <p class="muted">"MVP ก่อน · vertical ไม่ horizontal · apply ทุกอย่างตั้งแต่ commit แรก · deploy ตั้งแต่ feature แรก"</p>
+  </div>
+
+  <!-- PART 6: QUIZ -->
+  <h2>6 · Quiz</h2>
+  <div class="card">
+    <div class="mission"><strong>Q1.</strong> "MVP" ไม่ได้แปลว่าทำครึ่ง ๆ — แล้วแปลว่าอะไร?
+      <details><summary>เฉลย</summary>เวอร์ชันเล็กสุดที่<em>ยังใช้งานได้จริงและเสร็จสมบูรณ์</em> · ทำ feature หลักให้ครบและดี โดยตัด nice-to-have ออก — ไม่ใช่ทุก feature ทำครึ่งเดียว</details>
+    </div>
+    <div class="mission"><strong>Q2.</strong> ทำไม vertical slice แรกควรรวม deploy ด้วย ไม่ใช่ deploy ตอนจบ?
+      <details><summary>เฉลย</summary>เพื่อพิสูจน์ทั้ง pipeline (build/env/migration/CORS) ตั้งแต่ feature แรก · เจอปัญหา deploy ตอนยังเล็ก ง่ายแก้ · ไม่ใช่มาเจอตอนจบที่ทุกอย่างพันกัน</details>
+    </div>
+    <div class="mission"><strong>Q3.</strong> 🔐 ทำไม "apply security ตั้งแต่ scaffold" ดีกว่าเพิ่มทีหลัง?
+      <details><summary>เฉลย</summary>security ที่ bolt-on ทีหลังมักมีรู (ลืม endpoint, ลืม validate บางจุด) · ทำตั้งแต่ต้น = ทุก feature ใหม่อยู่บนฐานที่ปลอดภัยอยู่แล้ว (helmet/rate-limit/Zod/RBAC เป็น default) · shift-left (W19)</details>
+    </div>
+    <div class="mission"><strong>Q4.</strong> ถ้าเหลือเวลาน้อย ควรเลือกทำ should-have หรือ polish MVP?
+      <details><summary>เฉลย</summary>polish MVP · capstone ที่ core เสร็จ-ขัดเงา (test ครบ, README ดี, deploy ได้, ไม่มี bug) สร้างความประทับใจมากกว่ากองฟีเจอร์ที่ทำงานไม่ครบ — interviewer ดู depth ไม่ใช่ count</details>
+    </div>
+  </div>
+
+  <!-- PART 7 -->
+  <h2>7 · 🧹 Clean Code: เริ่มโปรเจกต์ให้สะอาดตั้งแต่วันแรก</h2>
+  <div class="card">
+    <div class="clean">
+      <div class="bad"><h4>❌ "เดี๋ยวค่อยจัด"</h4>
+        <p style="font-size:.9rem">ไม่มี lint/test/CI ตอนเริ่ม · โค้ดมั่วสะสม · พอจะเพิ่ม test ทีหลัง = rework เยอะ · README ว่างเปล่า</p>
+      </div>
+      <div class="good"><h4>✅ ฐานสะอาดตั้งแต่ commit 1</h4>
+        <p style="font-size:.9rem">lint+test+CI+Docker พร้อมก่อน feature แรก · ทุก PR ต้องเขียว · README มีวิธีรัน+architecture+screenshot ตั้งแต่ต้น</p>
+      </div>
+    </div>
+    <p class="muted"><strong>เคล็ด:</strong> commit แรกที่ดี = "chore: scaffold with TS, lint, test, docker, CI" + CI เขียว · ใช้ conventional commits (feat/fix/chore) ·
+    branch ต่อ feature · ทำให้ git history ของ capstone ดูเป็นมืออาชีพ (recruiter ดู commit history จริง ๆ)</p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-design-doc.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-capstone-start.html">Mission ใหญ่ →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 22 บทที่ 2</footer>
+</div>
+</body>
+</html>

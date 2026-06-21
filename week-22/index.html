@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Week 22 — Capstone: Design + Kickoff</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb">คอร์ส Senior Secure Full Stack · เฟส 4 (Capstone)</div>
+    <h1>Week 22 — Capstone: Design + Kickoff</h1>
+    <p>เริ่มโปรเจกต์ใหญ่ชิ้นสุดท้าย — ออกแบบเองตั้งแต่ศูนย์ แบบ senior</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">🎯 เป้าหมายของสัปดาห์นี้</h3>
+    <p>21 สัปดาห์ที่ผ่านมาคุณต่อยอด library-system (โจทย์ที่ให้มา) — Capstone คือการ <strong>ออกแบบและสร้างโปรเจกต์เองตั้งแต่ศูนย์</strong> ·
+    Week 22 โฟกัสที่ทักษะ senior ที่สุด: <strong>ออกแบบระบบก่อนเขียน</strong> (design doc, architecture, threat model) แล้ว scaffold +
+    สร้าง vertical slice แรก · จบ 2 สัปดาห์ (22-23) จะได้โปรเจกต์ production-grade ที่เล่า interview ได้ 30 นาที</p>
+    <ul class="check">
+      <li>เลือก Capstone (SecureShare หรือ VulnTracker — ทั้งคู่ใช้จุดแข็ง security)</li>
+      <li>เขียน Design Document — requirements, architecture, data model, API, threat model</li>
+      <li>MVP scoping — เลือกสิ่งที่สำคัญสุดทำก่อน (ไม่ทำทุกอย่าง)</li>
+      <li>Scaffold โปรเจกต์ (apply ทั้ง stack: TS, Docker, CI/CD, security)</li>
+      <li>สร้าง vertical slice แรก (1 feature ครบ frontend→backend→DB)</li>
+    </ul>
+    <div class="warn"><strong>ทำไมสัปดาห์นี้คือ peak ของคอร์ส:</strong> "ออกแบบระบบเองได้" คือนิยามของ senior — ไม่ใช่แค่ทำตามโจทย์ ·
+    design doc + threat model เป็นสิ่งที่ interview senior/staff ขอ และเป็น artifact ที่ทำให้ portfolio โดดเด่น</p></div>
+  </div>
+
+  <h2>เลือก Capstone</h2>
+  <div class="card">
+    <div class="clean" style="grid-template-columns:1fr 1fr">
+      <div class="good"><h4 style="color:#047857">🔐 SecureShare</h4>
+      <p style="font-size:.9rem;margin:4px 0">ระบบแชร์ไฟล์เข้ารหัส — upload ไฟล์ → ได้ลิงก์ที่หมดอายุ + เข้ารหัส + audit log ว่าใครเปิดเมื่อไหร่</p>
+      <p style="font-size:.85rem;color:#6b7280">ใช้: encryption, expiring link, access control, audit · เด่น: crypto + security</p></div>
+      <div class="good"><h4 style="color:#047857">🐛 VulnTracker</h4>
+      <p style="font-size:.9rem;margin:4px 0">เครื่องมือติดตามผล pentest สำหรับทีม — บันทึก finding, severity, status, มอบหมาย, dashboard, report export</p>
+      <p style="font-size:.85rem;color:#6b7280">ใช้: CRUD, role, workflow, dashboard, export · เด่น: ตรงงาน security คุณ + เล่า interview ดี</p></div>
+    </div>
+    <p class="muted">ทั้งคู่ใช้จุดแข็ง security ของคุณ · VulnTracker เล่า interview ได้ดี (คุณเข้าใจ pain point จากประสบการณ์จริง) · SecureShare เด่นด้าน crypto · เลือกที่สนุกกว่า</p>
+  </div>
+
+  <h2>บทเรียน</h2>
+  <div class="card">
+    <span class="badge">บทที่ 1</span> <strong><a href="01-design-doc.html">System Design Document + Threat Model</a></strong>
+    <p style="margin:6px 0 0">ทำไม design ก่อนเขียน · requirements (functional/non-functional) · architecture · data model · API design · threat model</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge">บทที่ 2</span> <strong><a href="02-mvp-kickoff.html">MVP Scoping + Project Kickoff</a></strong>
+    <p style="margin:6px 0 0">MVP vs nice-to-have · vertical slice · scaffold (apply stack) · setup CI/CD/Docker ตั้งแต่ต้น · first feature</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~2.5 ชม.</p>
+  </div>
+  <div class="card">
+    <span class="badge green">Mission ใหญ่</span> <strong><a href="03-mission-capstone-start.html">Design Doc + Scaffold + Vertical Slice แรก</a></strong>
+    <p style="margin:6px 0 0">เขียน design doc + threat model · scaffold (TS/Docker/CI) · สร้าง 1 feature ครบ stack · push</p>
+    <p style="margin:6px 0 0;color:#6b7280">⏱ ~4 ชม.</p>
+  </div>
+
+  <h2>ตารางแนะนำ</h2>
+  <div class="card">
+    <table>
+      <tr><th>วัน</th><th>ทำอะไร</th><th>เวลา</th></tr>
+      <tr><td>จันทร์</td><td>บทที่ 1 (design doc) + เลือก capstone</td><td>2.5 ชม.</td></tr>
+      <tr><td>อังคาร</td><td>เขียน design doc + threat model</td><td>1.5 ชม.</td></tr>
+      <tr><td>พุธ</td><td>บทที่ 2 (MVP + scaffold)</td><td>2.5 ชม.</td></tr>
+      <tr><td>พฤหัส</td><td>Mission 22.1-22.2 (design + scaffold)</td><td>1.5 ชม.</td></tr>
+      <tr><td>ศุกร์</td><td>Friday Rebuild + 🤖 AI Drill #21 + system design ฝึก</td><td>1 ชม.</td></tr>
+      <tr><td>เสาร์</td><td>Mission 22.3-22.4 (vertical slice แรก) + push</td><td>3 ชม.</td></tr>
+    </table>
+  </div>
+
+  <h2>🧹 หลักการประจำ Week 22</h2>
+  <div class="card">
+    <h3 style="margin-top:0">1. Design ก่อนโค้ด — แต่ไม่ over-design</h3>
+    <div class="clean">
+      <div class="bad"><h4>❌ เขียนเลยไม่คิด / หรือ design 2 สัปดาห์ไม่เขียน</h4>
+<pre><code>// เขียนเลย → architecture พังกลางทาง
+// หรือ over-design ทุก edge case → ไม่เริ่มสักที</code></pre></div>
+      <div class="good"><h4>✅ design พอเห็นภาพ → เริ่ม → ปรับ</h4>
+<pre><code>// design doc 1-2 หน้า (พอเห็นโครง)
+// → vertical slice → เรียนรู้ → ปรับ design
+// iterative ไม่ใช่ waterfall</code></pre></div>
+    </div>
+
+    <h3>2. Vertical slice — ทำ 1 feature ครบ ดีกว่าทุก feature ครึ่ง ๆ</h3>
+    <p class="muted">สร้าง 1 feature ครบ stack (UI→API→DB→test→deploy) ก่อน แล้วค่อยเพิ่ม feature · เห็นทั้งระบบทำงาน early · ดีกว่าทำ backend หมดแล้วค่อยเริ่ม frontend</p>
+    <div class="warn"><strong>กฎทอง:</strong> design พอเห็นภาพแล้วเริ่ม (ไม่ over-design) · MVP ก่อน (ตัด nice-to-have) · vertical slice (1 feature ครบ) ·
+    apply ทุกอย่างที่เรียน (TS/test/Docker/CI/security) ตั้งแต่ต้น · threat model ตั้งแต่ design</div>
+  </div>
+
+  <div class="danger"><strong>🤖 AI Drill #21 + System Design (ศุกร์ 30 นาที):</strong>
+  ① ให้ AI review design doc ของคุณ — หาช่องโหว่ใน architecture/threat model · ② ฝึก system design 1 ข้อเป็นอังกฤษ (Agoda Track) ·
+  จดลง <code>notes/system-design/</code></div>
+
+  <div class="warn"><strong>กติกาเดิม:</strong> Capstone เขียนเองทั้งหมด (AI ช่วยตามกฎ ai-workflow ได้นอก core logic) · ติดเกิน 20 นาทีถาม Claude · จบสัปดาห์ส่งงาน</div>
+
+  <footer>คอร์ส Senior Secure Full Stack · Week 22 (เฟส 4)</footer>
+</div>
+</body>
+</html>

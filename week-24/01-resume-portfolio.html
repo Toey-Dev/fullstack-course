@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1 — Resume + Portfolio ที่ตรงกับฝีมือจริง</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 24</a> · บทที่ 1</div>
+    <h1>📄 Resume + Portfolio ที่ตรงกับฝีมือจริง</h1>
+    <p>เปลี่ยน 23 สัปดาห์ให้เป็นหลักฐานที่ recruiter อ่านแล้วอยากเรียกสัมภาษณ์</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <!-- PART 1 -->
+  <h2>1 · Resume คือเครื่องมือ "ผ่านด่านแรก" ไม่ใช่ชีวประวัติ</h2>
+  <div class="card">
+    <p>recruiter ใช้เวลากับ resume แต่ละใบ ~6-10 วินาทีในรอบแรก · เป้าหมายของ resume ไม่ใช่เล่าทุกอย่างที่คุณทำ
+    แต่คือ <strong>ทำให้คนอ่านเชื่อภายใน 10 วินาทีว่าคุณทำงานนี้ได้</strong> แล้วเรียกสัมภาษณ์</p>
+
+    <p>โครง resume สาย dev ที่ได้ผล (1 หน้า สำหรับ 1-5 ปี):</p>
+    <ul class="check">
+      <li><strong>หัว</strong> — ชื่อ, ตำแหน่งที่อยากได้ (Secure Full Stack Developer), GitHub, LinkedIn, อีเมล</li>
+      <li><strong>Summary 2-3 บรรทัด</strong> — คุณคือใคร + จุดขายเฉพาะ (ex-pentester + full stack)</li>
+      <li><strong>Skills</strong> — จัดกลุ่ม (Frontend / Backend / DevOps / Security) เฉพาะที่ใช้จริงได้</li>
+      <li><strong>Projects</strong> — capstone + library-system + automation report (พร้อม link + ตัวเลข)</li>
+      <li><strong>Experience</strong> — media-presto + Royal Thai Army (pentester) — bullet วัดผล</li>
+      <li><strong>Education / Certs</strong> — + free certs ที่ทำ (PortSwigger, CTF)</li>
+    </ul>
+    <div class="warn"><strong>ตอบโจทย์ที่ 2 ของคุณโดยตรง:</strong> "resume ตรงกับโค้ดที่ทำได้จริง" — ทุกบรรทัดมี link/ตัวเลขรองรับ
+    เพื่อให้ในห้องสัมภาษณ์คุณ<em>ป้องกัน</em>ทุก bullet ได้ ไม่มีอะไรที่อธิบายไม่ได้</div>
+  </div>
+
+  <!-- PART 2 -->
+  <h2>2 · Bullet แบบ XYZ — Proof &gt; Claim</h2>
+  <div class="card">
+    <p>สูตรที่ Google แนะนำ: <strong>"ทำ [X] วัดผลได้ [Y] ด้วยวิธี [Z]"</strong> · เปลี่ยนคำคุยโม้เป็นข้อเท็จจริงที่พิสูจน์ได้</p>
+
+    <div class="clean">
+      <div class="bad"><h4>❌ Claim (อ้างลอย)</h4>
+        <p style="font-size:.9rem">"พัฒนาระบบ web ด้วย React และ Node.js"<br>"ดูแลเรื่อง performance"<br>"ใส่ใจ security"</p>
+      </div>
+      <div class="good"><h4>✅ XYZ (มีหลักฐาน)</h4>
+        <p style="font-size:.9rem">"ลด response time ของ dashboard 850ms→45ms ด้วย Redis cache + DB index (วัดด้วย EXPLAIN)"<br>
+        "พบและแก้ช่องโหว่ IDOR + 3 จุดจาก self-pentest ตาม OWASP"</p>
+      </div>
+    </div>
+
+    <h3>ตัวอย่าง bullet จาก capstone คุณ (ใช้ได้จริง)</h3>
+<pre><code>VulnTracker — Secure pentest tracking platform  [Live] [GitHub]
+• ออกแบบระบบจากศูนย์: design doc + threat model (STRIDE),
+  RBAC 3 ระดับ, audit log ครบทุก action
+• พบ+แก้ IDOR & broken access control ผ่าน self-pentest (OWASP Top 10)
+• ลด dashboard latency 850ms→45ms (Redis cache-aside + composite index)
+• CI/CD: GitHub Actions (lint+test+gitleaks+Semgrep), Docker, deploy Railway
+• Stack: TypeScript, Express, PostgreSQL, Next.js, Redis, BullMQ</code></pre>
+    <div class="danger"><strong>⚠️ counter-example:</strong> อย่าใส่ตัวเลขปลอม · "เพิ่ม performance 300%" ที่อธิบายไม่ได้ = ตายในห้องสัมภาษณ์ ·
+    ตัวเลขทุกตัวต้องมาจาก PERFORMANCE.md จริงที่คุณวัดเอง · proof ที่แท้จริงเท่านั้น</div>
+  </div>
+
+  <!-- PART 3 -->
+  <h2>3 · จุดขาย ex-pentester — ความได้เปรียบที่คนอื่นไม่มี</h2>
+  <div class="card">
+    <p>full stack dev มีเยอะ · full stack dev ที่<strong>คิดแบบ attacker ได้</strong>หายาก · นี่คือ moat ของคุณ — ต้องดันให้เด่น
+    ไม่ใช่ซ่อนไว้ท้าย resume</p>
+    <table>
+      <tr><th>สินทรัพย์ของคุณ</th><th>เขียนใน resume/สัมภาษณ์ยังไง</th></tr>
+      <tr><td>6 ปี pentester (Royal Thai Army)</td><td>Summary บรรทัดแรก — "Full stack dev with 6 yrs offensive security background"</td></tr>
+      <tr><td>OWASP Top 10 + CTF</td><td>Skills section + เล่าว่า apply กับ capstone จริงยังไง</td></tr>
+      <tr><td>self-pentest capstone</td><td>SECURITY-AUDIT.md ใน repo — โชว์ว่า build แบบ security-first</td></tr>
+      <tr><td>เป้า AI-Security Engineer</td><td>ทิศทางที่ชัด — บริษัทชอบคนที่รู้ว่าตัวเองไปไหน</td></tr>
+    </table>
+    <div class="warn"><strong>positioning:</strong> คุณไม่ใช่ "junior full stack อีกคน" · คุณคือ "secure full stack ที่ pentest เป็น" —
+    ตำแหน่งที่ตลาดไทยขาดแคลนและจ่ายแพง · นี่คือเส้นทางสู่ 100k และ AI-Security</div>
+  </div>
+
+  <!-- PART 4 -->
+  <h2>4 · Portfolio / GitHub — ด่านที่ recruiter คลิกดูจริง</h2>
+  <div class="card">
+    <p>recruiter สาย tech คลิก GitHub คุณจริง · จัดให้ด่านแรกสวย:</p>
+    <ul class="check">
+      <li><strong>Pin 3 repo เด่น</strong> — capstone, library-system, automation-report (มี README + screenshot + live URL)</li>
+      <li><strong>Profile README</strong> — แนะนำตัวสั้น + จุดขาย + 3 project + tech</li>
+      <li><strong>Commit history สะอาด</strong> — conventional commits, ไม่มี "fix" "asdf" รัว ๆ</li>
+      <li><strong>Course repo (public)</strong> — แสดง 24 สัปดาห์ของการเรียนรู้อย่างเป็นระบบ (นี่ก็คือ portfolio)</li>
+      <li><strong>vee-securedev.vercel.app</strong> — landing page รวม project + resume + contact</li>
+    </ul>
+    <div class="danger"><strong>💡 เคล็ด:</strong> repo ที่ pin ต้อง clone-แล้ว-รันได้ใน 5 นาที (README + .env.example + docker compose up) ·
+    recruiter ที่รัน project คุณได้จริง = ความประทับใจที่ resume สวยแค่ไหนก็สู้ไม่ได้</div>
+  </div>
+
+  <!-- PART 5 -->
+  <h2>5 · ภาพรวม + คำช่วยจำ</h2>
+  <div class="card" style="text-align:center">
+    <p><strong>Resume:</strong> <span class="badge">Summary (จุดขาย)</span> <span class="badge">Skills (จริง)</span>
+    <span class="badge orange">Projects (link+ตัวเลข)</span> <span class="badge">Experience (XYZ)</span></p>
+    <p><strong>สูตร bullet:</strong> <span class="badge green">ทำ X · วัดผล Y · ด้วยวิธี Z</span></p>
+    <p class="muted">"Proof &gt; Claim · เขียนแค่ที่อธิบายได้ · ดันจุดขาย pentester ขึ้นหัว · GitHub ต้อง clone-รันได้"</p>
+  </div>
+
+  <!-- PART 6: QUIZ -->
+  <h2>6 · Quiz</h2>
+  <div class="card">
+    <div class="mission"><strong>Q1.</strong> ทำไม resume bullet ควรเป็น XYZ (มีตัวเลข) แทน "พัฒนาระบบด้วย React"?
+      <details><summary>เฉลย</summary>XYZ พิสูจน์ผลกระทบที่วัดได้ ("850→45ms ด้วย cache+index") ทำให้ recruiter เห็นคุณค่าและความลึก · claim ลอย ๆ ใครก็เขียนได้ ไม่แยกคุณออกจากคนอื่น · และ XYZ บังคับให้คุณเขียนแค่สิ่งที่ทำจริง</details>
+    </div>
+    <div class="mission"><strong>Q2.</strong> ทำไม "ความซื่อสัตย์ใน resume" เป็นกลยุทธ์ ไม่ใช่แค่จริยธรรม?
+      <details><summary>เฉลย</summary>เพราะทุก bullet จะถูกขุดในห้องสัมภาษณ์ ("เล่าให้ฟังหน่อย") · ถ้าเขียนเกินฝีมือ คุณตอบลึกไม่ได้ = เสียความน่าเชื่อถือทั้งใบ · resume ที่ป้องกันตัวเองได้ทุกบรรทัด = แข็งแกร่งกว่า resume ที่สวยแต่กลวง</details>
+    </div>
+    <div class="mission"><strong>Q3.</strong> 🔐 ทำไมพื้นเพ ex-pentester ควรอยู่ "หัว" resume ไม่ใช่ซ่อนท้าย?
+      <details><summary>เฉลย</summary>เพราะมันคือ differentiator ที่หายาก — full stack ที่ pentest เป็นมีน้อยและตลาดไทยขาดแคลน/จ่ายแพง · ดันขึ้นหัว = recruiter เห็นทันทีว่าคุณไม่ใช่ junior ทั่วไป · เป็น positioning สู่ secure full stack / AI-Security</details>
+    </div>
+    <div class="mission"><strong>Q4.</strong> ทำไม repo ที่ pin ควร "clone แล้วรันได้ใน 5 นาที"?
+      <details><summary>เฉลย</summary>recruiter สาย tech คลิกดู GitHub จริง · repo ที่รันได้ทันที (README+env.example+docker compose) พิสูจน์ว่าทำงานได้จริงและคิดถึงคนอื่น · ความประทับใจนี้แรงกว่า resume สวย — เป็นหลักฐานเป็นรูปธรรม</details>
+    </div>
+  </div>
+
+  <!-- PART 7 -->
+  <h2>7 · 🧹 Clean Code: resume ที่ "อ่านง่าย" เหมือนโค้ดที่ดี</h2>
+  <div class="card">
+    <div class="clean">
+      <div class="bad"><h4>❌ resume รก อ่านยาก</h4>
+        <p style="font-size:.9rem">3 หน้า · ทุก skill ที่เคยแตะ · paragraph ยาว · ไม่มีลำดับความสำคัญ · recruiter หาจุดเด่นไม่เจอใน 10 วิ</p>
+      </div>
+      <div class="good"><h4>✅ resume กระชับ มีลำดับ</h4>
+        <p style="font-size:.9rem">1 หน้า · เด่นสุดอยู่บน · bullet สั้นวัดผล · เว้นวรรคหายใจ · skim ได้ใน 10 วิ เจอจุดขายทันที</p>
+      </div>
+    </div>
+    <p class="muted"><strong>เคล็ด:</strong> resume เหมือนโค้ดสะอาด — ตัดสิ่งไม่จำเป็น (skill ที่ไม่ใช้/งานเก่าไม่เกี่ยว), เรียงตามความสำคัญ (เด่นบน),
+    consistent (รูปแบบวันที่/bullet เหมือนกัน) · export เป็น PDF (ฟอนต์ไม่เพี้ยน) · ตั้งชื่อไฟล์ <code>Varat-Dube-Secure-FullStack.pdf</code> ดูเป็นมืออาชีพ</p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 24</a>
+    <a class="btn" href="02-mock-interview.html">บทที่ 2: Mock Interview →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 24 บทที่ 1</footer>
+</div>
+</body>
+</html>

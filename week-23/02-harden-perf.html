@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2 — Security Pass + Performance Pass</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 23</a> · บทที่ 2</div>
+    <h1>🛡️ Security Pass + Performance Pass</h1>
+    <p>self-pentest โปรเจกต์ตัวเอง + ทำให้เร็ว — ปิดท้ายด้วย case study</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <!-- PART 1 -->
+  <h2>1 · Security Pass — pentest capstone ของตัวเอง</h2>
+  <div class="card">
+    <p>นี่คือ<strong>จุดที่คุณเหนือ dev ทั่วไปชัดที่สุด</strong> · ก่อนเรียกว่าเสร็จ ให้สวมหมวก pentester (อาชีพเดิมคุณ) แล้วไล่ attack
+    ระบบตัวเอง · รวบทุกอย่างจาก Week 17-20 มาใช้กับ capstone จริง</p>
+
+    <p>Self-pentest checklist (OWASP Top 10 — apply กับ VulnTracker):</p>
+    <table>
+      <tr><th>OWASP</th><th>ลองโจมตี</th><th>ต้องป้องกันได้</th></tr>
+      <tr><td>A01 Broken Access</td><td>client เรียก PATCH /findings ของ project อื่น (IDOR)</td><td>RBAC + ownership check ฝั่ง server</td></tr>
+      <tr><td>A02 Crypto Failure</td><td>password เก็บ plain? token ใน localStorage?</td><td>bcrypt · JWT httpOnly cookie · HTTPS</td></tr>
+      <tr><td>A03 Injection</td><td>ใส่ <code>' OR 1=1--</code> / payload XSS ใน title</td><td>parameterized query · escape output · Zod</td></tr>
+      <tr><td>A05 Misconfig</td><td>error leak stack trace? CORS เปิดกว้าง?</td><td>helmet · error handler ไม่ leak · CORS allowlist</td></tr>
+      <tr><td>A07 Auth Failure</td><td>brute force login? token ไม่หมดอายุ?</td><td>rate-limit · token expiry · lockout</td></tr>
+      <tr><td>A09 Logging</td><td>action สำคัญไม่ถูก log? log มี secret?</td><td>audit log ครบ · ไม่ log password/token</td></tr>
+    </table>
+    <div class="danger"><strong>🎯 จุดขายของคุณ:</strong> เขียน <code>docs/SECURITY-AUDIT.md</code> — "ผม pentest ระบบตัวเอง เจอ X จุด แก้แบบ Y" ·
+    นี่คือ artifact ที่ทำให้ recruiter สาย security/AI-Security มองคุณคนละแบบ · ใช้ <code>npm audit</code> + gitleaks + Semgrep (W19) ปิดท้ายอัตโนมัติ</div>
+  </div>
+
+  <!-- PART 2 -->
+  <h2>2 · ตัวอย่างช่องโหว่ที่มักเจอใน capstone — และวิธีแก้</h2>
+  <div class="card">
+    <p>ช่องโหว่ยอดฮิตที่ dev มักพลาด (คุณจับได้เพราะพื้นเพ pentester):</p>
+    <div class="clean">
+      <div class="bad"><h4>❌ IDOR — ลืม ownership check</h4>
+<pre><code>// เช็คแค่ว่า login + role ถูก
+router.patch('/findings/:id', auth,
+  requireRole('lead'), (req,res) =&gt; {
+  // ❌ lead ของทีม A แก้ finding ทีม B ได้!
+  update(req.params.id, req.body);
+});</code></pre></div>
+      <div class="good"><h4>✅ เช็ก ownership/scope</h4>
+<pre><code>router.patch('/findings/:id', auth,
+  requireRole('lead'), async (req,res) =&gt; {
+  const f = await getFinding(req.params.id);
+  if (f.project_id !== req.user.project_id)
+    return res.status(404).json({error:'not found'});
+  update(req.params.id, req.body);   // ✅
+});</code></pre></div>
+    </div>
+    <div class="warn"><strong>หลัก:</strong> auth (คุณเป็นใคร) ≠ authorization (คุณทำ<em>สิ่งนี้กับข้อมูลชิ้นนี้</em>ได้ไหม) · IDOR เกิดเพราะเช็คแค่ role
+    ไม่เช็คว่าเป็นเจ้าของ resource · คืน 404 ไม่ใช่ 403 เพื่อไม่ leak ว่ามี resource อยู่</div>
+  </div>
+
+  <!-- PART 3 -->
+  <h2>3 · Performance Pass — apply Week 21 กับ capstone</h2>
+  <div class="card">
+    <p>ก่อนโชว์ ให้ profile แล้วแก้คอขวด (measure ก่อนเสมอ — W21):</p>
+    <ul class="check">
+      <li><strong>Index</strong> — EXPLAIN query หลัก (list/filter findings, dashboard) → เพิ่ม index ที่ขาด</li>
+      <li><strong>N+1</strong> — dashboard/list ยิง query ซ้ำต่อแถวไหม → JOIN</li>
+      <li><strong>Pagination</strong> — list findings มี pagination (cursor) ไม่โหลดหมด</li>
+      <li><strong>Cache</strong> — dashboard (อ่านบ่อย เปลี่ยนช้า) → cache + invalidate ตอน finding เปลี่ยน</li>
+      <li><strong>Queue</strong> — export PDF (ช้า) → BullMQ ไม่ block request</li>
+    </ul>
+    <div class="warn"><strong>เก็บตัวเลข:</strong> ใส่ใน <code>docs/PERFORMANCE.md</code> (before/after) · "dashboard 850ms → 45ms (cache + index)" คือประโยคทองใน interview
+    และ resume bullet · พิสูจน์ว่าคุณ optimize เป็นและวัดผลได้</div>
+  </div>
+
+  <!-- PART 4 -->
+  <h2>4 · Case Study — เปลี่ยนโปรเจกต์เป็นเรื่องเล่า</h2>
+  <div class="card">
+    <p>โปรเจกต์ที่ไม่มีคนเล่า = โค้ดบน GitHub ที่ไม่มีใครอ่าน · <strong>case study</strong> ทำให้มันกลายเป็นเรื่องที่ recruiter/interviewer
+    เข้าใจคุณค่าใน 2 นาที · เขียนใน README หรือ <code>docs/CASE-STUDY.md</code> ตามโครง:</p>
+    <table>
+      <tr><th>หัวข้อ</th><th>เล่าอะไร</th></tr>
+      <tr><td><strong>Problem</strong></td><td>ปัญหาจริง + ทำไมน่าแก้ (ทีม pentest บันทึกกระจัดกระจาย)</td></tr>
+      <tr><td><strong>Approach</strong></td><td>ออกแบบยังไง + tech เลือกอะไร <em>เพราะอะไร</em> (trade-off)</td></tr>
+      <tr><td><strong>Security</strong></td><td>threat model + ช่องโหว่ที่ self-pentest เจอและแก้ (จุดเด่นคุณ)</td></tr>
+      <tr><td><strong>Performance</strong></td><td>คอขวดที่เจอ + ตัวเลข before/after</td></tr>
+      <tr><td><strong>Result + Learnings</strong></td><td>ผลลัพธ์ + screenshot/live demo + ได้เรียนรู้อะไร</td></tr>
+    </table>
+    <div class="danger"><strong>💡 เคล็ด interview:</strong> ซ้อมเล่า case study นี้ออกเสียง 5 นาที · มันคือ "tell me about a project" ที่ทุก interview ถาม ·
+    คุณมี threat model + ตัวเลข perf + ช่องโหว่จริงที่แก้ → เรื่องเล่าที่ junior ไม่มี</div>
+  </div>
+
+  <!-- PART 5 -->
+  <h2>5 · ภาพรวม + คำช่วยจำ</h2>
+  <div class="card" style="text-align:center">
+    <p><strong>ลำดับ harden:</strong></p>
+    <p><span class="badge orange">Security Pass (self-pentest OWASP)</span> → <span class="badge">Performance Pass (W21)</span>
+    → <span class="badge green">Polish UI</span> → <span class="badge">Case Study</span> → <span class="badge green">tag v1.0</span></p>
+    <p class="muted">"pentest ตัวเอง · measure ก่อน optimize · เปลี่ยน trade-off เป็นเรื่องเล่า"</p>
+  </div>
+
+  <!-- PART 6: QUIZ -->
+  <h2>6 · Quiz</h2>
+  <div class="card">
+    <div class="mission"><strong>Q1.</strong> 🔐 IDOR คืออะไร และต่างจาก "ลืมใส่ auth" ยังไง?
+      <details><summary>เฉลย</summary>IDOR = ผู้ใช้ที่ login + มี role ถูกต้องแล้ว แต่เข้าถึง resource ของ<em>คนอื่น</em>ได้ (เช่น lead ทีม A แก้ของทีม B) · ต่างจากลืม auth ตรงที่ auth ผ่านแล้วแต่ขาด <strong>ownership/scope check</strong> · แก้: เทียบเจ้าของ resource ฝั่ง server</details>
+    </div>
+    <div class="mission"><strong>Q2.</strong> 🔐 ทำไมตัวอย่างคืน 404 แทน 403 เมื่อ resource ไม่ใช่ของผู้ใช้?
+      <details><summary>เฉลย</summary>403 บอกว่า "resource นี้มีอยู่แต่คุณห้ามดู" = leak การมีอยู่ของข้อมูล (enumeration) · 404 บอกแค่ "ไม่เจอ" ไม่เปิดเผยว่ามี · ลด info disclosure</details>
+    </div>
+    <div class="mission"><strong>Q3.</strong> ก่อน optimize performance ควรทำอะไรก่อนเสมอ (หลัก W21)?
+      <details><summary>เฉลย</summary><strong>measure/profile ก่อน</strong> — EXPLAIN, จับ query count, วัด response time หาคอขวดจริง · อย่าเดา · optimize ตรงที่ช้าจริง แล้ววัด after เทียบ — ไม่ใช่ optimize สุ่ม</details>
+    </div>
+    <div class="mission"><strong>Q4.</strong> ทำไม case study สำคัญพอ ๆ กับตัวโค้ด?
+      <details><summary>เฉลย</summary>recruiter/interviewer ไม่อ่านโค้ดทุกบรรทัด · case study เล่า problem→approach→trade-off→result ใน 2 นาที ทำให้เห็นว่าคุณ<em>คิด</em>ยังไง ไม่ใช่แค่เขียนได้ · เป็นบทซ้อม "tell me about a project"</details>
+    </div>
+  </div>
+
+  <!-- PART 7 -->
+  <h2>7 · 🧹 Clean Code: ส่งมอบให้คนอื่นอ่านรู้เรื่อง</h2>
+  <div class="card">
+    <div class="clean">
+      <div class="bad"><h4>❌ repo ที่ไม่มีใครเริ่มได้</h4>
+        <p style="font-size:.9rem">README ว่าง/แค่ชื่อ · ไม่บอกวิธีรัน · ไม่มี .env.example · ไม่มี screenshot · ต้องอ่านโค้ดถึงจะเข้าใจ</p>
+      </div>
+      <div class="good"><h4>✅ repo พร้อมส่งมอบ</h4>
+        <p style="font-size:.9rem">README: 1-line วิธีรัน · architecture · screenshot · live URL · .env.example · case study link · CI badge เขียว</p>
+      </div>
+    </div>
+    <p class="muted"><strong>เคล็ด:</strong> repo ที่ดีคือ "clone แล้วรันได้ใน 5 นาที" · มี <code>.env.example</code>, <code>docker compose up</code> ขึ้นเลย,
+    README มี screenshot + live demo · tag <code>v1.0</code> เมื่อเสร็จ (recruiter เห็น release = เสร็จจริง) · git history สะอาดด้วย conventional commits</p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-complete-test.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-capstone-done.html">Mission ใหญ่ →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 23 บทที่ 2</footer>
+</div>
+</body>
+</html>

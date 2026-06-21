@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission ใหญ่: Capstone Design + Kickoff</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 22</a> · Mission ใหญ่</div>
+    <h1>🏗 Capstone: Design Doc + Scaffold + Vertical Slice แรก</h1>
+    <p>วางรากฐานโปรเจกต์ปิดคอร์ส — ออกแบบ + ตั้งโครง + 1 feature ทำงานจริง</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3 style="margin-top:0">เป้าหมาย Mission สัปดาห์นี้</h3>
+    <p>จบสัปดาห์นี้คุณจะมี: repo capstone ที่มี design doc + threat model, scaffold ที่ CI เขียว + Docker รัน, และ
+    <strong>1 feature ทำงานครบ stack + deploy ได้</strong> · นี่คือรากฐานที่ Week 23 จะต่อยอดให้เสร็จ · เลือก
+    <strong>VulnTracker</strong> (แนะนำ — ตรงงานคุณ เล่า interview ดี) หรือ <strong>SecureShare</strong></p>
+    <div class="warn"><strong>หลักประจำสัปดาห์:</strong> design พอเห็นภาพแล้วเริ่ม (ไม่ over-design) · MVP ก่อน · vertical slice (ครบชั้น+deploy) · apply ทุกอย่างที่เรียน · threat model ตั้งแต่ออกแบบ</div>
+  </div>
+
+  <h2>🪜 4 Mission ย่อย</h2>
+
+  <div class="mission">
+    <h3>Mission 22.1 — Design Doc + Threat Model <span class="badge orange">90 นาที</span></h3>
+    <ol>
+      <li>เลือก capstone + สร้าง repo ใหม่ (public)</li>
+      <li>เขียน <code>docs/DESIGN.md</code>: Problem, Requirements (func/non-func), Architecture diagram, Data model, API list</li>
+      <li>เขียน <code>docs/THREAT-MODEL.md</code>: ตาราง STRIDE 6 แถว + วิธีป้องกันแต่ละข้อ</li>
+    </ol>
+    <div class="tip"><strong>✅ เช็ก:</strong> ใครอ่าน DESIGN.md แล้วเข้าใจระบบใน 5 นาที · threat model ครบ 6 STRIDE</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 22.2 — Scaffold + CI เขียว <span class="badge orange">90 นาที</span></h3>
+    <ol>
+      <li>โครง repo (apps/api, apps/web, docs) + TS strict + ESLint/Prettier</li>
+      <li><code>docker-compose.yml</code> (api, web, postgres, redis) รันขึ้นได้</li>
+      <li>GitHub Actions CI: lint + test + build + (gitleaks/npm audit) → <strong>เขียว</strong></li>
+      <li>1 test ผ่าน (health check) + commit แรกแบบ conventional</li>
+    </ol>
+    <div class="warn"><strong>เช็ก:</strong> <code>docker compose up</code> รันได้ · CI badge เขียวบน README · ไม่มี secret ใน repo (gitleaks ผ่าน)</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 22.3 — Auth + Vertical Slice แรก <span class="badge orange">2 ชม.</span></h3>
+    <ol>
+      <li>auth (register/login JWT + bcrypt) + RBAC middleware</li>
+      <li>feature หลัก 1 ตัวครบชั้น: migration+index → Zod → route+RBAC → service → test (UI พื้นฐานก็ได้)</li>
+      <li>audit log การ action ที่เปลี่ยนข้อมูล (defense ตาม threat model)</li>
+    </ol>
+    <div class="tip"><strong>✅ เช็ก:</strong> สร้าง record ได้ผ่าน API · test RBAC ผ่าน (role ผิด → 403) · audit log บันทึก</div>
+  </div>
+
+  <div class="mission">
+    <h3>Mission 22.4 — Deploy + README + push <span class="badge orange">75 นาที</span></h3>
+    <ol>
+      <li>deploy ขึ้น (Vercel web + Railway/Render api+db) — feature แรกใช้งานได้บน production</li>
+      <li>README: วิธีรัน local + architecture diagram + screenshot + live URL</li>
+      <li>push ทุกอย่าง · AI Drill #21 (ให้ AI review design doc + ฝึก system design 1 ข้อ EN)</li>
+    </ol>
+    <div class="tip"><strong>✅ เช็ก:</strong> live URL เปิดได้ · README ครบ (recruiter อ่านแล้วเข้าใจ) · ทุกอย่างบน GitHub</div>
+  </div>
+
+  <h2>📏 เกณฑ์ review</h2>
+  <div class="card">
+    <table>
+      <tr><th>ด้าน</th><th>%</th><th>ดูจาก</th></tr>
+      <tr><td>Design + Threat Model</td><td>30%</td><td>DESIGN.md ชัด · THREAT-MODEL.md ครบ STRIDE · trade-off อธิบายได้</td></tr>
+      <tr><td>Scaffold + CI/CD</td><td>25%</td><td>docker compose รัน · CI เขียว · apply stack (TS/lint/test/security)</td></tr>
+      <tr><td>Vertical slice</td><td>25%</td><td>1 feature ครบชั้น · auth+RBAC · test ผ่าน · audit log</td></tr>
+      <tr><td>Deploy + README + Git</td><td>20%</td><td>live URL · README ดี (screenshot/วิธีรัน) · git history สะอาด · AI Usage</td></tr>
+    </table>
+  </div>
+
+  <h2>✅ Checkpoint จบสัปดาห์</h2>
+  <ul class="check">
+    <li>เลือก capstone + DESIGN.md + THREAT-MODEL.md (STRIDE)</li>
+    <li>scaffold + docker compose + CI เขียว</li>
+    <li>auth + RBAC + 1 vertical slice ครบชั้น + test</li>
+    <li>deploy live + README (screenshot + architecture)</li>
+    <li>push + AI Drill #21 + system design 1 ข้อ (EN)</li>
+    <li>บอกผม: เลือกอะไร + slice แรกคืออะไร + ติดตรงไหน → ปรับ Week 23 (ทำให้เสร็จ)</li>
+  </ul>
+
+  <div class="danger"><strong>🎯 มองภาพ Week 23:</strong> สัปดาห์หน้าต่อ should-have features (audit/export/filter), polish, เพิ่ม test coverage,
+  performance (apply W21), security pass สุดท้าย (apply W18-20) → capstone เสร็จสมบูรณ์พร้อมโชว์ interview</div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="02-mvp-kickoff.html">← บทที่ 2</a>
+    <a class="btn" href="index.html">กลับหน้าหลัก Week 22</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 22 Mission ใหญ่</footer>
+</div>
+</body>
+</html>

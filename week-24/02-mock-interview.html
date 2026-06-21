@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2 — Mock Interview + เจรจาเงินเดือน</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 24</a> · บทที่ 2</div>
+    <h1>🎤 Mock Interview + เจรจาเงินเดือน</h1>
+    <p>ซ้อมจนพูดได้ลื่น — technical, system design, เล่า capstone, ต่อรองเงินเดือน</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <!-- PART 1 -->
+  <h2>1 · โครงสัมภาษณ์ dev — รู้ว่าจะเจออะไร</h2>
+  <div class="card">
+    <p>สัมภาษณ์ตำแหน่ง full stack ในไทย (บริษัท product / agency / บริษัทใหญ่อย่าง Agoda) มักมีรอบเหล่านี้:</p>
+    <table>
+      <tr><th>รอบ</th><th>วัดอะไร</th><th>คุณเตรียมจาก</th></tr>
+      <tr><td>HR / culture</td><td>ทำไมอยากมา, แรงจูงใจ, soft skill</td><td>เรื่องเล่าเส้นทาง: pentester→full stack→secure</td></tr>
+      <tr><td>Technical Q&A</td><td>JS/TS, Node, DB, security พื้นฐาน</td><td>ทั้งคอร์ส (W1-21) — ทบทวน quiz</td></tr>
+      <tr><td>Live coding</td><td>แก้โจทย์สด + คิดออกเสียง</td><td>DSA (Agoda Track) + เขียนสะอาด</td></tr>
+      <tr><td>System design</td><td>ออกแบบระบบ + trade-off</td><td>W21-22 + AI drill system design</td></tr>
+      <tr><td>Project deep-dive</td><td>เล่า + ขุดลึก capstone</td><td>case study + ป้องกันทุก resume bullet</td></tr>
+    </table>
+    <div class="warn"><strong>หลัก:</strong> ไม่มีรอบไหนที่คุณไม่ได้เตรียมมา — คอร์สนี้ build มาเพื่อตอบทุกรอบ · สัปดาห์นี้แค่<em>ซ้อมพูด</em>สิ่งที่ทำมาแล้ว
+    ให้ออกมาเป็นคำพูดที่ลื่น มั่นใจ</div>
+  </div>
+
+  <!-- PART 2 -->
+  <h2>2 · เล่า Capstone ด้วย STAR — โครงที่ขุดยังไงก็ไม่หลุด</h2>
+  <div class="card">
+    <p>"Tell me about a project" คือคำถามที่<em>ทุก</em>สัมภาษณ์ถาม · ใช้โครง <strong>STAR</strong> + ลึกพอให้ขุดต่อได้:</p>
+    <table>
+      <tr><th>STAR</th><th>VulnTracker ของคุณ</th></tr>
+      <tr><td><strong>S</strong>ituation</td><td>ทีม pentest บันทึก finding กระจัดกระจาย ติดตามสถานะยาก</td></tr>
+      <tr><td><strong>T</strong>ask</td><td>สร้างระบบ track finding ที่ปลอดภัย + มี RBAC + audit</td></tr>
+      <tr><td><strong>A</strong>ction</td><td>design doc + threat model, build TS/Express/Next, self-pentest, optimize</td></tr>
+      <tr><td><strong>R</strong>esult</td><td>live system, แก้ IDOR ที่เจอ, dashboard 850→45ms, test coverage จุดเสี่ยง</td></tr>
+    </table>
+
+    <h3>เตรียมรับการขุดลึก (follow-up ที่จะเจอ)</h3>
+    <ul class="check">
+      <li>"ทำไมเลือก PostgreSQL ไม่ใช่ MongoDB?" → relational data + ACID + ต้อง JOIN finding/project/user</li>
+      <li>"IDOR ที่เจอเป็นยังไง แก้ยังไง?" → เล่า ownership check ฝั่ง server + 404 anti-enumeration</li>
+      <li>"ถ้า scale 100x ต้องทำอะไร?" → read replica, cache layer, queue, partition (W21-22)</li>
+      <li>"จุดที่ภูมิใจ / จุดที่จะทำต่างออกไป?" → ความซื่อสัตย์ = น่าเชื่อถือ</li>
+    </ul>
+    <div class="danger"><strong>💡 จุดแข็งคุณ:</strong> ส่วนใหญ่ candidate เล่า project ได้แค่ "ทำอะไร" · คุณเล่าได้ถึง threat model, ช่องโหว่จริงที่แก้,
+    และตัวเลข perf — ลึกระดับที่ทำให้ interviewer จำได้</div>
+  </div>
+
+  <!-- PART 3 -->
+  <h2>3 · System Design สด — เฟรมเวิร์กตอบ (Agoda Track)</h2>
+  <div class="card">
+    <p>รอบ system design กลัวกันมาก แต่มีสูตร · ใช้กรอบ 5 ขั้น (ตอบเป็นอังกฤษได้ตามที่ซ้อม AI drill):</p>
+    <svg viewBox="0 0 660 110" style="width:100%;max-width:660px;background:#0f172a;border-radius:8px">
+      <g font-size="10" text-anchor="middle">
+        <rect x="15"  y="35" width="115" height="44" rx="6" fill="#1e3a5f" stroke="#3b82f6"/><text x="72"  y="54" fill="#dbeafe">1. Clarify</text><text x="72" y="70" fill="#93c5fd" font-size="8">requirement+scale</text>
+        <rect x="145" y="35" width="115" height="44" rx="6" fill="#1e3a5f" stroke="#3b82f6"/><text x="202" y="54" fill="#dbeafe">2. API + Data</text><text x="202" y="70" fill="#93c5fd" font-size="8">endpoints+schema</text>
+        <rect x="275" y="35" width="115" height="44" rx="6" fill="#1e3a5f" stroke="#3b82f6"/><text x="332" y="54" fill="#dbeafe">3. High-level</text><text x="332" y="70" fill="#93c5fd" font-size="8">component diagram</text>
+        <rect x="405" y="35" width="115" height="44" rx="6" fill="#3a2e1e" stroke="#f59e0b"/><text x="462" y="54" fill="#fef3c7">4. Scale</text><text x="462" y="70" fill="#fcd34d" font-size="8">cache/queue/shard</text>
+        <rect x="535" y="35" width="115" height="44" rx="6" fill="#3b1e2e" stroke="#ef4444"/><text x="592" y="54" fill="#fecaca">5. Trade-off</text><text x="592" y="70" fill="#fca5a5" font-size="8">+security</text>
+      </g>
+    </svg>
+    <p class="muted">① ถามให้ชัดก่อน (อย่ารีบวาด) · ② API + data model · ③ วาดภาพรวม · ④ จุด scale (apply W21!) · ⑤ trade-off + security (จุดขายคุณ)</p>
+    <div class="warn"><strong>เคล็ด:</strong> คิดออกเสียงตลอด — interviewer วัด<em>วิธีคิด</em>ไม่ใช่คำตอบสมบูรณ์ · ถามกลับได้ · พูดถึง security เสมอ (คนอื่นลืม) ·
+    "measure ก่อน optimize" + "ไม่ over-engineer" = สัญญาณ senior</div>
+  </div>
+
+  <!-- PART 4 -->
+  <h2>4 · เจรจาเงินเดือน — ตลาดไทย สาย Secure Full Stack</h2>
+  <div class="card">
+    <p>เป้าหมาย 100k ของคุณเป็นจริงได้ด้วยข้อมูล + การวางตัว · หลักเจรจา:</p>
+    <ul class="check">
+      <li><strong>รู้ตลาดก่อน</strong> — ดูช่วงเงินเดือนจริง (เช็ค ISM Technology, Talent Sauce, JobsDB, LinkedIn Salary, เพื่อนในวงการ) ตามตำแหน่ง+ประสบการณ์</li>
+      <li><strong>อย่าบอกตัวเลขแรก</strong> — ถ้าถามให้คืนคำถาม "ช่วงงบของตำแหน่งนี้เท่าไหร่ครับ" · ถ้าต้องบอก ให้ช่วงที่ปลายล่างคือเป้า</li>
+      <li><strong>ขายคุณค่า ไม่ใช่ความต้องการ</strong> — "ด้วยพื้นเพ security + full stack ผมช่วยลดความเสี่ยงที่ปกติต้องจ้างแยก" ไม่ใช่ "ผมอยากได้ 100k เพราะ..."</li>
+      <li><strong>มองทั้ง package</strong> — base + โบนัส + WFH + อุปกรณ์ + งบเรียน/cert + การเติบโต (เส้นทาง AI-Security)</li>
+      <li><strong>มีหลายตัวเลือก = อำนาจต่อรอง</strong> — สมัครหลายที่พร้อมกัน · offer หนึ่งช่วยต่อรองอีกที่</li>
+    </ul>
+    <div class="danger"><strong>⚠️ ไม่ใช่คำแนะนำการเงินส่วนบุคคล:</strong> ตัวเลขตลาดเปลี่ยนตลอด — เช็คแหล่งล่าสุดเองก่อนเจรจา ·
+    การกระโดดจาก 40k → 100k อาจต้อง 1-2 ก้าว (เปลี่ยนงานไป 60-70k ก่อน แล้วขยับ) ตามที่วางใน FIVE-YEAR-PLAN · ใช้ข้อมูลจริงตัดสินใจ</div>
+  </div>
+
+  <!-- PART 5 -->
+  <h2>5 · ภาพรวม + คำช่วยจำ</h2>
+  <div class="card" style="text-align:center">
+    <p><strong>เล่า project:</strong> <span class="badge">STAR + ขุดลึกได้</span> ·
+    <strong>System design:</strong> <span class="badge orange">Clarify→API→Diagram→Scale→Trade-off</span></p>
+    <p><strong>เจรจา:</strong> <span class="badge green">รู้ตลาด · อย่าบอกก่อน · ขายคุณค่า · ดูทั้ง package</span></p>
+    <p class="muted">"interviewer วัดวิธีคิด ไม่ใช่คำตอบเป๊ะ · คิดออกเสียง · พูด security เสมอ · เจรจาด้วยข้อมูลไม่ใช่อารมณ์"</p>
+  </div>
+
+  <!-- PART 6: QUIZ -->
+  <h2>6 · Quiz</h2>
+  <div class="card">
+    <div class="mission"><strong>Q1.</strong> ในรอบ system design ทำไม "ถามให้ชัดก่อน" สำคัญกว่ารีบวาดทันที?
+      <details><summary>เฉลย</summary>เพราะ scope ที่ไม่ชัดทำให้ออกแบบผิดทาง · การถาม (จำนวน user, read/write ratio, ข้อจำกัด) แสดงว่าคุณคิดเป็นระบบและไม่เดา — เป็นสัญญาณ senior · interviewer มักจงใจให้โจทย์กว้างเพื่อดูว่าคุณถามไหม</details>
+    </div>
+    <div class="mission"><strong>Q2.</strong> ทำไมไม่ควรบอกตัวเลขเงินเดือนที่ต้องการก่อน?
+      <details><summary>เฉลย</summary>คนบอกตัวเลขก่อนมักเสียเปรียบ — ถ้าต่ำไปก็ปิดเพดานตัวเอง, สูงไปก็เสี่ยงถูกคัด · ให้ฝั่งบริษัทเผยช่วงงบก่อน หรือถ้าต้องบอกให้อิงข้อมูลตลาด + ให้ช่วงที่ปลายล่างคือเป้าจริง</details>
+    </div>
+    <div class="mission"><strong>Q3.</strong> 🔐 ในรอบ system design ทำไมการพูดถึง security ทำให้คุณโดดเด่น?
+      <details><summary>เฉลย</summary>เพราะ candidate ส่วนใหญ่โฟกัสแค่ functionality + scale แล้วลืม security · คุณ (ex-pentester) ใส่ threat model/auth/rate-limit เข้าไปธรรมชาติ = แสดงมุมที่คนอื่นมองข้าม + ตอกย้ำ positioning secure full stack</details>
+    </div>
+    <div class="mission"><strong>Q4.</strong> เมื่อเล่า capstone ทำไมต้องเตรียม "จุดที่จะทำต่างออกไป"?
+      <details><summary>เฉลย</summary>เพราะ interviewer มักถามเพื่อวัดวุฒิภาวะ/การสะท้อนตัวเอง · ตอบได้อย่างซื่อสัตย์ (เช่น "จะเพิ่ม test E2E แต่แรก") แสดงว่าคุณเรียนรู้และไม่หลงตัวเอง — น่าเชื่อถือกว่าอ้างว่าสมบูรณ์แบบ</details>
+    </div>
+  </div>
+
+  <!-- PART 7 -->
+  <h2>7 · 🧹 Clean Code: สื่อสารให้คมเหมือนโค้ดที่อ่านง่าย</h2>
+  <div class="card">
+    <div class="clean">
+      <div class="bad"><h4>❌ ตอบยืดยาว วกวน</h4>
+        <p style="font-size:.9rem">เล่าทุกรายละเอียดไม่เรียงลำดับ · interviewer หลงทาง · ไม่รู้ประเด็นหลักคืออะไร · เหมือนฟังก์ชัน 200 บรรทัด</p>
+      </div>
+      <div class="good"><h4>✅ ตอบมีโครง กระชับ</h4>
+        <p style="font-size:.9rem">สรุปก่อน (headline) → ลงรายละเอียดถ้าถูกถาม · ใช้ STAR · หยุดให้ interviewer ถามต่อ · เหมือนฟังก์ชันที่ตั้งชื่อดี</p>
+      </div>
+    </div>
+    <p class="muted"><strong>เคล็ด:</strong> ตอบแบบ "headline ก่อน รายละเอียดตาม" (เหมือน abstraction ที่ดี) · ซ้อมจนเล่า capstone ได้ 2 นาที (สั้น) และ 5 นาที (ยาว) ·
+    อัดเสียงตัวเองฟัง = เจอจุดวกวน · พูดช้า ชัด มั่นใจ ดีกว่าพูดเร็วแล้วรก · ไม่รู้ก็บอก "ไม่เคยใช้ แต่จะเข้าหาแบบนี้" — ซื่อสัตย์ชนะเสมอ</p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="01-resume-portfolio.html">← บทที่ 1</a>
+    <a class="btn" href="03-mission-job-ready.html">Mission ใหญ่ →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 24 บทที่ 2</footer>
+</div>
+</body>
+</html>

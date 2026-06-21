@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1 — System Design Document + Threat Model</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html" style="color:#fff">Week 22</a> · บทที่ 1</div>
+    <h1>📐 System Design Document + Threat Model</h1>
+    <p>ออกแบบระบบให้เสร็จบนกระดาษก่อนเขียนโค้ดบรรทัดแรก</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <!-- ===== PART 1: CONCEPT ===== -->
+  <h2>1 · Design Document คืออะไร และทำไมต้องมี</h2>
+  <div class="card">
+    <p><strong>Design Document (design doc)</strong> คือเอกสารสั้น ๆ (1-3 หน้า) ที่อธิบายว่าจะสร้าง<em>อะไร</em> และจะสร้าง<em>อย่างไร</em>
+    ก่อนลงมือเขียนโค้ด · เป็นมาตรฐานของบริษัทใหญ่ทุกที่ (Google เรียก design doc, Amazon เรียก 6-pager) · มันบังคับให้คุณ
+    "คิดให้จบ" ก่อนเสียเวลาเขียนโค้ดผิดทาง</p>
+
+    <p>มันตอบคำถามสำคัญก่อนที่จะสาย:</p>
+    <ul class="check">
+      <li><strong>Problem</strong> — แก้ปัญหาอะไร ใครใช้</li>
+      <li><strong>Requirements</strong> — ต้องทำอะไรได้ (functional) + ต้องเร็ว/ปลอดภัย/scale แค่ไหน (non-functional)</li>
+      <li><strong>Architecture</strong> — ระบบมีกี่ส่วน คุยกันยังไง</li>
+      <li><strong>Data model</strong> — เก็บข้อมูลอะไร ความสัมพันธ์</li>
+      <li><strong>API design</strong> — endpoint อะไรบ้าง</li>
+      <li><strong>Threat model</strong> — มีช่องโหว่อะไร ป้องกันยังไง (จุดแข็งคุณ!)</li>
+      <li><strong>Trade-offs</strong> — เลือกอะไร ไม่เลือกอะไร เพราะอะไร</li>
+    </ul>
+
+    <div class="warn"><strong>ทำไมสำคัญกับเป้าหมาย senior:</strong> mid-level เขียนโค้ดตามที่บอก · senior <strong>ออกแบบระบบเองได้และอธิบาย trade-off ได้</strong> ·
+    design doc คือหลักฐานที่จับต้องได้ของทักษะนี้ — และเป็น artifact ที่ทำให้ portfolio/GitHub ของคุณดูคนละระดับ</div>
+  </div>
+
+  <!-- ===== PART 2: WHY + COUNTER ===== -->
+  <h2>2 · ทำไมต้อง design ก่อน — และจะเกิดอะไรถ้าไม่ทำ</h2>
+  <div class="card">
+    <p>เหตุผลที่ไม่ใช่แค่ "ทำตามฟอร์ม":</p>
+    <p>① <strong>หาจุดพังก่อนเขียน</strong> — แก้ปัญหาบนกระดาษถูกกว่าแก้ในโค้ด 100 เท่า · เช่น เพิ่งรู้ตอน design ว่า "expiring link"
+    ต้องเก็บ token + expiry + เช็คทุกครั้ง — ดีกว่ามารู้ตอนเขียนไปครึ่งทาง · ② <strong>scope ชัด</strong> — รู้ว่าอะไรทำอะไรไม่ทำ ไม่หลงทาง ·
+    ③ <strong>คุยกับคนอื่นได้</strong> — ใน interview/ทีม คุณอธิบายระบบจาก doc ได้ใน 5 นาที</p>
+
+    <div class="clean">
+      <div class="bad"><h4>❌ ไม่มี design — เขียนเลย</h4>
+        <p style="font-size:.9rem">เขียน auth ก่อน → เขียน upload → เพิ่งรู้ว่า data model ผิด → rework ทั้งหมด · 2 สัปดาห์หายไป · architecture ปะผุ</p>
+      </div>
+      <div class="good"><h4>✅ design 2 ชม. ก่อน</h4>
+        <p style="font-size:.9rem">เห็นภาพรวม → รู้ลำดับที่ถูก → data model นิ่งตั้งแต่ต้น → เขียนราบรื่น · 2 ชม. ประหยัด 2 สัปดาห์</p>
+      </div>
+    </div>
+
+    <div class="danger"><strong>⚠️ counter-example (over-design ก็พังเหมือนกัน):</strong> design ทุก edge case 2 สัปดาห์ไม่เขียนสักบรรทัด = analysis paralysis ·
+    design doc ที่ดี = พอเห็นโครง (1-3 หน้า) แล้ว<strong>เริ่มเลย</strong> ปรับระหว่างทาง · doc คือเข็มทิศ ไม่ใช่พิมพ์เขียวที่ห้ามแก้</div>
+  </div>
+
+  <!-- ===== PART 3: REAL EXAMPLES ===== -->
+  <h2>3 · ตัวอย่างจริง — design doc ของ VulnTracker</h2>
+  <div class="card">
+    <p>มาดู design doc ตัวอย่างของ <strong>VulnTracker</strong> (capstone option ที่ตรงงานคุณ) — สั้น กระชับ แต่ครบ:</p>
+
+    <h3>① Problem & Users</h3>
+    <p class="muted">ทีม pentest บันทึก finding กระจัดกระจาย (Excel/Notion) → ติดตามสถานะยาก, ทำ report ซ้ำ ·
+    User: pentester (สร้าง finding), team lead (มอบหมาย+ดู dashboard), client (ดู report read-only)</p>
+
+    <h3>② Requirements</h3>
+    <table>
+      <tr><th>Functional</th><th>Non-functional</th></tr>
+      <tr><td>สร้าง/แก้ finding (title, severity, desc, CVSS)</td><td>auth ทุก endpoint (RBAC 3 role)</td></tr>
+      <tr><td>มอบหมาย + เปลี่ยน status (open→fixed→verified)</td><td>audit log ทุก action ที่เปลี่ยนข้อมูล</td></tr>
+      <tr><td>dashboard (count by severity/status)</td><td>response < 300ms (มี index + pagination)</td></tr>
+      <tr><td>export report (PDF/markdown)</td><td>input validation (Zod) + OWASP Top 10</td></tr>
+    </table>
+
+    <h3>③ Architecture (SVG)</h3>
+    <svg viewBox="0 0 640 200" style="width:100%;max-width:640px;background:#0f172a;border-radius:8px">
+      <rect x="20" y="75" width="110" height="50" rx="6" fill="#1e3a5f" stroke="#3b82f6"/>
+      <text x="75" y="98" fill="#dbeafe" font-size="13" text-anchor="middle">Next.js</text>
+      <text x="75" y="114" fill="#93c5fd" font-size="10" text-anchor="middle">(UI + SSR)</text>
+
+      <rect x="200" y="75" width="120" height="50" rx="6" fill="#1e3a5f" stroke="#3b82f6"/>
+      <text x="260" y="98" fill="#dbeafe" font-size="13" text-anchor="middle">Express API</text>
+      <text x="260" y="114" fill="#93c5fd" font-size="10" text-anchor="middle">(TS + JWT)</text>
+
+      <rect x="390" y="30" width="110" height="44" rx="6" fill="#3b1e3a" stroke="#a855f7"/>
+      <text x="445" y="57" fill="#f3e8ff" font-size="12" text-anchor="middle">PostgreSQL</text>
+
+      <rect x="390" y="125" width="110" height="44" rx="6" fill="#3a2e1e" stroke="#f59e0b"/>
+      <text x="445" y="152" fill="#fef3c7" font-size="12" text-anchor="middle">Redis (cache)</text>
+
+      <rect x="540" y="75" width="80" height="50" rx="6" fill="#1e3a2e" stroke="#10b981"/>
+      <text x="580" y="98" fill="#d1fae5" font-size="11" text-anchor="middle">Worker</text>
+      <text x="580" y="114" fill="#6ee7b7" font-size="9" text-anchor="middle">(PDF gen)</text>
+
+      <line x1="130" y1="100" x2="200" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+      <line x1="320" y1="92" x2="390" y2="58" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+      <line x1="320" y1="108" x2="390" y2="142" stroke="#64748b" stroke-width="2" marker-end="url(#a)"/>
+      <line x1="320" y1="100" x2="540" y2="100" stroke="#475569" stroke-width="2" stroke-dasharray="4" marker-end="url(#a)"/>
+      <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#64748b"/></marker></defs>
+    </svg>
+
+    <h3>④ Data Model (หลัก)</h3>
+<pre><code>users(id, email, password_hash, role)        -- role: pentester|lead|client
+findings(id, title, severity, cvss, status,  -- severity: low..critical
+         description, created_by, assigned_to, project_id, created_at)
+audit_log(id, user_id, action, entity, entity_id, timestamp)  -- ใครทำอะไร</code></pre>
+
+    <h3>⑤ API Design</h3>
+<pre><code>POST   /api/findings        สร้าง finding         (pentester+)
+GET    /api/findings        list + filter + page  (ทุก role, scope ตาม role)
+PATCH  /api/findings/:id    เปลี่ยน status/assign  (lead+ / audit log)
+GET    /api/dashboard       สรุป by severity      (cache 60s)
+POST   /api/reports/:id     export PDF (→ queue)  (lead+)</code></pre>
+
+    <p class="muted">นี่คือ design doc จริง ๆ ที่ทุกบริษัทใช้ — สั้น แต่พอให้ใครก็เริ่มเขียนได้ และอธิบาย interviewer ได้</p>
+  </div>
+
+  <!-- ===== THREAT MODEL ===== -->
+  <h2>4 · Threat Model — จุดแข็ง ex-pentester ของคุณ</h2>
+  <div class="card">
+    <p><strong>Threat model</strong> = ระบุภัยคุกคามอย่างเป็นระบบก่อนสร้าง · ใช้กรอบ <strong>STRIDE</strong> (มาตรฐาน Microsoft) ·
+    นี่คือสิ่งที่ dev ทั่วไป<em>ไม่ทำ</em> แต่คุณทำได้เพราะพื้นเพ pentester — ใส่ใน design doc แล้วคุณโดดเด่นทันที</p>
+
+    <table>
+      <tr><th>STRIDE</th><th>ภัย</th><th>VulnTracker ป้องกันยังไง</th></tr>
+      <tr><td><strong>S</strong>poofing</td><td>ปลอมตัวเป็นคนอื่น</td><td>JWT + bcrypt · ไม่มี endpoint ไหนไม่ auth</td></tr>
+      <tr><td><strong>T</strong>ampering</td><td>แก้ข้อมูลที่ไม่ควร</td><td>RBAC (client แก้ไม่ได้) · Zod validate · audit log</td></tr>
+      <tr><td><strong>R</strong>epudiation</td><td>ปฏิเสธว่าไม่ได้ทำ</td><td>audit_log บันทึกทุก action ที่เปลี่ยนข้อมูล</td></tr>
+      <tr><td><strong>I</strong>nfo Disclosure</td><td>เห็นข้อมูลที่ไม่ควร</td><td>scope by role+project · ไม่ leak ใน error · HTTPS</td></tr>
+      <tr><td><strong>D</strong>oS</td><td>ถล่มจนล่ม</td><td>rate-limit · pagination · query มี index</td></tr>
+      <tr><td><strong>E</strong>levation</td><td>ยกระดับสิทธิ์</td><td>เช็ค role ฝั่ง server เสมอ (ไม่เชื่อ client) · IDOR check</td></tr>
+    </table>
+
+    <div class="danger"><strong>🎯 จุดขายของคุณ:</strong> ใน interview เมื่อคุณพูดถึง capstone แล้วโชว์ threat model แบบ STRIDE +
+    "ผมทำ IDOR check ตรงนี้เพราะเคยเจอตอน pentest" — คุณคุยคนละภาษากับ junior ทันที · นี่คือสะพานจาก pentester → AI-Security Engineer</div>
+  </div>
+
+  <!-- ===== PART 5: DIAGRAM + MNEMONIC ===== -->
+  <h2>5 · ภาพรวม + คำสำคัญช่วยจำ</h2>
+  <div class="card">
+    <svg viewBox="0 0 660 150" style="width:100%;max-width:660px;background:#0f172a;border-radius:8px">
+      <text x="330" y="28" fill="#f1f5f9" font-size="15" text-anchor="middle" font-weight="bold">ลำดับเขียน Design Doc</text>
+      <g font-size="11" text-anchor="middle">
+        <rect x="20"  y="55" width="92" height="50" rx="6" fill="#1e3a5f" stroke="#3b82f6"/><text x="66"  y="78" fill="#dbeafe">Problem</text><text x="66" y="94" fill="#93c5fd" font-size="9">ใคร/อะไร</text>
+        <rect x="135" y="55" width="92" height="50" rx="6" fill="#1e3a5f" stroke="#3b82f6"/><text x="181" y="78" fill="#dbeafe">Requirements</text><text x="181" y="94" fill="#93c5fd" font-size="9">func/non-func</text>
+        <rect x="250" y="55" width="92" height="50" rx="6" fill="#1e3a5f" stroke="#3b82f6"/><text x="296" y="78" fill="#dbeafe">Arch + Data</text><text x="296" y="94" fill="#93c5fd" font-size="9">ส่วน/ER</text>
+        <rect x="365" y="55" width="92" height="50" rx="6" fill="#1e3a5f" stroke="#3b82f6"/><text x="411" y="78" fill="#dbeafe">API</text><text x="411" y="94" fill="#93c5fd" font-size="9">endpoints</text>
+        <rect x="480" y="55" width="92" height="50" rx="6" fill="#3b1e2e" stroke="#ef4444"/><text x="526" y="78" fill="#fecaca">Threat</text><text x="526" y="94" fill="#fca5a5" font-size="9">STRIDE</text>
+        <rect x="595" y="55" width="50" height="50" rx="6" fill="#1e3a2e" stroke="#10b981"/><text x="620" y="78" fill="#d1fae5">Trade</text><text x="620" y="94" fill="#6ee7b7" font-size="9">offs</text>
+      </g>
+      <line x1="112" y1="80" x2="135" y2="80" stroke="#64748b" stroke-width="2"/>
+      <line x1="227" y1="80" x2="250" y2="80" stroke="#64748b" stroke-width="2"/>
+      <line x1="342" y1="80" x2="365" y2="80" stroke="#64748b" stroke-width="2"/>
+      <line x1="457" y1="80" x2="480" y2="80" stroke="#64748b" stroke-width="2"/>
+      <line x1="572" y1="80" x2="595" y2="80" stroke="#64748b" stroke-width="2"/>
+    </svg>
+    <p style="text-align:center"><strong>คำช่วยจำ:</strong> <span class="badge">Problem</span> <span class="badge">Requirements</span>
+    <span class="badge">Architecture+Data</span> <span class="badge">API</span> <span class="badge orange">Threat (STRIDE)</span> <span class="badge green">Trade-offs</span></p>
+    <p style="text-align:center" class="muted">"design พอเห็นภาพ → เริ่ม → ปรับ" · over-design ก็พังเท่ากับไม่ design</p>
+  </div>
+
+  <!-- ===== PART 6: QUIZ ===== -->
+  <h2>6 · Quiz</h2>
+  <div class="card">
+    <div class="mission"><strong>Q1.</strong> ทำไม design doc ที่ดีควรสั้น (1-3 หน้า) ไม่ใช่ละเอียดทุก edge case?
+      <details><summary>เฉลย</summary>เพราะ over-design = analysis paralysis (ไม่ได้เริ่มเขียนสักที) · doc คือเข็มทิศพอเห็นโครงแล้วเริ่ม ปรับระหว่างทาง — ไม่ใช่พิมพ์เขียวที่สมบูรณ์แบบตั้งแต่แรก</details>
+    </div>
+    <div class="mission"><strong>Q2.</strong> ความต่างของ functional vs non-functional requirement?
+      <details><summary>เฉลย</summary>Functional = ระบบทำอะไรได้ (สร้าง finding, export report) · Non-functional = ทำได้<em>ดีแค่ไหน</em> (เร็ว &lt;300ms, ปลอดภัย RBAC, scale) · ทั้งคู่ต้องระบุก่อนสร้าง</details>
+    </div>
+    <div class="mission"><strong>Q3.</strong> 🔐 ในกรอบ STRIDE — "client เปลี่ยน status ของ finding ได้ทั้งที่ควรเป็น read-only" คือภัยตัวไหน และป้องกันยังไง?
+      <details><summary>เฉลย</summary><strong>Tampering</strong> (+Elevation of Privilege) · ป้องกัน: เช็ค role ฝั่ง <em>server</em> เสมอ ไม่เชื่อ client · RBAC middleware · บันทึก audit log · นี่คือ broken access control (OWASP A01)</details>
+    </div>
+    <div class="mission"><strong>Q4.</strong> ทำไม "vertical slice" ดีกว่าทำ backend ให้เสร็จก่อนแล้วค่อยทำ frontend?
+      <details><summary>เฉลย</summary>vertical slice = 1 feature ครบ stack (UI→API→DB→deploy) ทำให้เห็นทั้งระบบทำงาน early, เจอปัญหา integration เร็ว · ทำ backend หมดก่อน = เพิ่งรู้ปัญหาตอนต่อ frontend (สาย)</details>
+    </div>
+  </div>
+
+  <!-- ===== PART 7: CLEAN CODE ===== -->
+  <h2>7 · 🧹 Clean Code: design doc ที่ maintain ได้</h2>
+  <div class="card">
+    <p>design doc เป็นเอกสารมีชีวิต ไม่ใช่เขียนทิ้ง:</p>
+    <div class="clean">
+      <div class="bad"><h4>❌ doc ตายตั้งแต่วันแรก</h4>
+        <p style="font-size:.9rem">เขียนครั้งเดียวตอนเริ่ม · code เปลี่ยนแต่ doc ไม่อัปเดต · 1 เดือนผ่านไป doc โกหก → ไม่มีใครเชื่อ</p>
+      </div>
+      <div class="good"><h4>✅ doc อยู่ใน repo + อัปเดต</h4>
+        <p style="font-size:.9rem">เก็บใน <code>docs/DESIGN.md</code> · เปลี่ยน architecture สำคัญ → อัปเดต doc ใน PR เดียวกัน · มี "Decisions" log สั้น ๆ</p>
+      </div>
+    </div>
+    <p class="muted"><strong>เคล็ด:</strong> ใช้ <code>docs/DESIGN.md</code> + <code>docs/DECISIONS.md</code> (ADR — บันทึกว่าทำไมเลือก X ไม่เลือก Y) ·
+    interviewer ที่เห็น ADR ใน repo คุณ = "คนนี้คิดเป็นระบบ" · เก็บ threat model ใน <code>docs/THREAT-MODEL.md</code> แยกต่างหาก</p>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="btn ghost" href="index.html">← หน้าหลัก Week 22</a>
+    <a class="btn" href="02-mvp-kickoff.html">บทที่ 2: MVP + Kickoff →</a>
+  </div>
+  <footer>คอร์ส Senior Secure Full Stack · Week 22 บทที่ 1</footer>
+</div>
+</body>
+</html>
